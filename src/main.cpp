@@ -331,11 +331,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             g_rbx->Update();
         }
 
-        // Despacha tecla pendente do AutoDive — deve ser chamado na thread principal,
-        // com o foco correto, a cada frame (equivale ao task.wait(1/ScanRate) do Lua)
-        if (g_mem.IsValid())
-            g_dive.DispatchPendingKeys(overlay.GetTargetHWND());
-
         renderer.BeginFrame();
 
         if (g_mem.IsValid() && g_cfg.enabled)

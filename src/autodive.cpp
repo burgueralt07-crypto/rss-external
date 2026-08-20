@@ -20,9 +20,9 @@ void AutoDive::Stop()
 // --------------------------------------------------------------------------
 // ScanLoop — roda em thread dedicada
 //
-// Lê cópias thread-safe do RobloxReader (protegidas por mutex no rbx.cpp)
-// e decide o dive sem bloquear o render. A tecla é armazenada atomicamente
-// e despachada pela thread principal via DispatchPendingKeys().
+// Lê memória diretamente a cada iteração (ReadBallDirect / ReadGKDirect /
+// ReadGoalDirect) sem depender do render loop. Isso garante dados frescos
+// e disparo de tecla no microsegundo exato da detecção.
 // --------------------------------------------------------------------------
 void AutoDive::ScanLoop(RobloxReader* rbx)
 {
@@ -30,9 +30,9 @@ void AutoDive::ScanLoop(RobloxReader* rbx)
     {
         if (cfg.enabled)
         {
-            GKState   gk   = rbx->GetGKCopy();
-            BallState ball = rbx->GetBallCopy();
-            GoalState goal = rbx->GetGoalCopy();
+            GKState   gk   = rbx->ReadGKDirect();
+            BallState ball = rbx->ReadBallDirect();
+            GoalState goal = rbx->ReadGoalDirect();
             Evaluate(gk, ball, goal);
         }
 

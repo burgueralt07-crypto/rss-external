@@ -45,9 +45,10 @@ class RobloxReader;
 // --------------------------------------------------------------------------
 // AutoDive
 //
-// Thread dedicada ao scan — lê memória e decide dive sem bloquear o render.
-// PressKey() apenas armazena a tecla num atomic; a thread principal chama
-// DispatchPendingKeys() a cada frame para enviar via SendInput.
+// Thread dedicada ao scan — lê memória diretamente e decide dive sem
+// bloquear o render. PressKey() dispara SendInput imediatamente na ScanLoop,
+// usando hardware scancode puro (wVk=0). O key-up é enviado 25ms depois
+// em thread separada para não travar o loop de 240 Hz.
 // --------------------------------------------------------------------------
 class AutoDive {
 public:
@@ -79,15 +80,6 @@ public:
     // Para thread. Chame ao desativar ou ao fechar.
     void Stop();
 
-    // Chamado pela thread principal a cada frame (antes do Sleep).
-    // Despacha tecla pendente via SendInput — deve vir da thread com foco de UI.
-    void DispatchPendingKeys(HWND targetHwnd)
-    {
-        WORD vk = static_cast<WORD>(m_pendingKey.exchange(0));
-        if (!vk) return;
-        SendVKey(targetHwnd, vk);
-    }
-
     const char* LastDiveKey() const { return m_lastKey; }
     bool        DiveFired()   const { return m_firedThisFrame; }
 
@@ -108,27 +100,31 @@ public:
     } debug;
 
 private:
-    // Envia key down+up via SendInput (thread principal)
-    static void SendVKey(HWND targetHwnd, WORD vk)
+    // Dispara a tecla imediatamente por hardware scancode puro (wVk=0).
+    // Solta a tecla 25ms depois em thread assíncrona — não trava o loop de scan.
+    static void PressKey(WORD vk)
     {
-        if (targetHwnd && IsWindow(targetHwnd) && GetForegroundWindow() != targetHwnd)
-            SetForegroundWindow(targetHwnd);
+        WORD sc = static_cast<WORD>(MapVirtualKeyW(vk, MAPVK_VK_TO_VSC));
 
-        UINT sc = MapVirtualKeyW(vk, MAPVK_VK_TO_VSC);
-        INPUT inputs[2] = {};
-        inputs[0].type       = INPUT_KEYBOARD;
-        inputs[0].ki.wVk     = vk;
-        inputs[0].ki.wScan   = static_cast<WORD>(sc);
-        inputs[0].ki.dwFlags = KEYEVENTF_SCANCODE;
-        inputs[1].type       = INPUT_KEYBOARD;
-        inputs[1].ki.wVk     = vk;
-        inputs[1].ki.wScan   = static_cast<WORD>(sc);
-        inputs[1].ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-        SendInput(2, inputs, sizeof(INPUT));
+        // Key down — imediato, sem passar pelo virtual-key path
+        INPUT down = {};
+        down.type       = INPUT_KEYBOARD;
+        down.ki.wVk     = 0;
+        down.ki.wScan   = sc;
+        down.ki.dwFlags = KEYEVENTF_SCANCODE;
+        SendInput(1, &down, sizeof(INPUT));
+
+        // Key up — 25ms depois em thread separada para não bloquear o scan
+        std::thread([sc]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));
+            INPUT up = {};
+            up.type       = INPUT_KEYBOARD;
+            up.ki.wVk     = 0;
+            up.ki.wScan   = sc;
+            up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
+            SendInput(1, &up, sizeof(INPUT));
+        }).detach();
     }
-
-    // Armazena tecla — chamado pela ScanLoop (thread de background)
-    void PressKey(WORD vk) { m_pendingKey.store(vk); }
 
     static Vector3 PointToObjectSpace(const Vector3& origin,
                                       const Vector3& right,
@@ -147,9 +143,6 @@ private:
     std::chrono::steady_clock::time_point m_lastDiveTime;
     bool        m_firedThisFrame = false;
     const char* m_lastKey        = "-";
-
-    // Tecla pendente: escrita pelo ScanLoop, lida pela thread principal
-    std::atomic<uint16_t> m_pendingKey{ 0 };
 
     std::thread       m_thread;
     std::atomic<bool> m_running{ false };

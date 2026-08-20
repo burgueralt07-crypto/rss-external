@@ -222,6 +222,138 @@ bool RobloxReader::Update()
 }
 
 // --------------------------------------------------------------------------
+// ReadBallDirect / ReadGKDirect / ReadGoalDirect
+//
+// Versões públicas para uso direto pela ScanLoop do AutoDive (240 Hz).
+// Não atualizam m_ball/m_gkState/m_goalState — retornam o estado como valor.
+// Reutilizam ponteiros cacheados (m_workspace, m_localPlayer, m_cachedBall)
+// que são mantidos atualizados pelo render loop via Update().
+// --------------------------------------------------------------------------
+BallState RobloxReader::ReadBallDirect()
+{
+    BallState ball{};
+    if (!m_workspace) return ball;
+
+    // Valida cache da instância da bola
+    if (m_cachedBall)
+    {
+        std::string name = GetInstanceName(m_cachedBall);
+        std::string lower = name;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        if (lower != "ball" && lower != "football" && lower != "soccerball" && lower != "soccer_ball")
+            m_cachedBall = 0;
+    }
+
+    if (!m_cachedBall)
+    {
+        for (uintptr_t child : GetChildren(m_workspace))
+        {
+            std::string name = GetInstanceName(child);
+            std::string lower = name;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+            if (lower == "ball" || lower == "football" || lower == "soccerball" || lower == "soccer_ball")
+            {
+                m_cachedBall = child;
+                break;
+            }
+        }
+    }
+
+    if (!m_cachedBall) return ball;
+
+    uintptr_t primitive = ReadPtr(m_cachedBall + Offsets::BasePart::Primitive);
+    if (!primitive) { m_cachedBall = 0; return ball; }
+
+    ball.exists   = true;
+    ball.isWelded = (FindChild(m_cachedBall, "playerWeld") != 0);
+    ball.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    ball.velocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyLinearVelocity);
+    return ball;
+}
+
+GKState RobloxReader::ReadGKDirect()
+{
+    GKState gk{};
+
+    if (!m_workspace || !m_localPlayer) return gk;
+
+    // Verifica se o render loop já confirmou que somos GK — evita re-escanear
+    // pasta Bools a cada scan de 240 Hz (caro). A confirmação de GK muda raramente.
+    {
+        std::lock_guard<std::mutex> lk(m_stateMtx);
+        if (!m_gkState.isGK) return gk;
+        gk.isGK = true;
+    }
+
+    uintptr_t model = ReadPtr(m_localPlayer + Offsets::Player::ModelInstance);
+    if (!model) return gk;
+
+    uintptr_t hrp = FindChild(model, "HumanoidRootPart");
+    if (!hrp) return gk;
+
+    gk.position = ReadPartPosition(hrp);
+
+    uintptr_t hrpPrim = ReadPtr(hrp + Offsets::BasePart::Primitive);
+    if (hrpPrim)
+    {
+        Matrix3x3 rot = ReadT<Matrix3x3>(hrpPrim + Offsets::Primitive::Rotation);
+        gk.rightVec = rot.Right();
+        gk.upVec    = rot.Up();
+        gk.lookVec  = rot.Look();
+    }
+
+    return gk;
+}
+
+GoalState RobloxReader::ReadGoalDirect()
+{
+    GoalState goal{};
+    if (!m_workspace) return goal;
+
+    bool isAPG;
+    {
+        std::lock_guard<std::mutex> lk(m_stateMtx);
+        if (!m_gkState.isGK) return goal;
+        isAPG = m_isAPG;
+    }
+
+    uintptr_t goalModel = 0;
+    if (isAPG)
+    {
+        goalModel = FindChild(m_workspace, "AwayGoal");
+        if (!goalModel) goalModel = FindChild(m_workspace, "AwayGoalDetector");
+    }
+    else
+    {
+        goalModel = FindChild(m_workspace, "HomeGoal");
+        if (!goalModel) goalModel = FindChild(m_workspace, "HomeGoalDetector");
+    }
+    if (!goalModel) return goal;
+
+    uintptr_t primaryPart = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
+    if (!primaryPart)
+    {
+        for (uintptr_t child : GetChildren(goalModel))
+        {
+            if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
+        }
+    }
+    if (!primaryPart) return goal;
+
+    uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
+    if (!primitive) return goal;
+
+    goal.exists   = true;
+    goal.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    goal.size     = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
+    Matrix3x3 rot = ReadT<Matrix3x3>(primitive + Offsets::Primitive::Rotation);
+    goal.rightVec = rot.Right();
+    goal.upVec    = rot.Up();
+    goal.lookVec  = rot.Look();
+    return goal;
+}
+
+// --------------------------------------------------------------------------
 // ReadBallState — lê posição e velocidade da bola no Workspace
 //
 // Cacheia o ponteiro da instância igual ao Lua (cachedBall).

@@ -30,10 +30,16 @@ public:
     const GoalState&               GetGoal()       const { return m_goalState; }
     void                           SetForceGK(bool force) { m_forceGK = force; }
 
-    // Thread-safe copies — usadas pelo ScanLoop do AutoDive
+    // Thread-safe copies — usadas pelo ScanLoop do AutoDive (lê cópia gerada pelo render loop)
     BallState  GetBallCopy()  const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_ball;     }
     GKState    GetGKCopy()    const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_gkState;  }
     GoalState  GetGoalCopy()  const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_goalState;}
+
+    // Leituras diretas de memória — chamadas pela ScanLoop a 240 Hz sem depender do render loop.
+    // Garantem que os dados chegam frescos no momento da decisão de dive.
+    BallState  ReadBallDirect();
+    GKState    ReadGKDirect();
+    GoalState  ReadGoalDirect();
 
     // Debug: lista filhos do Workspace com nomes e classes
     std::vector<std::pair<std::string, std::string>> GetWorkspaceChildrenDebug() const;
