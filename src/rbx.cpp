@@ -1,86 +1,108 @@
 #include "rbx.h"
 #include <algorithm>
-#include <cstring>
 
 // --------------------------------------------------------------------------
-// ReadRbxString
+// ReadRbxString — baseado em memory_t::read_string do base de referência
 //
-// std::string do MSVC (x64):
-//   [+0x00] union { char buf[16]; char* ptr; }  — dados inline se len<=15, heap se len>15
-//   [+0x10] size_t size
-//   [+0x18] size_t capacity
-//
-// Se capacity <= 15 os bytes ficam inline em [addr+0x00].
-// Se capacity >  15 existe um ponteiro heap em [addr+0x00].
+// threshold >= 16 → heap (ponteiro em addr+0x00)
+// threshold <  16 → inline (bytes em addr+0x00)
 // --------------------------------------------------------------------------
 std::string RobloxReader::ReadRbxString(uintptr_t addr) const
 {
     if (!addr) return {};
 
-    size_t len = ReadT<size_t>(addr + 0x10);   // size
-    if (len == 0 || len > 512) return {};
+    int32_t len = ReadT<int32_t>(addr + 0x10);
+    if (len <= 0 || len > 255) return {};
 
-    size_t cap = ReadT<size_t>(addr + 0x18);   // capacity
+    uintptr_t dataPtr = (len >= 16) ? ReadPtr(addr) : addr;
+    if (!dataPtr) return {};
 
     std::string result(len, '\0');
+    m_mem.ReadRaw(dataPtr, result.data(), len);
+    return result;
+}
 
-    if (cap > 15)
+// --------------------------------------------------------------------------
+// GetInstanceName — Instance + Name(0x8) é ponteiro direto para std::string
+// --------------------------------------------------------------------------
+std::string RobloxReader::GetInstanceName(uintptr_t instance) const
+{
+    if (!instance) return {};
+    uintptr_t namePtr = ReadPtr(instance + Offsets::Instance::Name);
+    if (!namePtr) return {};
+    return ReadRbxString(namePtr);
+}
+
+// --------------------------------------------------------------------------
+// GetInstanceClass — Instance + ClassDescriptor + ClassName → string
+// --------------------------------------------------------------------------
+std::string RobloxReader::GetInstanceClass(uintptr_t instance) const
+{
+    if (!instance) return {};
+    uintptr_t classDesc = ReadPtr(instance + Offsets::Instance::ClassDescriptor);
+    if (!classDesc) return {};
+    uintptr_t namePtr = ReadPtr(classDesc + Offsets::Instance::ClassName);
+    if (!namePtr) return {};
+    return ReadRbxString(namePtr);
+}
+
+// --------------------------------------------------------------------------
+// GetChildren — baseado em GetChildList() do base de referência
+//
+// Estrutura:
+//   instance + ChildrenStart(0x78) → ptr para struct intermediária
+//   struct[0x00] = begin (ptr para primeiro elemento)
+//   struct[ChildrenEnd(0x08)] = end
+//   cada elemento = 16 bytes (shared_ptr): [instancePtr(8)][refcount(8)]
+// --------------------------------------------------------------------------
+std::vector<uintptr_t> RobloxReader::GetChildren(uintptr_t instance) const
+{
+    std::vector<uintptr_t> result;
+    if (!instance) return result;
+
+    uintptr_t childStart = ReadPtr(instance + Offsets::Instance::ChildrenStart);
+    if (!childStart) return result;
+
+    uintptr_t childEnd = ReadPtr(childStart + Offsets::Instance::ChildrenEnd);
+    uintptr_t current  = ReadPtr(childStart);
+
+    if (!childEnd || !current || childEnd < current) return result;
+
+    constexpr size_t maxChildren = 4096;
+    size_t count = 0;
+
+    for (uintptr_t ptr = current; ptr < childEnd && count < maxChildren; ptr += 0x10, ++count)
     {
-        // heap — [addr+0x00] é ponteiro para os dados
-        uintptr_t dataPtr = ReadPtr(addr);
-        if (!dataPtr) return {};
-        m_mem.ReadRaw(dataPtr, result.data(), len);
-    }
-    else
-    {
-        // inline — os bytes começam em addr+0x00
-        m_mem.ReadRaw(addr, result.data(), len);
+        uintptr_t child = ReadPtr(ptr);
+        if (child) result.push_back(child);
     }
 
     return result;
 }
 
 // --------------------------------------------------------------------------
-// FindChild — percorre a lista de filhos de uma Instance pelo nome
-//
-// No Roblox o vetor de filhos armazena shared_ptr<Instance>:
-//   cada elemento = 16 bytes: [ptr Instance (8)] [ptr refcount (8)]
-//
-// instance + 0x78 = begin do vetor
-// instance + 0x80 = end do vetor
+// FindChild — busca por nome
 // --------------------------------------------------------------------------
 uintptr_t RobloxReader::FindChild(uintptr_t instance, const std::string& name) const
 {
-    if (!instance) return 0;
-
-    uintptr_t vecBegin = ReadPtr(instance + Offsets::Instance::ChildrenStart);
-    uintptr_t vecEnd   = ReadPtr(instance + Offsets::Instance::ChildrenStart + 0x8);
-
-    if (!vecBegin || !vecEnd || vecEnd <= vecBegin) return 0;
-
-    size_t bytes = vecEnd - vecBegin;
-    if (bytes > 0x1000) return 0;
-
-    // Tenta stride 16 (shared_ptr) primeiro, depois stride 8 (raw ptr)
-    for (int stride : { 16, 8 })
+    for (uintptr_t child : GetChildren(instance))
     {
-        size_t count = bytes / stride;
-        if (count == 0 || count > 256) continue;
-
-        for (size_t i = 0; i < count; ++i)
-        {
-            uintptr_t child = ReadPtr(vecBegin + i * stride);
-            if (!child || child < 0x10000) continue;
-
-            uintptr_t nameContainer = ReadPtr(child + Offsets::Instance::NameContainer);
-            if (!nameContainer || nameContainer < 0x10000) continue;
-
-            std::string childName = ReadRbxString(nameContainer + Offsets::Instance::Name);
-            if (childName == name)
-                return child;
-        }
+        if (GetInstanceName(child) == name)
+            return child;
     }
+    return 0;
+}
 
+// --------------------------------------------------------------------------
+// FindChildByClass — busca por classe (mais robusto que por nome)
+// --------------------------------------------------------------------------
+uintptr_t RobloxReader::FindChildByClass(uintptr_t instance, const std::string& cls) const
+{
+    for (uintptr_t child : GetChildren(instance))
+    {
+        if (GetInstanceClass(child) == cls)
+            return child;
+    }
     return 0;
 }
 
@@ -96,84 +118,70 @@ Vector3 RobloxReader::ReadPartPosition(uintptr_t basePart) const
 }
 
 // --------------------------------------------------------------------------
-// ReadHumanoid
-// --------------------------------------------------------------------------
-bool RobloxReader::ReadHumanoid(uintptr_t humanoid, float& health, float& maxHealth) const
-{
-    if (!humanoid) return false;
-    health    = ReadT<float>(humanoid + Offsets::Humanoid::Health);
-    maxHealth = ReadT<float>(humanoid + Offsets::Humanoid::MaxHealth);
-    return maxHealth > 0.f;
-}
-
-// --------------------------------------------------------------------------
-// Update — cadeia principal de leitura
+// Update — cadeia principal baseada no base de referência
 // --------------------------------------------------------------------------
 bool RobloxReader::Update()
 {
     m_players.clear();
 
-    // 1. DataModel via FakeDataModel estático
+    // 1. Base do módulo
     m_base = m_mem.GetModuleBase(L"RobloxPlayerBeta.exe");
     if (!m_base) return false;
 
+    // 2. DataModel via FakeDataModel estático
     uintptr_t fakeDataModel = ReadPtr(m_base + Offsets::FakeDataModel::Pointer);
     if (!fakeDataModel) return false;
 
     m_dataModel = ReadPtr(fakeDataModel + Offsets::FakeDataModel::RealDataModel);
     if (!m_dataModel) return false;
 
-    // 2. Workspace → Camera → ViewMatrix + Viewport
-    m_workspace = ReadPtr(m_dataModel + Offsets::DataModel::Workspace);
-    if (m_workspace)
+    // 3. VisualEngine — ponteiro estático separado, ViewMatrix lida diretamente
+    uintptr_t visualEngine = ReadPtr(m_base + Offsets::VisualEngine::Pointer);
+    if (visualEngine)
     {
-        m_camera = ReadPtr(m_workspace + Offsets::Workspace::CurrentCamera);
-        if (m_camera)
-        {
-            m_viewMatrix = ReadT<Matrix4x4>(m_camera + Offsets::Camera::Rotation);
-            m_viewport   = ReadT<Vector2>  (m_camera + Offsets::Camera::ViewportSize);
-        }
+        m_viewMatrix = ReadT<Matrix4x4>(visualEngine + Offsets::VisualEngine::ViewMatrix);
     }
 
-    // 3. Players service
-    m_playersService = FindChild(m_dataModel, "Players");
+    // 4. Workspace → Camera → Viewport
+    m_workspace = FindChildByClass(m_dataModel, "Workspace");
+    if (m_workspace)
+    {
+        m_camera = FindChildByClass(m_workspace, "Camera");
+        if (m_camera)
+            m_viewport = ReadT<Vector2>(m_camera + Offsets::Camera::ViewportSize);
+    }
+
+    // 5. Players service
+    m_playersService = FindChildByClass(m_dataModel, "Players");
     if (!m_playersService) return false;
 
     m_localPlayer = ReadPtr(m_playersService + Offsets::Player::LocalPlayer);
 
-    uintptr_t vecPtr = ReadPtr(m_playersService + Offsets::Instance::ChildrenStart);
-    uintptr_t vecEnd = ReadPtr(m_playersService + Offsets::Instance::ChildrenStart + 0x8);
-    if (!vecPtr || !vecEnd || vecEnd <= vecPtr) return false;
-
-    size_t count = (vecEnd - vecPtr) / sizeof(uintptr_t);
-    count = std::min(count, static_cast<size_t>(100));
-
-    for (size_t i = 0; i < count; ++i)
+    // 6. Itera jogadores
+    for (uintptr_t playerInst : GetChildren(m_playersService))
     {
-        uintptr_t playerInst = ReadPtr(vecPtr + i * sizeof(uintptr_t));
-        if (!playerInst) continue;
-
         if (playerInst == m_localPlayer) continue;
 
         PlayerData pd;
+        pd.name = GetInstanceName(playerInst);
+        if (pd.name.empty()) continue;
 
-        uintptr_t nameContainer = ReadPtr(playerInst + Offsets::Instance::NameContainer);
-        if (nameContainer)
-            pd.name = ReadRbxString(nameContainer + Offsets::Instance::Name);        if (pd.name.empty()) continue;
-
+        // Modelo do personagem
         uintptr_t model = ReadPtr(playerInst + Offsets::Player::ModelInstance);
         if (!model) continue;
 
-        uintptr_t humanoid = FindChild(model, "Humanoid");
+        // Humanoid
+        uintptr_t humanoid = FindChildByClass(model, "Humanoid");
         if (!humanoid) continue;
 
-        ReadHumanoid(humanoid, pd.health, pd.maxHealth);
-        pd.isAlive = pd.health > 0.f;
+        pd.health    = ReadT<float>(humanoid + Offsets::Humanoid::Health);
+        pd.maxHealth = ReadT<float>(humanoid + Offsets::Humanoid::MaxHealth);
+        pd.isAlive   = pd.health > 0.f;
         if (!pd.isAlive) continue;
 
+        // HumanoidRootPart
         uintptr_t hrp = ReadPtr(humanoid + Offsets::Humanoid::HumanoidRootPart);
-        if (!hrp)
-            hrp = FindChild(model, "HumanoidRootPart");
+        if (!hrp) hrp = FindChild(model, "HumanoidRootPart");
 
         pd.position = ReadPartPosition(hrp);
 

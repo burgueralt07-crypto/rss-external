@@ -1,0 +1,60 @@
+#pragma once
+
+namespace variables {
+    inline bool menuOpen = false;
+    inline int selectedTab = 0;
+    inline bool waitingForKey = false;
+    inline int* keyToRebind = nullptr;
+    inline bool teamCheck = false;
+
+    namespace Aimbot {
+        inline bool enabled = false;
+        inline bool showFOV = false;
+        inline float fovRadius = 100.0f;
+        inline float smoothing = 5.0f;
+        inline int aimTarget = 0;
+        inline int aimMethod = 0;
+        inline int aimbotKey = 2;
+    }
+
+    namespace ESP {
+        inline bool enabled = false;
+        inline bool boxes = false;
+        inline bool names = false;
+        inline bool distance = false;
+        inline bool healthBar = false;
+        inline bool snaplines = false;
+        inline int snaplinesOrigin = 3;
+        inline int snaplinesDestination = 0;
+        inline int snaplinesStyle = 0;
+        inline float snaplinesThickness = 1.0f;
+        inline bool snaplinesOutline = true;
+        inline bool skeleton = false;
+        inline float skeletonThickness = 2.0f;
+        inline bool skeletonOutline = true;
+        inline bool deadCheck = true;
+    }
+
+    namespace Exploits {
+        inline bool animation_changer = false;
+        inline int idle_animation = 0;
+        inline int run_animation = 0;
+        inline int walk_animation = 0;
+        inline int jump_animation = 0;
+        inline int fall_animation = 0;
+        inline int climb_animation = 0;
+        inline int swim_animation = 0;
+    }
+
+    namespace Local {
+        inline bool speedEnabled = false;
+        inline float walkSpeed = 16.0f;
+        inline bool jumpEnabled = false;
+        inline float jumpPower = 50.0f;
+        inline bool desyncEnabled = false;
+    }
+
+    namespace Misc {
+        inline bool streamProof = false;
+    }
+}

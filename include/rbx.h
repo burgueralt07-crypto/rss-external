@@ -57,7 +57,6 @@ public:
     uintptr_t  GetLocalPtr()    const { return m_localPlayer; }
 
 private:
-    // Helpers de leitura tipada com checagem de null
     template<typename T>
     T ReadT(uintptr_t addr, T def = {}) const {
         auto v = m_mem.Read<T>(addr);
@@ -68,17 +67,13 @@ private:
         return ReadT<uintptr_t>(addr);
     }
 
-    // Lê string Roblox (std::string armazenada como {ptr, len, cap})
     std::string ReadRbxString(uintptr_t addr) const;
-
-    // Encontra um filho de Instance pelo nome
+    std::string GetInstanceName(uintptr_t instance) const;
+    std::string GetInstanceClass(uintptr_t instance) const;
+    std::vector<uintptr_t> GetChildren(uintptr_t instance) const;
     uintptr_t FindChild(uintptr_t instance, const std::string& name) const;
-
-    // Lê posição 3D do Primitive de uma BasePart
-    Vector3 ReadPartPosition(uintptr_t basePart) const;
-
-    // Lê saúde de um Humanoid
-    bool ReadHumanoid(uintptr_t humanoid, float& health, float& maxHealth) const;
+    uintptr_t FindChildByClass(uintptr_t instance, const std::string& cls) const;
+    Vector3   ReadPartPosition(uintptr_t basePart) const;
 
     Memory&                  m_mem;
     std::vector<PlayerData>  m_players;
