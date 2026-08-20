@@ -109,38 +109,35 @@ bool RobloxReader::Update()
     m_players.clear();
 
     // 1. DataModel via FakeDataModel estático
-    uintptr_t base = m_mem.GetModuleBase(L"RobloxPlayerBeta.exe");
-    if (!base) return false;
+    m_base = m_mem.GetModuleBase(L"RobloxPlayerBeta.exe");
+    if (!m_base) return false;
 
-    uintptr_t fakeDataModel = ReadPtr(base + Offsets::FakeDataModel::Pointer);
+    uintptr_t fakeDataModel = ReadPtr(m_base + Offsets::FakeDataModel::Pointer);
     if (!fakeDataModel) return false;
 
     m_dataModel = ReadPtr(fakeDataModel + Offsets::FakeDataModel::RealDataModel);
     if (!m_dataModel) return false;
 
     // 2. Workspace → Camera → ViewMatrix + Viewport
-    uintptr_t workspace = ReadPtr(m_dataModel + Offsets::DataModel::Workspace);
-    if (workspace)
+    m_workspace = ReadPtr(m_dataModel + Offsets::DataModel::Workspace);
+    if (m_workspace)
     {
-        uintptr_t camera = ReadPtr(workspace + Offsets::Workspace::CurrentCamera);
-        if (camera)
+        m_camera = ReadPtr(m_workspace + Offsets::Workspace::CurrentCamera);
+        if (m_camera)
         {
-            m_viewMatrix = ReadT<Matrix4x4>(camera + Offsets::Camera::Rotation);
-            m_viewport   = ReadT<Vector2>  (camera + Offsets::Camera::ViewportSize);
+            m_viewMatrix = ReadT<Matrix4x4>(m_camera + Offsets::Camera::Rotation);
+            m_viewport   = ReadT<Vector2>  (m_camera + Offsets::Camera::ViewportSize);
         }
     }
 
-    // 3. Players service → filhos = jogadores
-    //    No Roblox, Players está como filho do DataModel com nome "Players"
-    uintptr_t playersService = FindChild(m_dataModel, "Players");
-    if (!playersService) return false;
+    // 3. Players service
+    m_playersService = FindChild(m_dataModel, "Players");
+    if (!m_playersService) return false;
 
-    // LocalPlayer
-    m_localPlayer = ReadPtr(playersService + Offsets::Player::LocalPlayer);
+    m_localPlayer = ReadPtr(m_playersService + Offsets::Player::LocalPlayer);
 
-    // Itera filhos do serviço Players
-    uintptr_t vecPtr = ReadPtr(playersService + Offsets::Instance::ChildrenStart);
-    uintptr_t vecEnd = ReadPtr(playersService + Offsets::Instance::ChildrenStart + 0x8);
+    uintptr_t vecPtr = ReadPtr(m_playersService + Offsets::Instance::ChildrenStart);
+    uintptr_t vecEnd = ReadPtr(m_playersService + Offsets::Instance::ChildrenStart + 0x8);
     if (!vecPtr || !vecEnd || vecEnd <= vecPtr) return false;
 
     size_t count = (vecEnd - vecPtr) / sizeof(uintptr_t);
@@ -151,23 +148,18 @@ bool RobloxReader::Update()
         uintptr_t playerInst = ReadPtr(vecPtr + i * sizeof(uintptr_t));
         if (!playerInst) continue;
 
-        // Ignora o LocalPlayer no ESP (desenha apenas inimigos)
-        // Comente a linha abaixo se quiser incluir o próprio jogador
         if (playerInst == m_localPlayer) continue;
 
         PlayerData pd;
 
-        // Nome
         uintptr_t nameContainer = ReadPtr(playerInst + Offsets::Instance::NameContainer);
         if (nameContainer)
             pd.name = ReadRbxString(nameContainer + Offsets::Instance::Name);
         if (pd.name.empty()) continue;
 
-        // Model do personagem
         uintptr_t model = ReadPtr(playerInst + Offsets::Player::ModelInstance);
         if (!model) continue;
 
-        // HumanoidRootPart via Humanoid::HumanoidRootPart
         uintptr_t humanoid = FindChild(model, "Humanoid");
         if (!humanoid) continue;
 
@@ -175,11 +167,10 @@ bool RobloxReader::Update()
         pd.isAlive = pd.health > 0.f;
         if (!pd.isAlive) continue;
 
-        // Posição via HumanoidRootPart → Primitive
         uintptr_t hrp = ReadPtr(humanoid + Offsets::Humanoid::HumanoidRootPart);
-        if (!hrp) {
+        if (!hrp)
             hrp = FindChild(model, "HumanoidRootPart");
-        }
+
         pd.position = ReadPartPosition(hrp);
 
         m_players.push_back(pd);

@@ -158,13 +158,12 @@ static void DrawMenu()
 {
     if (!g_menuOpen) return;
 
-    // Sem NoMove nem NoResize → arrastável e redimensionável
     ImGuiWindowFlags flags =
         ImGuiWindowFlags_AlwaysAutoResize |
         ImGuiWindowFlags_NoCollapse;
 
     ImGui::SetNextWindowBgAlpha(0.85f);
-    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once); // posição inicial apenas
+    ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
 
     if (ImGui::Begin("ESP  [HOME = fechar]", nullptr, flags))
     {
@@ -183,9 +182,48 @@ static void DrawMenu()
             ImGui::Checkbox("Box",       &g_cfg.showBox);
             ImGui::Checkbox("Vida",      &g_cfg.showHealth);
             ImGui::Checkbox("Nome",      &g_cfg.showName);
-            ImGui::Checkbox("Distância", &g_cfg.showDistance);
+            ImGui::Checkbox("Distancia", &g_cfg.showDistance);
             ImGui::SliderFloat("Max dist", &g_cfg.maxDistance, 50.f, 2000.f, "%.0f studs");
             ImGui::Unindent();
+        }
+
+        // ---- Painel de debug ----
+        ImGui::Separator();
+        if (ImGui::CollapsingHeader("Debug"))
+        {
+            auto hex = [](uintptr_t v) -> const char* {
+                static char buf[32];
+                std::snprintf(buf, sizeof(buf), "0x%llX", (unsigned long long)v);
+                return buf;
+            };
+
+            auto ok  = [](uintptr_t v) { return v != 0; };
+
+            ImGui::TextColored(ok(g_rbx->GetBase())      ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1),
+                "Base:        %s", hex(g_rbx->GetBase()));
+            ImGui::TextColored(ok(g_rbx->GetDataModel()) ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1),
+                "DataModel:   %s", hex(g_rbx->GetDataModel()));
+            ImGui::TextColored(ok(g_rbx->GetWorkspace()) ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1),
+                "Workspace:   %s", hex(g_rbx->GetWorkspace()));
+            ImGui::TextColored(ok(g_rbx->GetCamera())    ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1),
+                "Camera:      %s", hex(g_rbx->GetCamera()));
+            ImGui::TextColored(ok(g_rbx->GetPlayers_())  ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1),
+                "Players svc: %s", hex(g_rbx->GetPlayers_()));
+            ImGui::TextColored(ok(g_rbx->GetLocalPtr())  ? ImVec4(0,1,0,1) : ImVec4(1,0,0,1),
+                "LocalPlayer: %s", hex(g_rbx->GetLocalPtr()));
+
+            ImGui::Separator();
+            ImGui::Text("Viewport: %.0f x %.0f",
+                g_rbx->GetViewport().x, g_rbx->GetViewport().y);
+            ImGui::Text("Players encontrados: %zu", g_rbx->GetPlayers().size());
+
+            // Lista jogadores encontrados com posição
+            for (const auto& p : g_rbx->GetPlayers())
+            {
+                ImGui::Text("  [%s] HP:%.0f/%.0f pos:(%.1f,%.1f,%.1f)",
+                    p.name.c_str(), p.health, p.maxHealth,
+                    p.position.x, p.position.y, p.position.z);
+            }
         }
     }
     ImGui::End();

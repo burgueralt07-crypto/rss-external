@@ -48,6 +48,14 @@ public:
     Vector2                        GetViewport()   const { return m_viewport; }
     uintptr_t                      GetLocalPlayer()const { return m_localPlayer; }
 
+    // Debug — expõe estado interno da cadeia de ponteiros
+    uintptr_t  GetBase()        const { return m_base; }
+    uintptr_t  GetDataModel()   const { return m_dataModel; }
+    uintptr_t  GetWorkspace()   const { return m_workspace; }
+    uintptr_t  GetCamera()      const { return m_camera; }
+    uintptr_t  GetPlayers_()    const { return m_playersService; }
+    uintptr_t  GetLocalPtr()    const { return m_localPlayer; }
+
 private:
     // Helpers de leitura tipada com checagem de null
     template<typename T>
@@ -76,6 +84,10 @@ private:
     std::vector<PlayerData>  m_players;
     Matrix4x4                m_viewMatrix;
     Vector2                  m_viewport;
-    uintptr_t                m_localPlayer = 0;
-    uintptr_t                m_dataModel   = 0;
+    uintptr_t                m_localPlayer    = 0;
+    uintptr_t                m_dataModel      = 0;
+    uintptr_t                m_base           = 0;
+    uintptr_t                m_workspace      = 0;
+    uintptr_t                m_camera         = 0;
+    uintptr_t                m_playersService = 0;
 };
