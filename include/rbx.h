@@ -46,4 +46,10 @@ private:
     std::vector<PlayerData>  m_players;
     Matrix4x4                m_viewMatrix;
     Vector2                  m_viewport;
+    uintptr_t                m_base           = 0;
+    uintptr_t                m_dataModel      = 0;
+    uintptr_t                m_workspace      = 0;
+    uintptr_t                m_camera         = 0;
+    uintptr_t                m_playersService = 0;
+    uintptr_t                m_localPlayer    = 0;
 };
