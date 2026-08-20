@@ -284,7 +284,7 @@ bool RobloxReader::ReadGKState()
         }
     }
 
-    // Posição do GK
+    // Posição e rotação do GK (HumanoidRootPart)
     uintptr_t model = ReadPtr(m_localPlayer + Offsets::Player::ModelInstance);
     if (!model) return false;
 
@@ -292,6 +292,16 @@ bool RobloxReader::ReadGKState()
     if (!hrp) return false;
 
     m_gkState.position = ReadPartPosition(hrp);
+
+    // Lê a matriz de rotação do Primitive para extrair Right/Up/Look
+    uintptr_t hrpPrim = ReadPtr(hrp + Offsets::BasePart::Primitive);
+    if (hrpPrim)
+    {
+        Matrix3x3 rot = ReadT<Matrix3x3>(hrpPrim + Offsets::Primitive::Rotation);
+        m_gkState.rightVec = rot.Right();
+        m_gkState.upVec    = rot.Up();
+        m_gkState.lookVec  = rot.Look();
+    }
 
     // Se forçado (não encontrado na pasta Bools), determina gol por proximidade
     if (!foundInBools && m_forceGK)
@@ -364,28 +374,35 @@ bool RobloxReader::ReadGKState()
 }
 
 // --------------------------------------------------------------------------
-// ReadGoalState — lê posição e tamanho do gol que o GK defende
+// ReadGoalState — lê posição, tamanho e rotação do gol que o GK defende
 //
 // APG defende AwayGoal, HPG defende HomeGoal.
+// Busca pelo goalModel; tenta PrimaryPart, senão primeiro BasePart filho.
+// Também lê a Matrix3x3 de rotação para PointToObjectSpace correto.
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadGoalState()
 {
     m_goalState = {};
     if (!m_workspace || !m_gkState.isGK) return false;
 
-    const std::string goalName = m_isAPG ? "AwayGoal" : "HomeGoal";
-
-    uintptr_t goalModel = FindChild(m_workspace, goalName);
-    if (!goalModel) 
+    // Tenta nome principal e alternativo (GoalDetector)
+    uintptr_t goalModel = 0;
+    if (m_isAPG)
     {
-        // Debug: lista filhos do workspace para ver nomes dos gols
-        return false;
+        goalModel = FindChild(m_workspace, "AwayGoal");
+        if (!goalModel) goalModel = FindChild(m_workspace, "AwayGoalDetector");
     }
+    else
+    {
+        goalModel = FindChild(m_workspace, "HomeGoal");
+        if (!goalModel) goalModel = FindChild(m_workspace, "HomeGoalDetector");
+    }
+    if (!goalModel) return false;
 
     // Tenta PrimaryPart do Model primeiro
     uintptr_t primaryPart = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
 
-    // Se não tiver, pega o primeiro BasePart filho
+    // Se não tiver PrimaryPart, pega o primeiro BasePart filho com Primitive válido
     if (!primaryPart)
     {
         for (uintptr_t child : GetChildren(goalModel))
@@ -404,17 +421,15 @@ bool RobloxReader::ReadGoalState()
     uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
     if (!primitive) return false;
 
-    Vector3 pos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
-    Vector3 sz  = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
-    
-    // Debug: verifica se leu valores válidos
-    if (pos.x == 0.f && pos.y == 0.f && pos.z == 0.f)
-    {
-        // Posição zerada - pode ser offset errado
-    }
+    Vector3    pos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    Vector3    sz  = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
+    Matrix3x3  rot = ReadT<Matrix3x3>(primitive + Offsets::Primitive::Rotation);
 
     m_goalState.exists   = true;
     m_goalState.position = pos;
     m_goalState.size     = sz;
+    m_goalState.rightVec = rot.Right();
+    m_goalState.upVec    = rot.Up();
+    m_goalState.lookVec  = rot.Look();
     return true;
 }

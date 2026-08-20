@@ -10,6 +10,11 @@
 struct GKState {
     bool    isGK     = false;
     Vector3 position;
+    // CFrame do GK (rotação) — necessário para PointToObjectSpace
+    // Armazenamos os vetores Right, Up, Look que compõem a rotação
+    Vector3 rightVec  = { 1.f, 0.f,  0.f };
+    Vector3 upVec     = { 0.f, 1.f,  0.f };
+    Vector3 lookVec   = { 0.f, 0.f, -1.f }; // forward do personagem
 };
 
 // --------------------------------------------------------------------------
@@ -27,69 +32,84 @@ struct BallState {
 // --------------------------------------------------------------------------
 struct GoalState {
     bool    exists   = false;
-    Vector3 position; // centro do gol (GetBoundingBox para Model, Primitive::Position para Part)
-    Vector3 size;     // tamanho (GetBoundingBox para Model, Primitive::Size para Part)
+    Vector3 position; // centro do gol
+    Vector3 size;     // tamanho (X = largura, Y = altura, Z = profundidade)
+    // Eixos do gol para PointToObjectSpace — caso o gol seja rotacionado
+    Vector3 rightVec  = { 1.f, 0.f, 0.f };
+    Vector3 upVec     = { 0.f, 1.f, 0.f };
+    Vector3 lookVec   = { 0.f, 0.f, 1.f };
 };
 
 // --------------------------------------------------------------------------
 // AutoDive
 //
-// Lógica baseada no script Lua que funciona:
-//   1. Detecta qual gol o GK defende (APG = AwayGoal, HPG = HomeGoal)
-//   2. Converte posição da bola para espaço LOCAL do GK (relPos)
-//   3. Thresholds simples e eficazes:
-//      - relPos.X > 3  → Right Dive (E)
-//      - relPos.X < -3 → Left Dive (Q)
-//      - |relPos.X| ≤ 3 e relPos.Z < 0 → Front Dive
-//      - relPos.Y >= 5.5 e |relPos.X| ≤ 6 → High Jump
-//   4. Verifica se bola está vindo pro gol (dot product com direção do gol)
-//   5. Cooldown, distância mínima, velocidade mínima da bola
+// Lógica portada do script Lua:
+//   1. isGoalie()          — APG/HPG via pasta Bools, ou forceGK por proximidade
+//   2. isBallTargetingGoal — simulação física com gravidade (45 steps x dt=0.035)
+//                            verifica se trajetória cruza volume da trave + margem
+//   3. relPos              — root.CFrame:PointToObjectSpace(ballPos)
+//                            usando vetores Right/Up/Look do GK
+//   4. Decisão de dive:
+//      - relPos.Y >= 5.5 e |relPos.X| <= 6  → Jump    (VK_SPACE)
+//      - relPos.X > 3                        → Right   ('E')
+//      - relPos.X < -3                       → Left    ('Q')
+//      - |relPos.X| <= 3 e relPos.Z < 0      → Front   ('F')
+//   5. Cooldown, distância máxima, velocidade mínima da bola
+//   6. Bola welded (playerWeld) → ignora
 // --------------------------------------------------------------------------
 class AutoDive {
 public:
     struct Config {
         bool  enabled         = false;
-        bool  forceGK         = false;   // Forçar estado de GK mesmo sem pasta Bools
-        float triggerDistance = 18.f;    // studs — distância máxima pra ativar (Lua default: 18)
-        float reactionDelay   = 0.05f;   // segundos de delay (simula reação)
-        float cooldownSec     = 1.2f;    // cooldown entre dives (Lua default: 1.2)
-        float minBallSpeed    = 8.f;     // velocidade mínima da bola (Lua default: 8)
-        float goalMargin      = 2.f;     // margem extra além da trave (Lua default: 2)
+        bool  forceGK         = false;  // ignorar pasta Bools, detectar por proximidade
+        bool  onlyInGoal      = true;   // só age se simulação prevê bola no gol
+        bool  lowDive         = true;   // diferencia bola rasteira (ball.Y <= 3 após vel)
+        bool  highJump        = true;   // ativa GKJump para bolas altas no centro
+        float triggerDistance = 18.f;   // distância máxima GK-bola (studs)
+        float cooldownSec     = 1.2f;   // cooldown entre dives (seg)
+        float minBallSpeed    = 8.f;    // velocidade mínima da bola (studs/s)
+        float goalMargin      = 2.f;    // margem extra além da trave (studs)
+        int   simSteps        = 45;     // passos de simulação de trajetória
+        float simDt           = 0.035f; // passo de tempo da simulação (seg)
+        float gravity         = 196.2f; // workspace.Gravity * 0.8 (~196 studs/s²)
     };
 
     Config cfg;
 
     void Update(const GKState& gk, const BallState& ball, const GoalState& goal);
 
-    const char* LastDiveKey()    const { return m_lastKey; }
-    bool        DiveFired()      const { return m_firedThisFrame; }
+    const char* LastDiveKey() const { return m_lastKey; }
+    bool        DiveFired()   const { return m_firedThisFrame; }
 
-    // Debug — exposto pro menu
+    // Debug — exposto pro menu ImGui
     struct DebugInfo {
         float distToBall   = 0.f;
-        float approachDot  = 0.f;
-        float relPosX      = 0.f;  // posição relativa da bola no espaço do GK
-        float relPosZ      = 0.f;
+        float relPosX      = 0.f;
         float relPosY      = 0.f;
-        bool  approaching  = false;
-        std::string blockReason; // por que não deu dive
-        
-        // Debug extra para diagnosticar
-        float ballPosX = 0.f;
-        float ballPosZ = 0.f;
-        float ballVelX = 0.f;
-        float ballVelZ = 0.f;
-        float goalPosX = 0.f;
-        float goalPosZ = 0.f;
-        float goalSizeX = 0.f;
-        float goalSizeZ = 0.f;
-        bool  isAPG    = false;
+        float relPosZ      = 0.f;
+        bool  approaching  = false;   // isBallTargetingGoal
+        bool  isAPG        = false;
+        std::string blockReason;
+
+        // valores brutos para diagnóstico
+        float ballPosX  = 0.f, ballPosZ  = 0.f;
+        float ballVelX  = 0.f, ballVelZ  = 0.f;
+        float goalPosX  = 0.f, goalPosZ  = 0.f;
+        float goalSizeX = 0.f, goalSizeZ = 0.f;
     } debug;
 
 private:
-    bool  IsBallTargetingGoal(const GKState& gk, const BallState& ball, const GoalState& goal) const;
-    void  PressKey(WORD vk);
-    Vector3 GetGoalCenter(const GoalState& goal) const;
+    // Converte worldPos para espaço local usando os vetores do CFrame
+    static Vector3 PointToObjectSpace(const Vector3& origin,
+                                      const Vector3& right,
+                                      const Vector3& up,
+                                      const Vector3& look,
+                                      const Vector3& worldPos);
+
+    // Simulação de trajetória com gravidade — retorna true se bola vai entrar no gol
+    bool IsBallTargetingGoal(const BallState& ball, const GoalState& goal) const;
+
+    static void PressKey(WORD vk);
 
     std::chrono::steady_clock::time_point m_lastDiveTime;
     bool        m_firedThisFrame = false;

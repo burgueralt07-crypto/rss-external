@@ -26,6 +26,22 @@ struct Matrix4x4 {
     float data[16] = {};
 };
 
+// Matriz 3x3 — layout da rotação do Primitive do Roblox (Primitive::Rotation)
+// Colunas: [Right | Up | -Look] em coluna maior (column-major)
+// right = col[0] = {m[0], m[3], m[6]}
+// up    = col[1] = {m[1], m[4], m[7]}
+// look  = col[2] = {m[2], m[5], m[8]}  (LookVector = -col[2] no Roblox)
+struct Matrix3x3 {
+    float m[9] = {}; // row-major conforme dump: m[0..2]=row0, m[3..5]=row1, m[6..8]=row2
+
+    // right  = primeira coluna (X do objeto no mundo)
+    Vector3 Right() const { return { m[0], m[3], m[6] }; }
+    // up     = segunda coluna (Y do objeto no mundo)
+    Vector3 Up()    const { return { m[1], m[4], m[7] }; }
+    // look   = -terceira coluna (LookVector do Roblox aponta -Z local)
+    Vector3 Look()  const { return { -m[2], -m[5], -m[8] }; }
+};
+
 // --------------------------------------------------------------------------
 // WorldToScreen — baseado em RenderEngine::WorldToViewport do base
 // --------------------------------------------------------------------------

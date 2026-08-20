@@ -195,17 +195,19 @@ static void DrawMenu()
         {
             ImGui::Indent();
             ImGui::Checkbox("Forcar GK (Ignorar pasta Bools)", &g_dive.cfg.forceGK);
-            ImGui::SliderFloat("Trigger dist",    &g_dive.cfg.triggerDistance,  5.f,  80.f, "%.0f studs");
-            ImGui::SliderFloat("Reaction delay",  &g_dive.cfg.reactionDelay,    0.0f, 0.3f, "%.2f s");
-            ImGui::SliderFloat("Cooldown",         &g_dive.cfg.cooldownSec,      0.8f, 3.0f, "%.1f s");
-            ImGui::SliderFloat("Min approach spd", &g_dive.cfg.approachMinSpeed, 1.f, 30.f, "%.0f s/s");
+            ImGui::Checkbox("Apenas No Alvo (Gol)",            &g_dive.cfg.onlyInGoal);
+            ImGui::Checkbox("Pular em Bola Alta",               &g_dive.cfg.highJump);
+            ImGui::SliderFloat("Dist reacao",   &g_dive.cfg.triggerDistance, 5.f,  35.f, "%.0f studs");
+            ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  30.f, "%.0f studs/s");
+            ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.5f,  3.f, "%.1f s");
+            ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   6.f, "%.0f studs");
 
             if (g_rbx)
             {
-                const GKState&         gk   = g_rbx->GetGKState();
-                const BallState&       ball = g_rbx->GetBall();
-                const GoalState&       goal = g_rbx->GetGoal();
-                const AutoDive::DebugInfo& dbg = g_dive.debug;
+                const GKState&             gk   = g_rbx->GetGKState();
+                const BallState&           ball = g_rbx->GetBall();
+                const GoalState&           goal = g_rbx->GetGoal();
+                const AutoDive::DebugInfo& dbg  = g_dive.debug;
 
                 ImGui::Separator();
 
@@ -216,30 +218,31 @@ static void DrawMenu()
                     ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "GK: nao detectado");
 
                 // Bola
-                ImGui::Text("Bola: %s  pos=(%.1f,%.1f,%.1f)",
+                ImGui::Text("Bola: %s%s  pos=(%.1f,%.1f,%.1f)",
                     ball.exists ? "sim" : "NAO",
+                    ball.isWelded ? " [welded]" : "",
                     ball.position.x, ball.position.y, ball.position.z);
-                ImGui::Text("      vel=(%.1f,%.1f,%.1f)",
-                    ball.velocity.x, ball.velocity.y, ball.velocity.z);
+                ImGui::Text("      vel=(%.1f,%.1f,%.1f)  spd=%.1f",
+                    ball.velocity.x, ball.velocity.y, ball.velocity.z, ball.velocity.Length());
 
                 // Gol
                 if (goal.exists)
-                    ImGui::Text("Gol:  pos=(%.1f,%.1f,%.1f) tam=%.1f",
-                        goal.position.x, goal.position.y, goal.position.z, goal.size.x);
+                    ImGui::Text("Gol:  pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
+                        goal.position.x, goal.position.y, goal.position.z,
+                        goal.size.x, goal.size.y, goal.size.z);
                 else
                     ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "Gol: NAO encontrado");
 
                 // Debug do AutoDive
                 ImGui::Separator();
-                ImGui::Text("Dist bola: %.1f  approach: %.1f", dbg.distToBall, dbg.approachDot);
-                ImGui::Text("Aprox: %s", dbg.approaching ? "SIM" : "nao");
+                ImGui::Text("Dist bola: %.1f", dbg.distToBall);
+                ImGui::Text("Bola->Gol: %s", dbg.approaching ? "SIM (no alvo)" : "nao");
                 ImGui::Text("RelPos (GK space): X=%.1f  Y=%.1f  Z=%.1f",
                     dbg.relPosX, dbg.relPosY, dbg.relPosZ);
                 ImGui::Text("Bola pos: (%.1f, %.1f)  vel: (%.1f, %.1f)",
                     dbg.ballPosX, dbg.ballPosZ, dbg.ballVelX, dbg.ballVelZ);
                 ImGui::Text("Gol pos: (%.1f, %.1f)  tam: (%.1f, %.1f)",
                     dbg.goalPosX, dbg.goalPosZ, dbg.goalSizeX, dbg.goalSizeZ);
-                ImGui::Text("isAPG: %s", dbg.isAPG ? "SIM (AwayGoal)" : "NAO (HomeGoal)");
 
                 ImGui::Spacing();
                 ImGui::Text("Status: %s", dbg.blockReason.c_str());

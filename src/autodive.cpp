@@ -2,41 +2,95 @@
 #include <cmath>
 
 // --------------------------------------------------------------------------
-// GetGoalCenter — retorna o centro do gol
+// PointToObjectSpace — equivalente a CFrame:PointToObjectSpace() do Roblox
+//
+// Converte worldPos para coordenadas locais do CFrame definido por:
+//   origin (posição), right, up, look (vetores da rotação)
+//
+// Fórmula: localPos = R^T * (worldPos - origin)
+//   onde R é a matriz de rotação com colunas [right, up, look]
 // --------------------------------------------------------------------------
-Vector3 AutoDive::GetGoalCenter(const GoalState& goal) const
+Vector3 AutoDive::PointToObjectSpace(const Vector3& origin,
+                                     const Vector3& right,
+                                     const Vector3& up,
+                                     const Vector3& look,
+                                     const Vector3& worldPos)
 {
-    return goal.position;
+    Vector3 delta = worldPos - origin;
+    return {
+        delta.Dot(right),
+        delta.Dot(up),
+        delta.Dot(look)
+    };
 }
 
 // --------------------------------------------------------------------------
-// IsBallTargetingGoal — verifica se a bola está indo em direção ao gol
-// Baseado na lógica do script Lua: dot product entre velocidade da bola
-// e vetor do gol para a bola deve ser > 0
+// IsBallTargetingGoal — simulação física com gravidade
+//
+// Portado diretamente da função isBallTargetingGoal() do script Lua:
+//
+//   1. Se bola se afastando do gol (dot <= 0) → retorna false
+//   2. Simula trajetória com gravidade (dt=0.035, até 45 steps = ~1.57s)
+//   3. Em cada step converte simPos para espaço local do gol
+//   4. Verifica se está dentro do volume da trave + margem
+//
+// Equivalência Lua:
+//   gravity = Vector3.new(0, -workspace.Gravity * 0.8, 0)  → ~196 studs/s²
+//   simPos += simVel * dt; simVel += gravity * dt
+//   localPos = goalCF:PointToObjectSpace(simPos)
+//   if |localPos.X| <= goalSize.X/2 + margin
+//   and |localPos.Y| <= goalSize.Y/2 + margin
+//   and |localPos.Z| <= goalSize.Z/2 + 3   → true
 // --------------------------------------------------------------------------
-bool AutoDive::IsBallTargetingGoal(const GKState& gk, const BallState& ball, const GoalState& goal) const
+bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal) const
 {
-    if (!ball.exists || !goal.exists) return false;
+    if (!cfg.onlyInGoal) return true;
+    if (!ball.exists || !goal.exists) return true; // sem dados → não bloqueia
 
-    Vector3 goalCenter = GetGoalCenter(goal);
-    
-    // Vetor do gol para a bola
-    Vector3 toBall = ball.position - goalCenter;
-    
-    // Se a velocidade da bola tem componente na direção do gol (dot > 0)
-    // significa que a bola está indo PRO gol
-    float dot = ball.velocity.Dot(toBall);
-    
-    // Também verifica velocidade mínima
-    float speed = std::sqrtf(ball.velocity.x * ball.velocity.x + 
-                             ball.velocity.y * ball.velocity.y + 
-                             ball.velocity.z * ball.velocity.z);
-    
-    return (dot > 0.f) && (speed >= cfg.minBallSpeed);
+    // 1. Se a bola está se afastando do gol → descarta imediatamente
+    Vector3 toGoal = goal.position - ball.position;
+    float   dot    = ball.velocity.Dot(toGoal);
+    if (dot <= 0.f) return false;
+
+    // 2. Simulação de trajetória com gravidade
+    const float gravity = cfg.gravity; // ~196 studs/s² (Roblox Gravity ~245 * 0.8)
+    const float margin  = cfg.goalMargin;
+    const float dt      = cfg.simDt;
+    const int   steps   = cfg.simSteps;
+
+    Vector3 simPos = ball.position;
+    Vector3 simVel = ball.velocity;
+
+    for (int i = 0; i < steps; ++i)
+    {
+        simPos.x += simVel.x * dt;
+        simPos.y += simVel.y * dt;
+        simPos.z += simVel.z * dt;
+
+        simVel.y -= gravity * dt; // gravidade só em Y
+
+        // Converte simPos para espaço local do gol (PointToObjectSpace)
+        Vector3 localPos = PointToObjectSpace(
+            goal.position,
+            goal.rightVec,
+            goal.upVec,
+            goal.lookVec,
+            simPos
+        );
+
+        // Verifica se cruza o volume da trave + margem
+        bool inX = std::fabsf(localPos.x) <= (goal.size.x * 0.5f + margin);
+        bool inY = std::fabsf(localPos.y) <= (goal.size.y * 0.5f + margin);
+        bool inZ = std::fabsf(localPos.z) <= (goal.size.z * 0.5f + 3.f);
+
+        if (inX && inY && inZ) return true;
+    }
+
+    return false;
 }
 
 // --------------------------------------------------------------------------
-// PressKey
+// PressKey — envia keydown + keyup via SendInput
 // --------------------------------------------------------------------------
 void AutoDive::PressKey(WORD vk)
 {
@@ -54,21 +108,30 @@ void AutoDive::PressKey(WORD vk)
 }
 
 // --------------------------------------------------------------------------
-// Update
+// Update — loop principal do AutoDive, chamado a cada frame
+//
+// Ordem de checagem idêntica ao Lua attemptAutoDive():
+//   1. enabled, isGK, !isDiving (cooldown), !penaltyBool (não temos → skip)
+//   2. ball exists, !ball.isWelded
+//   3. dist <= triggerDistance
+//   4. ballSpeed >= minBallSpeed
+//   5. isBallTargetingGoal (simulação física)
+//   6. relPos = root.CFrame:PointToObjectSpace(ballPos)
+//   7. Decisão: HighJump → Right → Left → Front
 // --------------------------------------------------------------------------
 void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState& goal)
 {
     m_firedThisFrame = false;
     debug = {};
 
-    if (!cfg.enabled)    { debug.blockReason = "disabled";     return; }
-    if (!gk.isGK)        { debug.blockReason = "not GK";       return; }
-    if (!ball.exists)    { debug.blockReason = "no ball";       return; }
-    if (!goal.exists)    { debug.blockReason = "no goal";       return; }
-
-    auto now = std::chrono::steady_clock::now();
+    // --- Pré-condições ---
+    if (!cfg.enabled)  { debug.blockReason = "disabled";   return; }
+    if (!gk.isGK)      { debug.blockReason = "not GK";     return; }
+    if (!ball.exists)  { debug.blockReason = "no ball";     return; }
+    if (ball.isWelded) { debug.blockReason = "ball welded"; return; }
 
     // --- Cooldown ---
+    auto  now       = std::chrono::steady_clock::now();
     float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
     if (sinceLast < cfg.cooldownSec)
     {
@@ -87,123 +150,101 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
         return;
     }
 
-    // --- Velocidade da bola ---
-    float ballSpeed = std::sqrtf(ball.velocity.x * ball.velocity.x + 
-                                 ball.velocity.y * ball.velocity.y + 
-                                 ball.velocity.z * ball.velocity.z);
-    
+    // --- Velocidade mínima da bola ---
+    float ballSpeed = ball.velocity.Length();
     if (ballSpeed < cfg.minBallSpeed)
     {
         debug.blockReason = "ball too slow";
         return;
     }
 
-    // --- Verifica se bola está indo pro gol ---
-    bool targetingGoal = IsBallTargetingGoal(gk, ball, goal);
-    debug.approaching = targetingGoal;
-    
-    if (!targetingGoal)
+    // --- Trajetória no gol (simulação física) ---
+    bool targeting = IsBallTargetingGoal(ball, goal);
+    debug.approaching = targeting;
+
+    // Preenche debug info
+    debug.ballPosX  = ball.position.x;
+    debug.ballPosZ  = ball.position.z;
+    debug.ballVelX  = ball.velocity.x;
+    debug.ballVelZ  = ball.velocity.z;
+    debug.goalPosX  = goal.position.x;
+    debug.goalPosZ  = goal.position.z;
+    debug.goalSizeX = goal.size.x;
+    debug.goalSizeZ = goal.size.z;
+
+    if (!targeting)
     {
         debug.blockReason = "not targeting goal";
         return;
     }
 
-    // --- Converte posição da bola para espaço LOCAL do GK ---
-    // O GK olha para o gol, então:
-    // - Forward (LookVector) = direção do GK para o gol
-    // - Right = perpendicular ao forward no plano XZ
-    // - Up = Y
-    
-    Vector3 goalCenter = GetGoalCenter(goal);
-    Vector3 gkToGoal = goalCenter - gk.position;
-    float gkToGoalLen = gkToGoal.Length();
-    
-    if (gkToGoalLen < 0.001f)
-    {
-        debug.blockReason = "gk at goal center?";
-        return;
-    }
-    
-    // Forward = direção normalizada do GK para o gol
-    Vector3 forward = { gkToGoal.x / gkToGoalLen, 0.f, gkToGoal.z / gkToGoalLen };
-    
-    // Right = perpendicular no plano XZ (rotaciona 90 graus no sentido horário)
-    Vector3 right = { forward.z, 0.f, -forward.x };
-    
-    // Up = Y
-    Vector3 up = { 0.f, 1.f, 0.f };
-    
-    // Posição relativa da bola no espaço do GK
-    Vector3 relPos = {
-        toBall.Dot(right),   // X local: positivo = direita, negativo = esquerda
-        toBall.Dot(up),      // Y local: altura
-        toBall.Dot(forward)  // Z local: positivo = frente (em direção ao gol), negativo = atrás
-    };
-    
+    // --- relPos = root.CFrame:PointToObjectSpace(ballPos) ---
+    // Usa os vetores Right/Up/Look do HRP do GK
+    Vector3 relPos = PointToObjectSpace(
+        gk.position,
+        gk.rightVec,
+        gk.upVec,
+        gk.lookVec,
+        ball.position
+    );
+
     debug.relPosX = relPos.x;
     debug.relPosY = relPos.y;
     debug.relPosZ = relPos.z;
 
-    // --- Debug info ---
-    debug.ballPosX = ball.position.x;
-    debug.ballPosZ = ball.position.z;
-    debug.ballVelX = ball.velocity.x;
-    debug.ballVelZ = ball.velocity.z;
-    debug.goalPosX = goal.position.x;
-    debug.goalPosZ = goal.position.z;
-    debug.goalSizeX = goal.size.x;
-    debug.goalSizeZ = goal.size.z;
+    // -----------------------------------------------------------------------
+    // Lógica de decisão — espelho exato do Lua:
+    //
+    //   if HighJump and relPos.Y >= 5.5 and |relPos.X| <= 6  → Jump  (Space)
+    //   if relPos.X > 3                                        → Right (E)
+    //   if relPos.X < -3                                       → Left  (Q)
+    //   if |relPos.X| <= 3 and relPos.Z < 0                   → Front (F)
+    // -----------------------------------------------------------------------
 
-    // --- Lógica de decisão baseada no script Lua ---
-    // Thresholds do Lua:
-    // - relPos.X > 3  → Right Dive (E)
-    // - relPos.X < -3 → Left Dive (Q)
-    // - |relPos.X| ≤ 3 e relPos.Z < 0 → Front Dive
-    // - relPos.Y >= 5.5 e |relPos.X| ≤ 6 → High Jump
-
-    const float DIVE_THRESHOLD_X = 3.0f;
-    const float HIGH_JUMP_Y = 5.5f;
-    const float HIGH_JUMP_X_MAX = 6.0f;
-
-    // High Jump - bola alta no centro
-    if (relPos.y >= HIGH_JUMP_Y && std::fabsf(relPos.x) <= HIGH_JUMP_X_MAX)
+    // High Jump — bola alta no centro
+    if (cfg.highJump && relPos.y >= 5.5f && std::fabsf(relPos.x) <= 6.f)
     {
-        // Por enquanto não implementamos Jump (precisaria de tecla Space)
-        // Mas logamos para debug
-        debug.blockReason = "high jump (not implemented)";
+        PressKey(VK_SPACE);
+        m_lastKey        = "Space (Jump)";
+        m_firedThisFrame = true;
+        m_lastDiveTime   = now;
+        debug.blockReason = "FIRED - Jump";
         return;
     }
 
-    // Right Dive (E)
-    if (relPos.x > DIVE_THRESHOLD_X)
+    // Right Dive — bola à direita do GK
+    if (relPos.x > 3.f)
     {
         PressKey('E');
-        m_lastKey = "E (Right)";
+        m_lastKey        = "E (Right)";
         m_firedThisFrame = true;
-        m_lastDiveTime = now;
+        m_lastDiveTime   = now;
         debug.blockReason = "FIRED - Right";
         return;
     }
 
-    // Left Dive (Q)
-    if (relPos.x < -DIVE_THRESHOLD_X)
+    // Left Dive — bola à esquerda do GK
+    if (relPos.x < -3.f)
     {
         PressKey('Q');
-        m_lastKey = "Q (Left)";
+        m_lastKey        = "Q (Left)";
         m_firedThisFrame = true;
-        m_lastDiveTime = now;
+        m_lastDiveTime   = now;
         debug.blockReason = "FIRED - Left";
         return;
     }
 
-    // Front Dive - bola vindo no centro (|X| <= 3) e na frente (Z < 0)
-    if (std::fabsf(relPos.x) <= DIVE_THRESHOLD_X && relPos.z < 0.f)
+    // Front Dive — bola no centro, vindo pela frente (Z < 0 = na frente do GK)
+    if (std::fabsf(relPos.x) <= 3.f && relPos.z < 0.f)
     {
-        // Front dive seria uma tecla diferente, por enquanto logamos
-        debug.blockReason = "front dive (not implemented)";
+        PressKey('F');
+        m_lastKey        = "F (Front)";
+        m_firedThisFrame = true;
+        m_lastDiveTime   = now;
+        debug.blockReason = "FIRED - Front";
         return;
     }
 
-    // Se chegou aqui, bola está no centro mas não na frente (atrás ou parado)
+    // Bola no centro mas atrás ou parada
     debug.blockReason = "ball not in dive zone";
 }
