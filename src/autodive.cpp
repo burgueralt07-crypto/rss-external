@@ -95,14 +95,6 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
 }
 
 // --------------------------------------------------------------------------
-// PressKey — enfileira tecla para ser despachada pela thread principal
-// --------------------------------------------------------------------------
-void AutoDive::PressKey(WORD vk)
-{
-    m_pendingKey.store(static_cast<uint16_t>(vk));
-}
-
-// --------------------------------------------------------------------------
 // Evaluate — lógica de decisão (chamada pelo ScanLoop)
 //
 // Espelho exato do Lua attemptAutoDive():
