@@ -123,46 +123,67 @@ Vector3 RobloxReader::ReadPartPosition(uintptr_t basePart) const
 }
 
 // --------------------------------------------------------------------------
-// Update — cadeia principal baseada no base de referência
+// Update — cadeia principal
+//
+// Separado em dois estágios:
+//   UpdateStructure() — resolve ponteiros estáveis (base, dataModel, workspace,
+//                       players service). Caro (Toolhelp32Snapshot). Roda uma
+//                       vez e só repete se os ponteiros ficarem inválidos.
+//   Update()          — atualiza apenas dados que mudam a cada frame
+//                       (posições, velocidades, ball, gk, goal). Barato.
 // --------------------------------------------------------------------------
-bool RobloxReader::Update()
+bool RobloxReader::UpdateStructure()
 {
-    m_players.clear();
-
-    // 1. Base do módulo
+    // Base do módulo — caro, cacheia
     m_base = m_mem.GetModuleBase(L"RobloxPlayerBeta.exe");
     if (!m_base) return false;
 
-    // 2. DataModel via FakeDataModel estático
+    // DataModel
     uintptr_t fakeDataModel = ReadPtr(m_base + Offsets::FakeDataModel::Pointer);
     if (!fakeDataModel) return false;
-
     m_dataModel = ReadPtr(fakeDataModel + Offsets::FakeDataModel::RealDataModel);
     if (!m_dataModel) return false;
 
-    // 3. VisualEngine — ponteiro estático separado, ViewMatrix lida diretamente
-    uintptr_t visualEngine = ReadPtr(m_base + Offsets::VisualEngine::Pointer);
-    if (visualEngine)
-    {
-        m_viewMatrix = ReadT<Matrix4x4>(visualEngine + Offsets::VisualEngine::ViewMatrix);
-    }
-
-    // 4. Workspace → Camera → Viewport
+    // Workspace
     m_workspace = FindChildByClass(m_dataModel, "Workspace");
-    if (m_workspace)
-    {
-        m_camera = FindChildByClass(m_workspace, "Camera");
-        if (m_camera)
-            m_viewport = ReadT<Vector2>(m_camera + Offsets::Camera::ViewportSize);
-    }
+    if (!m_workspace) return false;
 
-    // 5. Players service
+    // Camera (viewport estável)
+    m_camera = FindChildByClass(m_workspace, "Camera");
+
+    // Players service
     m_playersService = FindChildByClass(m_dataModel, "Players");
     if (!m_playersService) return false;
 
     m_localPlayer = ReadPtr(m_playersService + Offsets::Player::LocalPlayer);
 
-    // 6. Itera jogadores
+    m_structureValid = true;
+    return true;
+}
+
+bool RobloxReader::Update()
+{
+    m_players.clear();
+
+    // Refresh estrutura se necessário (primeira vez ou ponteiros inválidos)
+    if (!m_structureValid || !m_dataModel || !m_workspace || !m_playersService)
+    {
+        if (!UpdateStructure()) return false;
+    }
+
+    // VisualEngine — lê ViewMatrix (ponteiro estático, leve)
+    uintptr_t visualEngine = ReadPtr(m_base + Offsets::VisualEngine::Pointer);
+    if (visualEngine)
+        m_viewMatrix = ReadT<Matrix4x4>(visualEngine + Offsets::VisualEngine::ViewMatrix);
+
+    // Viewport
+    if (m_camera)
+        m_viewport = ReadT<Vector2>(m_camera + Offsets::Camera::ViewportSize);
+
+    // LocalPlayer pode mudar (reconnect)
+    m_localPlayer = ReadPtr(m_playersService + Offsets::Player::LocalPlayer);
+
+    // Itera jogadores
     for (uintptr_t playerInst : GetChildren(m_playersService))
     {
         if (playerInst == m_localPlayer) continue;
@@ -201,34 +222,49 @@ bool RobloxReader::Update()
 }
 
 // --------------------------------------------------------------------------
-// ReadBallState — lê posição e velocidade da bola no Workspace (robusto)
+// ReadBallState — lê posição e velocidade da bola no Workspace
+//
+// Cacheia o ponteiro da instância igual ao Lua (cachedBall).
+// Só refaz o scan de GetChildren se o ponteiro cacheado ficar inválido.
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadBallState()
 {
     m_ball = {};
     if (!m_workspace) return false;
 
-    // Busca pela bola com comparação case-insensitive
-    uintptr_t ballInst = 0;
-    for (uintptr_t child : GetChildren(m_workspace))
+    // Valida cache: tenta ler o nome da instância cacheada
+    if (m_cachedBall)
     {
-        std::string name = GetInstanceName(child);
-        std::string lowerName = name;
-        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
-        if (lowerName == "ball" || lowerName == "football" || lowerName == "soccerball" || lowerName == "soccer_ball")
+        std::string name = GetInstanceName(m_cachedBall);
+        std::string lower = name;
+        std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+        if (lower != "ball" && lower != "football" && lower != "soccerball" && lower != "soccer_ball")
+            m_cachedBall = 0; // cache inválido, refaz busca
+    }
+
+    // Só escaneia filhos se não tem cache válido
+    if (!m_cachedBall)
+    {
+        for (uintptr_t child : GetChildren(m_workspace))
         {
-            ballInst = child;
-            break;
+            std::string name = GetInstanceName(child);
+            std::string lower = name;
+            std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+            if (lower == "ball" || lower == "football" || lower == "soccerball" || lower == "soccer_ball")
+            {
+                m_cachedBall = child;
+                break;
+            }
         }
     }
 
-    if (!ballInst) return false;
+    if (!m_cachedBall) return false;
 
     BallState newBall{};
-    newBall.isWelded = (FindChild(ballInst, "playerWeld") != 0);
+    newBall.isWelded = (FindChild(m_cachedBall, "playerWeld") != 0);
 
-    uintptr_t primitive = ReadPtr(ballInst + Offsets::BasePart::Primitive);
-    if (!primitive) return false;
+    uintptr_t primitive = ReadPtr(m_cachedBall + Offsets::BasePart::Primitive);
+    if (!primitive) { m_cachedBall = 0; return false; }
 
     newBall.exists   = true;
     newBall.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
