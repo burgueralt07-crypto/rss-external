@@ -1,0 +1,68 @@
+name: Build x64 Release
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  # Permite rodar manualmente pela aba Actions
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: MSVC x64 Release
+    runs-on: windows-latest   # Windows Server 2022 + MSVC 2022
+
+    steps:
+      # ----------------------------------------------------------------
+      # 1. Checkout do repositório (incluindo submódulos, se houver)
+      # ----------------------------------------------------------------
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # ----------------------------------------------------------------
+      # 2. Configura o ambiente MSVC (vcvars64) via developer shell
+      # ----------------------------------------------------------------
+      - name: Setup MSVC Developer Shell
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # ----------------------------------------------------------------
+      # 3. Cache do diretório de build do CMake
+      #    Chave inclui hash dos CMakeLists e dos sources para invalidar
+      #    o cache quando algo mudar.
+      # ----------------------------------------------------------------
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: cmake-${{ runner.os }}-x64-${{ hashFiles('CMakeLists.txt', 'src/**', 'include/**') }}
+          restore-keys: |
+            cmake-${{ runner.os }}-x64-
+
+      # ----------------------------------------------------------------
+      # 4. Configure — CMake gera os arquivos de build para x64
+      # ----------------------------------------------------------------
+      - name: CMake Configure
+        run: cmake -B build -A x64 -DCMAKE_BUILD_TYPE=Release
+
+      # ----------------------------------------------------------------
+      # 5. Build — compila em Release com todos os núcleos disponíveis
+      # ----------------------------------------------------------------
+      - name: CMake Build
+        run: cmake --build build --config Release --parallel
+
+      # ----------------------------------------------------------------
+      # 6. Upload do artefato — disponibiliza o .exe para download
+      #    direto na aba Actions do GitHub por 7 dias
+      # ----------------------------------------------------------------
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rss-external-x64-release
+          path: build/Release/rss-external.exe
+          retention-days: 7
+          if-no-files-found: error
