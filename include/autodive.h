@@ -101,7 +101,7 @@ public:
         float impactY     = 0.f;  // ponto de impacto projetado no plano do gol (Y)
         bool  approaching = false;
         std::string blockReason;
-    } debug;
+    mutable DebugInfo debug;
 
 private:
     // Envia key down+up via SendInput (thread principal)
