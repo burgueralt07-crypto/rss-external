@@ -27,28 +27,34 @@ struct BallState {
 // --------------------------------------------------------------------------
 struct GoalState {
     bool    exists   = false;
-    Vector3 position; // centro do gol (Primitive::Position)
-    Vector3 size;     // tamanho (Primitive::Size)
+    Vector3 position; // centro do gol (GetBoundingBox para Model, Primitive::Position para Part)
+    Vector3 size;     // tamanho (GetBoundingBox para Model, Primitive::Size para Part)
 };
 
 // --------------------------------------------------------------------------
 // AutoDive
 //
-// Lógica baseada no gol — mais robusta que depender dos vetores do GK:
-//   1. Sabe qual gol o GK defende (APG = AwayGoal, HPG = HomeGoal)
-//   2. Prediz onde a bola vai cruzar a linha do gol (usando velocidade)
-//   3. Compara com o centro do gol pra saber se é esquerda ou direita
-//   4. Pressiona Q (left) ou E (right) via SendInput
+// Lógica baseada no script Lua que funciona:
+//   1. Detecta qual gol o GK defende (APG = AwayGoal, HPG = HomeGoal)
+//   2. Converte posição da bola para espaço LOCAL do GK (relPos)
+//   3. Thresholds simples e eficazes:
+//      - relPos.X > 3  → Right Dive (E)
+//      - relPos.X < -3 → Left Dive (Q)
+//      - |relPos.X| ≤ 3 e relPos.Z < 0 → Front Dive
+//      - relPos.Y >= 5.5 e |relPos.X| ≤ 6 → High Jump
+//   4. Verifica se bola está vindo pro gol (dot product com direção do gol)
+//   5. Cooldown, distância mínima, velocidade mínima da bola
 // --------------------------------------------------------------------------
 class AutoDive {
 public:
     struct Config {
         bool  enabled         = false;
-        bool  forceGK         = false;  // Forçar estado de GK mesmo sem pasta Bools
-        float triggerDistance = 40.f;  // studs — distância máxima pra ativar
-        float reactionDelay   = 0.05f; // segundos de delay (simula reação)
-        float cooldownSec     = 1.2f;  // cooldown entre dives
-        float approachMinSpeed = 5.f;  // velocidade mínima de aproximação (studs/s)
+        bool  forceGK         = false;   // Forçar estado de GK mesmo sem pasta Bools
+        float triggerDistance = 18.f;    // studs — distância máxima pra ativar (Lua default: 18)
+        float reactionDelay   = 0.05f;   // segundos de delay (simula reação)
+        float cooldownSec     = 1.2f;    // cooldown entre dives (Lua default: 1.2)
+        float minBallSpeed    = 8.f;     // velocidade mínima da bola (Lua default: 8)
+        float goalMargin      = 2.f;     // margem extra além da trave (Lua default: 2)
     };
 
     Config cfg;
@@ -62,9 +68,9 @@ public:
     struct DebugInfo {
         float distToBall   = 0.f;
         float approachDot  = 0.f;
-        float predictedX   = 0.f; // posição lateral prevista da bola na linha do gol
-        float goalCenterX  = 0.f;
-        float lateralOffset = 0.f;
+        float relPosX      = 0.f;  // posição relativa da bola no espaço do GK
+        float relPosZ      = 0.f;
+        float relPosY      = 0.f;
         bool  approaching  = false;
         std::string blockReason; // por que não deu dive
         
@@ -77,19 +83,15 @@ public:
         float goalPosZ = 0.f;
         float goalSizeX = 0.f;
         float goalSizeZ = 0.f;
+        bool  isAPG    = false;
     } debug;
 
-// Exposto para poder usar no ESP (linhas de ajuda visual se quisermos)
-    float PredictBallAtGoalLine(const BallState& ball, const GoalState& goal) const;
-
 private:
-    bool  BallApproaching(const GKState& gk, const BallState& ball, const GoalState& goal) const;
+    bool  IsBallTargetingGoal(const GKState& gk, const BallState& ball, const GoalState& goal) const;
     void  PressKey(WORD vk);
+    Vector3 GetGoalCenter(const GoalState& goal) const;
 
     std::chrono::steady_clock::time_point m_lastDiveTime;
-    std::chrono::steady_clock::time_point m_pendingFireTime;
     bool        m_firedThisFrame = false;
-    bool        m_pendingFire    = false;
-    float       m_pendingLateral = 0.f;
     const char* m_lastKey        = "-";
 };

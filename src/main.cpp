@@ -233,12 +233,13 @@ static void DrawMenu()
                 ImGui::Separator();
                 ImGui::Text("Dist bola: %.1f  approach: %.1f", dbg.distToBall, dbg.approachDot);
                 ImGui::Text("Aprox: %s", dbg.approaching ? "SIM" : "nao");
-                ImGui::Text("PredX: %.2f  GolX: %.2f  Lat: %.2f",
-                    dbg.predictedX, dbg.goalCenterX, dbg.lateralOffset);
+                ImGui::Text("RelPos (GK space): X=%.1f  Y=%.1f  Z=%.1f",
+                    dbg.relPosX, dbg.relPosY, dbg.relPosZ);
                 ImGui::Text("Bola pos: (%.1f, %.1f)  vel: (%.1f, %.1f)",
                     dbg.ballPosX, dbg.ballPosZ, dbg.ballVelX, dbg.ballVelZ);
                 ImGui::Text("Gol pos: (%.1f, %.1f)  tam: (%.1f, %.1f)",
                     dbg.goalPosX, dbg.goalPosZ, dbg.goalSizeX, dbg.goalSizeZ);
+                ImGui::Text("isAPG: %s", dbg.isAPG ? "SIM (AwayGoal)" : "NAO (HomeGoal)");
 
                 ImGui::Spacing();
                 ImGui::Text("Status: %s", dbg.blockReason.c_str());

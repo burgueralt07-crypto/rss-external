@@ -27,6 +27,9 @@ public:
     const GKState&                 GetGKState()    const { return m_gkState; }
     const GoalState&               GetGoal()       const { return m_goalState; }
     void                           SetForceGK(bool force) { m_forceGK = force; }
+    
+    // Debug: lista filhos do Workspace com nomes e classes
+    std::vector<std::pair<std::string, std::string>> GetWorkspaceChildrenDebug() const;
 
 private:
     template<typename T>

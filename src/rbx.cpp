@@ -376,7 +376,11 @@ bool RobloxReader::ReadGoalState()
     const std::string goalName = m_isAPG ? "AwayGoal" : "HomeGoal";
 
     uintptr_t goalModel = FindChild(m_workspace, goalName);
-    if (!goalModel) return false;
+    if (!goalModel) 
+    {
+        // Debug: lista filhos do workspace para ver nomes dos gols
+        return false;
+    }
 
     // Tenta PrimaryPart do Model primeiro
     uintptr_t primaryPart = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
@@ -400,8 +404,17 @@ bool RobloxReader::ReadGoalState()
     uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
     if (!primitive) return false;
 
+    Vector3 pos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    Vector3 sz  = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
+    
+    // Debug: verifica se leu valores válidos
+    if (pos.x == 0.f && pos.y == 0.f && pos.z == 0.f)
+    {
+        // Posição zerada - pode ser offset errado
+    }
+
     m_goalState.exists   = true;
-    m_goalState.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
-    m_goalState.size     = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
+    m_goalState.position = pos;
+    m_goalState.size     = sz;
     return true;
 }

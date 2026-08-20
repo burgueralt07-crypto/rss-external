@@ -2,86 +2,37 @@
 #include <cmath>
 
 // --------------------------------------------------------------------------
-// BallApproaching — verifica se a bola está se aproximando do gol que o GK defende
+// GetGoalCenter — retorna o centro do gol
 // --------------------------------------------------------------------------
-bool AutoDive::BallApproaching(const GKState& gk, const BallState& ball, const GoalState& goal) const
+Vector3 AutoDive::GetGoalCenter(const GoalState& goal) const
 {
-    if (!ball.exists || !goal.exists) return false;
-
-    // Se o gol é mais largo no eixo X (orientação padrão do RSS - gol no plano Z)
-    if (goal.size.x >= goal.size.z)
-    {
-        // A linha do gol está no centro do gol (goal.position.z) para gols finos
-        // Mas para ser mais robusto, usamos a posição Z do gol como referência
-        float dz = goal.position.z - ball.position.z;
-        float vz = ball.velocity.z;
-
-        if (std::fabsf(vz) < cfg.approachMinSpeed) return false;
-
-        // Se dz e vz têm o mesmo sinal, a bola está indo em direção à linha do gol (Z)
-        bool approaching = (dz * vz > 0.f);
-        
-        // Debug
-        (void)gk; // unused
-        return approaching;
-    }
-    else // O gol é mais largo no eixo Z (campo orientado em X - gol no plano X)
-    {
-        float dx = goal.position.x - ball.position.x;
-        float vx = ball.velocity.x;
-
-        if (std::fabsf(vx) < cfg.approachMinSpeed) return false;
-
-        // Se dx e vx têm o mesmo sinal, a bola está indo em direção à linha do gol (X)
-        return (dx * vx > 0.f);
-    }
+    return goal.position;
 }
 
 // --------------------------------------------------------------------------
-// PredictBallAtGoalLine
-//
-// Prevê a posição lateral da bola quando ela cruzar a linha de gol.
-// Suporta de forma robusta campos orientados tanto em Z quanto em X.
+// IsBallTargetingGoal — verifica se a bola está indo em direção ao gol
+// Baseado na lógica do script Lua: dot product entre velocidade da bola
+// e vetor do gol para a bola deve ser > 0
 // --------------------------------------------------------------------------
-float AutoDive::PredictBallAtGoalLine(const BallState& ball, const GoalState& goal) const
+bool AutoDive::IsBallTargetingGoal(const GKState& gk, const BallState& ball, const GoalState& goal) const
 {
-    if (!ball.exists || !goal.exists) return 0.f;
+    if (!ball.exists || !goal.exists) return false;
 
-    // Se o gol é mais largo no eixo X (campo orientado em Z, gol no plano Z fixo)
-    if (goal.size.x >= goal.size.z)
-    {
-        float goalZ = goal.position.z;
-        float dz    = goalZ - ball.position.z;
-        float vz    = ball.velocity.z;
-
-        if (std::fabsf(vz) < 0.5f)
-        {
-            return ball.position.x;
-        }
-
-        float t = dz / vz;
-        if (t < 0.f) t = 0.f;
-        if (t > 3.f) t = 3.f;
-
-        return ball.position.x + ball.velocity.x * t;
-    }
-    else // O gol é mais largo no eixo Z (campo orientado em X, gol no plano X fixo)
-    {
-        float goalX = goal.position.x;
-        float dx    = goalX - ball.position.x;
-        float vx    = ball.velocity.x;
-
-        if (std::fabsf(vx) < 0.5f)
-        {
-            return ball.position.z;
-        }
-
-        float t = dx / vx;
-        if (t < 0.f) t = 0.f;
-        if (t > 3.f) t = 3.f;
-
-        return ball.position.z + ball.velocity.z * t;
-    }
+    Vector3 goalCenter = GetGoalCenter(goal);
+    
+    // Vetor do gol para a bola
+    Vector3 toBall = ball.position - goalCenter;
+    
+    // Se a velocidade da bola tem componente na direção do gol (dot > 0)
+    // significa que a bola está indo PRO gol
+    float dot = ball.velocity.Dot(toBall);
+    
+    // Também verifica velocidade mínima
+    float speed = std::sqrtf(ball.velocity.x * ball.velocity.x + 
+                             ball.velocity.y * ball.velocity.y + 
+                             ball.velocity.z * ball.velocity.z);
+    
+    return (dot > 0.f) && (speed >= cfg.minBallSpeed);
 }
 
 // --------------------------------------------------------------------------
@@ -117,31 +68,6 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
 
     auto now = std::chrono::steady_clock::now();
 
-    // --- Processa dive pendente (delay de reação) ---
-    if (m_pendingFire)
-    {
-        float elapsed = std::chrono::duration<float>(now - m_pendingFireTime).count();
-        if (elapsed >= cfg.reactionDelay)
-        {
-            m_pendingFire    = false;
-            m_firedThisFrame = true;
-            m_lastDiveTime   = now;
-
-            if (m_pendingLateral > 0.f)
-            {
-                PressKey('E');
-                m_lastKey = "E (Right)";
-            }
-            else
-            {
-                PressKey('Q');
-                m_lastKey = "Q (Left)";
-            }
-        }
-        debug.blockReason = "pending fire...";
-        return;
-    }
-
     // --- Cooldown ---
     float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
     if (sinceLast < cfg.cooldownSec)
@@ -150,12 +76,75 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
         return;
     }
 
-    // --- Preenche debug ---
+    // --- Distância GK-Bola ---
     Vector3 toBall = ball.position - gk.position;
     float   dist   = toBall.Length();
     debug.distToBall = dist;
 
-    // Debug: posição da bola, velocidade, posição do gol, tamanho do gol
+    if (dist > cfg.triggerDistance)
+    {
+        debug.blockReason = "too far";
+        return;
+    }
+
+    // --- Velocidade da bola ---
+    float ballSpeed = std::sqrtf(ball.velocity.x * ball.velocity.x + 
+                                 ball.velocity.y * ball.velocity.y + 
+                                 ball.velocity.z * ball.velocity.z);
+    
+    if (ballSpeed < cfg.minBallSpeed)
+    {
+        debug.blockReason = "ball too slow";
+        return;
+    }
+
+    // --- Verifica se bola está indo pro gol ---
+    bool targetingGoal = IsBallTargetingGoal(gk, ball, goal);
+    debug.approaching = targetingGoal;
+    
+    if (!targetingGoal)
+    {
+        debug.blockReason = "not targeting goal";
+        return;
+    }
+
+    // --- Converte posição da bola para espaço LOCAL do GK ---
+    // O GK olha para o gol, então:
+    // - Forward (LookVector) = direção do GK para o gol
+    // - Right = perpendicular ao forward no plano XZ
+    // - Up = Y
+    
+    Vector3 goalCenter = GetGoalCenter(goal);
+    Vector3 gkToGoal = goalCenter - gk.position;
+    float gkToGoalLen = gkToGoal.Length();
+    
+    if (gkToGoalLen < 0.001f)
+    {
+        debug.blockReason = "gk at goal center?";
+        return;
+    }
+    
+    // Forward = direção normalizada do GK para o gol
+    Vector3 forward = { gkToGoal.x / gkToGoalLen, 0.f, gkToGoal.z / gkToGoalLen };
+    
+    // Right = perpendicular no plano XZ (rotaciona 90 graus no sentido horário)
+    Vector3 right = { forward.z, 0.f, -forward.x };
+    
+    // Up = Y
+    Vector3 up = { 0.f, 1.f, 0.f };
+    
+    // Posição relativa da bola no espaço do GK
+    Vector3 relPos = {
+        toBall.Dot(right),   // X local: positivo = direita, negativo = esquerda
+        toBall.Dot(up),      // Y local: altura
+        toBall.Dot(forward)  // Z local: positivo = frente (em direção ao gol), negativo = atrás
+    };
+    
+    debug.relPosX = relPos.x;
+    debug.relPosY = relPos.y;
+    debug.relPosZ = relPos.z;
+
+    // --- Debug info ---
     debug.ballPosX = ball.position.x;
     debug.ballPosZ = ball.position.z;
     debug.ballVelX = ball.velocity.x;
@@ -165,70 +154,56 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
     debug.goalSizeX = goal.size.x;
     debug.goalSizeZ = goal.size.z;
 
-    // Pega o centro do gol dependendo da orientação
-    if (goal.size.x >= goal.size.z)
-    {
-        debug.goalCenterX = goal.position.x;
-    }
-    else
-    {
-        debug.goalCenterX = goal.position.z;
-    }
+    // --- Lógica de decisão baseada no script Lua ---
+    // Thresholds do Lua:
+    // - relPos.X > 3  → Right Dive (E)
+    // - relPos.X < -3 → Left Dive (Q)
+    // - |relPos.X| ≤ 3 e relPos.Z < 0 → Front Dive
+    // - relPos.Y >= 5.5 e |relPos.X| ≤ 6 → High Jump
 
-    if (dist > 0.001f)
-    {
-        Vector3 dir  = toBall * (1.f / dist);
-        Vector3 toGK = { -dir.x, -dir.y, -dir.z };
-        debug.approachDot = ball.velocity.Dot(toGK);
-    }
+    const float DIVE_THRESHOLD_X = 3.0f;
+    const float HIGH_JUMP_Y = 5.5f;
+    const float HIGH_JUMP_X_MAX = 6.0f;
 
-    debug.approaching = BallApproaching(gk, ball, goal);
-
-    // --- Verifica distância ---
-    if (dist > cfg.triggerDistance)
+    // High Jump - bola alta no centro
+    if (relPos.y >= HIGH_JUMP_Y && std::fabsf(relPos.x) <= HIGH_JUMP_X_MAX)
     {
-        debug.blockReason = "too far";
+        // Por enquanto não implementamos Jump (precisaria de tecla Space)
+        // Mas logamos para debug
+        debug.blockReason = "high jump (not implemented)";
         return;
     }
 
-    // --- Verifica aproximação ---
-    if (!debug.approaching)
+    // Right Dive (E)
+    if (relPos.x > DIVE_THRESHOLD_X)
     {
-        debug.blockReason = "not approaching";
+        PressKey('E');
+        m_lastKey = "E (Right)";
+        m_firedThisFrame = true;
+        m_lastDiveTime = now;
+        debug.blockReason = "FIRED - Right";
         return;
     }
 
-    // --- Prediz lado ---
-    float predictedLateral = PredictBallAtGoalLine(ball, goal);
-    float lateral = 0.f;
-
-    if (goal.size.x >= goal.size.z)
+    // Left Dive (Q)
+    if (relPos.x < -DIVE_THRESHOLD_X)
     {
-        lateral = predictedLateral - goal.position.x; // positivo = direita do gol, negativo = esquerda
-    }
-    else
-    {
-        lateral = predictedLateral - goal.position.z;
-    }
-
-    debug.predictedX    = predictedLateral;
-    debug.lateralOffset = lateral;
-
-    // Threshold mínimo — ignora se a bola vai pro centro do gol
-    // Usa metade da largura do gol como referência para "lado"
-    float halfGoalWidth = (goal.size.x >= goal.size.z) ? goal.size.x * 0.5f : goal.size.z * 0.5f;
-    float threshold     = halfGoalWidth * 0.15f; // 15% da metade = evita false positives centrais
-    if (threshold < 0.5f) threshold = 0.5f;
-
-    if (std::fabsf(lateral) < threshold)
-    {
-        debug.blockReason = "ball going center";
+        PressKey('Q');
+        m_lastKey = "Q (Left)";
+        m_firedThisFrame = true;
+        m_lastDiveTime = now;
+        debug.blockReason = "FIRED - Left";
         return;
     }
 
-    // --- Arma o disparo ---
-    m_pendingFire     = true;
-    m_pendingLateral  = lateral;
-    m_pendingFireTime = now;
-    debug.blockReason = "FIRED";
+    // Front Dive - bola vindo no centro (|X| <= 3) e na frente (Z < 0)
+    if (std::fabsf(relPos.x) <= DIVE_THRESHOLD_X && relPos.z < 0.f)
+    {
+        // Front dive seria uma tecla diferente, por enquanto logamos
+        debug.blockReason = "front dive (not implemented)";
+        return;
+    }
+
+    // Se chegou aqui, bola está no centro mas não na frente (atrás ou parado)
+    debug.blockReason = "ball not in dive zone";
 }
