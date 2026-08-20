@@ -236,14 +236,9 @@ static void DrawMenu()
                 // Debug do AutoDive
                 ImGui::Separator();
                 ImGui::Text("Dist bola: %.1f", dbg.distToBall);
-                ImGui::Text("Bola->Gol: %s", dbg.approaching ? "SIM (no alvo)" : "nao");
-                ImGui::Text("RelPos (GK space): X=%.1f  Y=%.1f  Z=%.1f",
-                    dbg.relPosX, dbg.relPosY, dbg.relPosZ);
-                ImGui::Text("Bola pos: (%.1f, %.1f)  vel: (%.1f, %.1f)",
-                    dbg.ballPosX, dbg.ballPosZ, dbg.ballVelX, dbg.ballVelZ);
-                ImGui::Text("Gol pos: (%.1f, %.1f)  tam: (%.1f, %.1f)",
-                    dbg.goalPosX, dbg.goalPosZ, dbg.goalSizeX, dbg.goalSizeZ);
-
+                ImGui::Text("Bola->Gol: %s", dbg.approaching ? "SIM" : "nao");
+                ImGui::Text("Impacto gol: X=%.2f  Y=%.2f", dbg.impactX, dbg.impactY);
+                ImGui::Text("RelPos GK:   X=%.2f  Y=%.2f  Z=%.2f", dbg.relPosX, dbg.relPosY, dbg.relPosZ);
                 ImGui::Spacing();
                 ImGui::Text("Status: %s", dbg.blockReason.c_str());
                 ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());

@@ -97,14 +97,10 @@ public:
         float relPosX     = 0.f;
         float relPosY     = 0.f;
         float relPosZ     = 0.f;
+        float impactX     = 0.f;  // ponto de impacto projetado no plano do gol (X)
+        float impactY     = 0.f;  // ponto de impacto projetado no plano do gol (Y)
         bool  approaching = false;
-        bool  isAPG       = false;
         std::string blockReason;
-
-        float ballPosX  = 0.f, ballPosZ  = 0.f;
-        float ballVelX  = 0.f, ballVelZ  = 0.f;
-        float goalPosX  = 0.f, goalPosZ  = 0.f;
-        float goalSizeX = 0.f, goalSizeZ = 0.f;
     } debug;
 
 private:
