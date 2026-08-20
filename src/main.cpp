@@ -59,9 +59,27 @@ static bool IsRobloxForeground(HWND targetHwnd)
 static void DrawESP(ImDrawList* dl,
                     const std::vector<PlayerData>& players,
                     const Matrix4x4& viewMatrix,
-                    const Vector2&   viewport)
+                    const Vector2&   viewport,
+                    HWND             targetHwnd)
 {
     if (!g_cfg.enabled || players.empty()) return;
+
+    // Offset da janela do Roblox na tela — necessário quando não está em tela cheia
+    float winOffsetX = 0.f, winOffsetY = 0.f;
+    if (targetHwnd)
+    {
+        RECT wr{};
+        GetWindowRect(targetHwnd, &wr);
+        RECT cr{};
+        GetClientRect(targetHwnd, &cr);
+
+        // Diferença entre WindowRect e ClientRect = bordas + título
+        int borderX = ((wr.right - wr.left) - cr.right) / 2;
+        int titleH  =  (wr.bottom - wr.top) - cr.bottom - borderX;
+
+        winOffsetX = static_cast<float>(wr.left + borderX);
+        winOffsetY = static_cast<float>(wr.top  + titleH);
+    }
 
     // HumanoidRootPart fica na cintura do personagem Roblox
     constexpr float OFFSET_TOP    =  2.8f;
@@ -76,6 +94,11 @@ static void DrawESP(ImDrawList* dl,
         if (!WorldToScreen(viewMatrix, p.position, viewport, screenCenter)) continue;
         if (!WorldToScreen(viewMatrix, posTop,      viewport, screenTop))    continue;
         if (!WorldToScreen(viewMatrix, posBottom,   viewport, screenBottom)) continue;
+
+        // Aplica offset da posição da janela no monitor
+        screenCenter.x += winOffsetX; screenCenter.y += winOffsetY;
+        screenTop.x    += winOffsetX; screenTop.y    += winOffsetY;
+        screenBottom.x += winOffsetX; screenBottom.y += winOffsetY;
 
         float boxH = screenBottom.y - screenTop.y;
         if (boxH < 4.f || boxH > 2000.f) continue;
@@ -226,7 +249,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             DrawESP(ImGui::GetBackgroundDrawList(),
                     g_rbx->GetPlayers(),
                     g_rbx->GetViewMatrix(),
-                    g_rbx->GetViewport());
+                    g_rbx->GetViewport(),
+                    overlay.GetTargetHWND());
 
         DrawMenu();
         renderer.EndFrame();
