@@ -5,34 +5,35 @@
 // --------------------------------------------------------------------------
 // ReadRbxString
 //
-// O Roblox armazena strings como uma struct:
-//   [0x00] char* data  (ou buffer inline se len <= 15)
-//   [0x10] size_t len
-//   [0x18] size_t cap
+// std::string do MSVC (x64):
+//   [+0x00] union { char buf[16]; char* ptr; }  — dados inline se len<=15, heap se len>15
+//   [+0x10] size_t size
+//   [+0x18] size_t capacity
 //
-// Se cap > 15, 'data' é um ponteiro heap; caso contrário, inline no próprio slot.
+// Se capacity <= 15 os bytes ficam inline em [addr+0x00].
+// Se capacity >  15 existe um ponteiro heap em [addr+0x00].
 // --------------------------------------------------------------------------
 std::string RobloxReader::ReadRbxString(uintptr_t addr) const
 {
-    constexpr size_t INLINE_CAP = 15;
+    if (!addr) return {};
 
-    size_t len = ReadT<size_t>(addr + Offsets::Misc::StringLength);
-    if (len == 0 || len > 256)
-        return {};
+    size_t len = ReadT<size_t>(addr + 0x10);   // size
+    if (len == 0 || len > 512) return {};
+
+    size_t cap = ReadT<size_t>(addr + 0x18);   // capacity
 
     std::string result(len, '\0');
 
-    size_t cap = ReadT<size_t>(addr + 0x18);
-    if (cap > INLINE_CAP)
+    if (cap > 15)
     {
-        // string heap-allocated: lê o ponteiro e depois os bytes
+        // heap — [addr+0x00] é ponteiro para os dados
         uintptr_t dataPtr = ReadPtr(addr);
         if (!dataPtr) return {};
         m_mem.ReadRaw(dataPtr, result.data(), len);
     }
     else
     {
-        // string inline: os bytes ficam no próprio slot (addr + 0x00)
+        // inline — os bytes começam em addr+0x00
         m_mem.ReadRaw(addr, result.data(), len);
     }
 
@@ -42,36 +43,36 @@ std::string RobloxReader::ReadRbxString(uintptr_t addr) const
 // --------------------------------------------------------------------------
 // FindChild — percorre a lista de filhos de uma Instance pelo nome
 //
-// Instance::ChildrenStart → ponteiro para vetor de filhos
-// Cada elemento: [ptr para Instance]
-// Instance::NameContainer + Instance::Name → std::string
+// Estrutura do vetor de filhos no Roblox:
+//   instance + 0x70  = NameContainer (ptr para std::string do nome)
+//   instance + 0x78  = ptr para início do vetor de filhos (std::vector begin)
+//   instance + 0x80  = ptr para fim do vetor de filhos   (std::vector end)
+//
+// Cada elemento do vetor é um ponteiro de 8 bytes para outra Instance.
 // --------------------------------------------------------------------------
 uintptr_t RobloxReader::FindChild(uintptr_t instance, const std::string& name) const
 {
     if (!instance) return 0;
 
-    uintptr_t childrenStart = ReadPtr(instance + Offsets::Instance::ChildrenStart);
-    uintptr_t childrenEnd   = ReadPtr(instance + Offsets::Instance::ChildrenEnd + 0x70); // ajuste
+    // O vetor de filhos está em instance+0x78 (begin) e instance+0x80 (end)
+    uintptr_t vecBegin = ReadPtr(instance + Offsets::Instance::ChildrenStart);
+    uintptr_t vecEnd   = ReadPtr(instance + Offsets::Instance::ChildrenStart + 0x8);
 
-    // Lê ponteiro para o vetor interno
-    uintptr_t vecPtr = ReadPtr(instance + Offsets::Instance::ChildrenStart);
-    uintptr_t vecEnd = ReadPtr(instance + Offsets::Instance::ChildrenStart + 0x8);
+    if (!vecBegin || !vecEnd || vecEnd <= vecBegin) return 0;
 
-    if (!vecPtr || !vecEnd || vecEnd <= vecPtr)
-        return 0;
-
-    size_t count = (vecEnd - vecPtr) / sizeof(uintptr_t);
-    count = std::min(count, static_cast<size_t>(512)); // limite de segurança
+    size_t count = (vecEnd - vecBegin) / sizeof(uintptr_t);
+    if (count == 0 || count > 1024) return 0;
 
     for (size_t i = 0; i < count; ++i)
     {
-        uintptr_t child = ReadPtr(vecPtr + i * sizeof(uintptr_t));
+        uintptr_t child = ReadPtr(vecBegin + i * sizeof(uintptr_t));
         if (!child) continue;
 
+        // Nome da instância: child + 0x70 = NameContainer, NameContainer + 0x8 = std::string
         uintptr_t nameContainer = ReadPtr(child + Offsets::Instance::NameContainer);
         if (!nameContainer) continue;
 
-        std::string childName = ReadRbxString(nameContainer + Offsets::Instance::Name);
+        std::string childName = ReadRbxString(nameContainer);
         if (childName == name)
             return child;
     }
