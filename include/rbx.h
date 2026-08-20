@@ -3,6 +3,7 @@
 #include "rmath.h"
 #include "autodive.h"
 #include "offsets.h"
+#include <mutex>
 #include <vector>
 #include <string>
 
@@ -27,7 +28,12 @@ public:
     const GKState&                 GetGKState()    const { return m_gkState; }
     const GoalState&               GetGoal()       const { return m_goalState; }
     void                           SetForceGK(bool force) { m_forceGK = force; }
-    
+
+    // Thread-safe copies — usadas pelo ScanLoop do AutoDive
+    BallState  GetBallCopy()  const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_ball;     }
+    GKState    GetGKCopy()    const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_gkState;  }
+    GoalState  GetGoalCopy()  const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_goalState;}
+
     // Debug: lista filhos do Workspace com nomes e classes
     std::vector<std::pair<std::string, std::string>> GetWorkspaceChildrenDebug() const;
 
@@ -54,6 +60,7 @@ private:
     bool                   ReadGoalState();
 
     Memory&                  m_mem;
+    mutable std::mutex       m_stateMtx;   // protege m_ball, m_gkState, m_goalState
     std::vector<PlayerData>  m_players;
     Matrix4x4                m_viewMatrix;
     Vector2                  m_viewport;

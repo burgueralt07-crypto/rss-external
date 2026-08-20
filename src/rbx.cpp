@@ -224,14 +224,17 @@ bool RobloxReader::ReadBallState()
 
     if (!ballInst) return false;
 
-    m_ball.isWelded = (FindChild(ballInst, "playerWeld") != 0);
+    BallState newBall{};
+    newBall.isWelded = (FindChild(ballInst, "playerWeld") != 0);
 
     uintptr_t primitive = ReadPtr(ballInst + Offsets::BasePart::Primitive);
     if (!primitive) return false;
 
-    m_ball.exists   = true;
-    m_ball.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
-    m_ball.velocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyLinearVelocity);
+    newBall.exists   = true;
+    newBall.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    newBall.velocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyLinearVelocity);
+
+    { std::lock_guard<std::mutex> lk(m_stateMtx); m_ball = newBall; }
     return true;
 }
 
@@ -243,10 +246,14 @@ bool RobloxReader::ReadBallState()
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadGKState()
 {
-    m_gkState = {};
-    m_isAPG   = false;
+    GKState newGK{};
+    bool    newIsAPG = false;
 
-    if (!m_workspace || !m_localPlayer) return false;
+    if (!m_workspace || !m_localPlayer)
+    {
+        std::lock_guard<std::mutex> lk(m_stateMtx); m_gkState = newGK; m_isAPG = newIsAPG;
+        return false;
+    }
 
     bool foundInBools = false;
     uintptr_t boolsFolder = FindChild(m_workspace, "Bools");
@@ -258,52 +265,37 @@ bool RobloxReader::ReadGKState()
         uintptr_t apgPlayer = apgObj ? ReadPtr(apgObj + Offsets::Misc::Value) : 0;
         uintptr_t hpgPlayer = hpgObj ? ReadPtr(hpgObj + Offsets::Misc::Value) : 0;
 
-        if (apgPlayer == m_localPlayer)
-        {
-            m_gkState.isGK = true;
-            m_isAPG        = true;
-            foundInBools   = true;
-        }
-        else if (hpgPlayer == m_localPlayer)
-        {
-            m_gkState.isGK = true;
-            m_isAPG        = false;
-            foundInBools   = true;
-        }
+        if (apgPlayer == m_localPlayer)      { newGK.isGK = true; newIsAPG = true;  foundInBools = true; }
+        else if (hpgPlayer == m_localPlayer) { newGK.isGK = true; newIsAPG = false; foundInBools = true; }
     }
 
     if (!foundInBools)
     {
-        if (m_forceGK)
-        {
-            m_gkState.isGK = true;
-        }
+        if (m_forceGK) { newGK.isGK = true; }
         else
         {
+            std::lock_guard<std::mutex> lk(m_stateMtx); m_gkState = newGK; m_isAPG = newIsAPG;
             return false;
         }
     }
 
-    // Posição e rotação do GK (HumanoidRootPart)
     uintptr_t model = ReadPtr(m_localPlayer + Offsets::Player::ModelInstance);
-    if (!model) return false;
+    if (!model) { std::lock_guard<std::mutex> lk(m_stateMtx); m_gkState = newGK; m_isAPG = newIsAPG; return false; }
 
     uintptr_t hrp = FindChild(model, "HumanoidRootPart");
-    if (!hrp) return false;
+    if (!hrp)   { std::lock_guard<std::mutex> lk(m_stateMtx); m_gkState = newGK; m_isAPG = newIsAPG; return false; }
 
-    m_gkState.position = ReadPartPosition(hrp);
+    newGK.position = ReadPartPosition(hrp);
 
-    // Lê a matriz de rotação do Primitive para extrair Right/Up/Look
     uintptr_t hrpPrim = ReadPtr(hrp + Offsets::BasePart::Primitive);
     if (hrpPrim)
     {
         Matrix3x3 rot = ReadT<Matrix3x3>(hrpPrim + Offsets::Primitive::Rotation);
-        m_gkState.rightVec = rot.Right();
-        m_gkState.upVec    = rot.Up();
-        m_gkState.lookVec  = rot.Look();
+        newGK.rightVec = rot.Right();
+        newGK.upVec    = rot.Up();
+        newGK.lookVec  = rot.Look();
     }
 
-    // Se forçado (não encontrado na pasta Bools), determina gol por proximidade
     if (!foundInBools && m_forceGK)
     {
         uintptr_t awayGoal = FindChild(m_workspace, "AwayGoal");
@@ -312,64 +304,27 @@ bool RobloxReader::ReadGKState()
         Vector3 awayPos, homePos;
         bool hasAway = false, hasHome = false;
 
-        if (awayGoal)
-        {
-            uintptr_t primaryPart = ReadPtr(awayGoal + Offsets::Model::PrimaryPart);
-            if (!primaryPart)
-            {
-                for (uintptr_t child : GetChildren(awayGoal))
-                {
-                    if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
-                }
-            }
-            if (primaryPart)
-            {
-                uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
-                if (primitive)
-                {
-                    awayPos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
-                    hasAway = true;
-                }
-            }
-        }
+        auto tryGetPos = [&](uintptr_t goalModel, Vector3& outPos) -> bool {
+            if (!goalModel) return false;
+            uintptr_t pp = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
+            if (!pp) { for (uintptr_t c : GetChildren(goalModel)) { if (ReadPtr(c + Offsets::BasePart::Primitive)) { pp = c; break; } } }
+            if (!pp) return false;
+            uintptr_t prim = ReadPtr(pp + Offsets::BasePart::Primitive);
+            if (!prim) return false;
+            outPos = ReadT<Vector3>(prim + Offsets::Primitive::Position);
+            return true;
+        };
 
-        if (homeGoal)
-        {
-            uintptr_t primaryPart = ReadPtr(homeGoal + Offsets::Model::PrimaryPart);
-            if (!primaryPart)
-            {
-                for (uintptr_t child : GetChildren(homeGoal))
-                {
-                    if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
-                }
-            }
-            if (primaryPart)
-            {
-                uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
-                if (primitive)
-                {
-                    homePos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
-                    hasHome = true;
-                }
-            }
-        }
+        hasAway = tryGetPos(awayGoal, awayPos);
+        hasHome = tryGetPos(homeGoal, homePos);
 
         if (hasAway && hasHome)
-        {
-            float distAway = (m_gkState.position - awayPos).Length();
-            float distHome = (m_gkState.position - homePos).Length();
-            m_isAPG = (distAway < distHome);
-        }
-        else if (hasAway)
-        {
-            m_isAPG = true;
-        }
+            newIsAPG = (newGK.position - awayPos).Length() < (newGK.position - homePos).Length();
         else
-        {
-            m_isAPG = false;
-        }
+            newIsAPG = hasAway;
     }
 
+    { std::lock_guard<std::mutex> lk(m_stateMtx); m_gkState = newGK; m_isAPG = newIsAPG; }
     return true;
 }
 
@@ -382,10 +337,14 @@ bool RobloxReader::ReadGKState()
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadGoalState()
 {
-    m_goalState = {};
-    if (!m_workspace || !m_gkState.isGK) return false;
+    GoalState newGoal{};
 
-    // Tenta nome principal e alternativo (GoalDetector)
+    if (!m_workspace || !m_gkState.isGK)
+    {
+        std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal;
+        return false;
+    }
+
     uintptr_t goalModel = 0;
     if (m_isAPG)
     {
@@ -397,39 +356,29 @@ bool RobloxReader::ReadGoalState()
         goalModel = FindChild(m_workspace, "HomeGoal");
         if (!goalModel) goalModel = FindChild(m_workspace, "HomeGoalDetector");
     }
-    if (!goalModel) return false;
+    if (!goalModel) { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; return false; }
 
-    // Tenta PrimaryPart do Model primeiro
     uintptr_t primaryPart = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
-
-    // Se não tiver PrimaryPart, pega o primeiro BasePart filho com Primitive válido
     if (!primaryPart)
     {
         for (uintptr_t child : GetChildren(goalModel))
         {
-            uintptr_t prim = ReadPtr(child + Offsets::BasePart::Primitive);
-            if (prim)
-            {
-                primaryPart = child;
-                break;
-            }
+            if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
         }
     }
-
-    if (!primaryPart) return false;
+    if (!primaryPart) { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; return false; }
 
     uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
-    if (!primitive) return false;
+    if (!primitive) { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; return false; }
 
-    Vector3    pos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
-    Vector3    sz  = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
-    Matrix3x3  rot = ReadT<Matrix3x3>(primitive + Offsets::Primitive::Rotation);
+    newGoal.exists   = true;
+    newGoal.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    newGoal.size     = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
+    Matrix3x3 rot    = ReadT<Matrix3x3>(primitive + Offsets::Primitive::Rotation);
+    newGoal.rightVec = rot.Right();
+    newGoal.upVec    = rot.Up();
+    newGoal.lookVec  = rot.Look();
 
-    m_goalState.exists   = true;
-    m_goalState.position = pos;
-    m_goalState.size     = sz;
-    m_goalState.rightVec = rot.Right();
-    m_goalState.upVec    = rot.Up();
-    m_goalState.lookVec  = rot.Look();
+    { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; }
     return true;
 }

@@ -284,6 +284,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     g_rbx = new RobloxReader(g_mem);
     TryAttach();
 
+    // Controla se a thread de scan já foi iniciada (só inicia quando attach OK)
+    bool diveStarted = false;
+
     while (overlay.IsRunning())
     {
         if (!overlay.ProcessMessages()) break;
@@ -291,7 +294,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         overlay.SyncWithTarget();
         renderer.Resize(overlay.GetWidth(), overlay.GetHeight());
 
+        bool wasValid = g_mem.IsValid();
         TryAttach();
+        bool isValid  = g_mem.IsValid();
+
+        // Attach recém-obtido → inicia thread de scan
+        if (!wasValid && isValid)
+        {
+            g_dive.Stop();
+            g_dive.Start(g_rbx);
+            diveStarted = true;
+        }
+        // Conexão perdida → para thread de scan
+        else if (wasValid && !isValid)
+        {
+            g_dive.Stop();
+            diveStarted = false;
+        }
 
         bool robloxActive = IsRobloxForeground(overlay.GetTargetHWND());
         overlay.SetVisible(robloxActive);
@@ -307,9 +326,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             g_rbx->Update();
         }
 
-        // AutoDive — roda mesmo com menu fechado, só precisa de Roblox ativo
+        // Despacha tecla pendente do AutoDive — deve ser chamado na thread principal,
+        // com o foco correto, a cada frame (equivale ao task.wait(1/ScanRate) do Lua)
         if (g_mem.IsValid())
-            g_dive.Update(g_rbx->GetGKState(), g_rbx->GetBall(), g_rbx->GetGoal());
+            g_dive.DispatchPendingKeys(overlay.GetTargetHWND());
 
         renderer.BeginFrame();
 
@@ -324,6 +344,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         renderer.EndFrame();
     }
 
+    g_dive.Stop();
     delete g_rbx;
     renderer.Shutdown();
     g_mem.Detach();
