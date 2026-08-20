@@ -224,6 +224,23 @@ static void DrawMenu()
                     p.name.c_str(), p.health, p.maxHealth,
                     p.position.x, p.position.y, p.position.z);
             }
+
+            // Debug filhos do Players service
+            ImGui::Separator();
+            ImGui::Text("Filhos do Players service:");
+            if (g_rbx->GetPlayers_())
+            {
+                auto children = g_rbx->GetPlayersChildren();
+                ImGui::Text("  count raw: %zu", children.size());
+                for (size_t i = 0; i < children.size() && i < 10; i++)
+                {
+                    ImGui::Text("  [%zu] 0x%llX = '%s' class='%s'",
+                        i,
+                        (unsigned long long)children[i].addr,
+                        children[i].name.c_str(),
+                        children[i].cls.c_str());
+                }
+            }
         }
 
         // ---- Scanner de estrutura ----

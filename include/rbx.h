@@ -8,6 +8,12 @@
 // --------------------------------------------------------------------------
 // Estrutura com os dados de um jogador já processados
 // --------------------------------------------------------------------------
+struct ChildInfo {
+    uintptr_t   addr = 0;
+    std::string name;
+    std::string cls;
+};
+
 struct PlayerData {
     std::string name;
     float       health    = 0.f;
@@ -48,13 +54,27 @@ public:
     Vector2                        GetViewport()   const { return m_viewport; }
     uintptr_t                      GetLocalPlayer()const { return m_localPlayer; }
 
-    // Debug — expõe estado interno da cadeia de ponteiros
     uintptr_t  GetBase()        const { return m_base; }
     uintptr_t  GetDataModel()   const { return m_dataModel; }
     uintptr_t  GetWorkspace()   const { return m_workspace; }
     uintptr_t  GetCamera()      const { return m_camera; }
     uintptr_t  GetPlayers_()    const { return m_playersService; }
     uintptr_t  GetLocalPtr()    const { return m_localPlayer; }
+
+    // Debug: retorna info dos filhos diretos do Players service
+    std::vector<ChildInfo> GetPlayersChildren() const
+    {
+        std::vector<ChildInfo> result;
+        for (uintptr_t child : GetChildren(m_playersService))
+        {
+            ChildInfo ci;
+            ci.addr = child;
+            ci.name = GetInstanceName(child);
+            ci.cls  = GetInstanceClass(child);
+            result.push_back(ci);
+        }
+        return result;
+    }
 
 private:
     template<typename T>
@@ -74,7 +94,6 @@ private:
     uintptr_t FindChild(uintptr_t instance, const std::string& name) const;
     uintptr_t FindChildByClass(uintptr_t instance, const std::string& cls) const;
     Vector3   ReadPartPosition(uintptr_t basePart) const;
-
     Memory&                  m_mem;
     std::vector<PlayerData>  m_players;
     Matrix4x4                m_viewMatrix;
