@@ -90,19 +90,42 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
 }
 
 // --------------------------------------------------------------------------
-// PressKey — envia keydown + keyup via SendInput
+// PressKey — envia keydown + keyup via SendInput com scan code
+//
+// Jogos como Roblox leem input via GetAsyncKeyState, que é populado por
+// SendInput. Usamos KEYEVENTF_SCANCODE para maior compatibilidade — VK
+// puro pode ser ignorado por alguns hooks de input.
+//
+// Scan codes (Set 1):
+//   Q = 0x10,  E = 0x12,  F = 0x21,  Space = 0x39
 // --------------------------------------------------------------------------
+static WORD VkToScanCode(WORD vk)
+{
+    UINT sc = MapVirtualKeyW(vk, MAPVK_VK_TO_VSC);
+    return static_cast<WORD>(sc);
+}
+
 void AutoDive::PressKey(WORD vk)
 {
+    WORD sc = VkToScanCode(vk);
+
     INPUT inputs[2] = {};
 
-    inputs[0].type       = INPUT_KEYBOARD;
-    inputs[0].ki.wVk     = vk;
-    inputs[0].ki.dwFlags = 0;
+    // Key Down
+    inputs[0].type           = INPUT_KEYBOARD;
+    inputs[0].ki.wVk         = vk;
+    inputs[0].ki.wScan       = sc;
+    inputs[0].ki.dwFlags     = KEYEVENTF_SCANCODE;
+    inputs[0].ki.time        = 0;
+    inputs[0].ki.dwExtraInfo = 0;
 
-    inputs[1].type       = INPUT_KEYBOARD;
-    inputs[1].ki.wVk     = vk;
-    inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+    // Key Up
+    inputs[1].type           = INPUT_KEYBOARD;
+    inputs[1].ki.wVk         = vk;
+    inputs[1].ki.wScan       = sc;
+    inputs[1].ki.dwFlags     = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
+    inputs[1].ki.time        = 0;
+    inputs[1].ki.dwExtraInfo = 0;
 
     SendInput(2, inputs, sizeof(INPUT));
 }

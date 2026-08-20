@@ -95,6 +95,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 target_link_options(${PROJECT_NAME} PRIVATE
     /SUBSYSTEM:WINDOWS              # sem console window
     /MACHINE:X64                    # garante x64
+    /MANIFEST:EMBED                 # embute o manifesto no .exe
+    /MANIFESTINPUT:${CMAKE_SOURCE_DIR}/rss-external.manifest  # UAC requireAdministrator
     $<$<CONFIG:Release>:/LTCG>      # link-time code generation (combina com /GL)
     $<$<CONFIG:Release>:/OPT:REF>   # remove funções não referenciadas
     $<$<CONFIG:Release>:/OPT:ICF>   # mescla funções idênticas
