@@ -44,10 +44,6 @@ class RobloxReader;
 
 // --------------------------------------------------------------------------
 // AutoDive
-//
-// Thread dedicada ao scan — lê memória e decide dive sem bloquear o render.
-// PressKey() apenas armazena a tecla num atomic; a thread principal chama
-// DispatchPendingKeys() a cada frame para enviar via SendInput.
 // --------------------------------------------------------------------------
 class AutoDive {
 public:
@@ -66,21 +62,14 @@ public:
         float cooldownSec     = 1.2f;
         float minBallSpeed    = 8.f;
         float goalMargin      = 2.f;
-        int   simSteps        = 45;
-        float simDt           = 0.035f;
-        float gravity         = 156.96f;  // workspace.Gravity * 0.8, igual ao Lua
-        int   scanRate        = 240;    // scans por segundo
+        int   scanRate        = 240;
     };
 
     Config cfg;
 
-    // Inicia thread de scan. Chame quando attach OK.
     void Start(RobloxReader* rbx);
-    // Para thread. Chame ao desativar ou ao fechar.
     void Stop();
 
-    // Chamado pela thread principal a cada frame (antes do Sleep).
-    // Despacha tecla pendente via SendInput — deve vir da thread com foco de UI.
     void DispatchPendingKeys(HWND targetHwnd)
     {
         WORD vk = static_cast<WORD>(m_pendingKey.exchange(0));
@@ -91,20 +80,20 @@ public:
     const char* LastDiveKey() const { return m_lastKey; }
     bool        DiveFired()   const { return m_firedThisFrame; }
 
-    // Debug
     struct DebugInfo {
-        float distToBall  = 0.f;
-        float relPosX     = 0.f;
-        float relPosY     = 0.f;
-        float relPosZ     = 0.f;
-        float impactX     = 0.f;  // ponto de impacto projetado no plano do gol (X)
-        float impactY     = 0.f;  // ponto de impacto projetado no plano do gol (Y)
-        bool  approaching = false;
+        float       distToBall  = 0.f;
+        float       relPosX     = 0.f;
+        float       relPosY     = 0.f;
+        float       relPosZ     = 0.f;
+        float       impactX     = 0.f;
+        float       impactY     = 0.f;
+        bool        approaching = false;
         std::string blockReason;
+    };
+
     mutable DebugInfo debug;
 
 private:
-    // Envia key down+up via SendInput (thread principal)
     static void SendVKey(HWND targetHwnd, WORD vk)
     {
         if (targetHwnd && IsWindow(targetHwnd) && GetForegroundWindow() != targetHwnd)
@@ -123,7 +112,6 @@ private:
         SendInput(2, inputs, sizeof(INPUT));
     }
 
-    // Armazena tecla — chamado pela ScanLoop (thread de background)
     void PressKey(WORD vk) { m_pendingKey.store(vk); }
 
     static Vector3 PointToObjectSpace(const Vector3& origin,
@@ -133,20 +121,14 @@ private:
                                       const Vector3& worldPos);
 
     bool IsBallTargetingGoal(const BallState& ball, const GoalState& goal) const;
-
-    // Loop da thread de scan
     void ScanLoop(RobloxReader* rbx);
-
-    // Lógica de decisão (chamada pelo ScanLoop com cópias locais)
     void Evaluate(const GKState& gk, const BallState& ball, const GoalState& goal);
 
     std::chrono::steady_clock::time_point m_lastDiveTime;
     bool        m_firedThisFrame = false;
     const char* m_lastKey        = "-";
 
-    // Tecla pendente: escrita pelo ScanLoop, lida pela thread principal
     std::atomic<uint16_t> m_pendingKey{ 0 };
-
-    std::thread       m_thread;
-    std::atomic<bool> m_running{ false };
+    std::thread           m_thread;
+    std::atomic<bool>     m_running{ false };
 };
