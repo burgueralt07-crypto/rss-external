@@ -17,6 +17,7 @@ struct GKState {
 // --------------------------------------------------------------------------
 struct BallState {
     bool    exists   = false;
+    bool    isWelded = false;
     Vector3 position;
     Vector3 velocity; // AssemblyLinearVelocity
 };
@@ -43,6 +44,7 @@ class AutoDive {
 public:
     struct Config {
         bool  enabled         = false;
+        bool  forceGK         = false;  // Forçar estado de GK mesmo sem pasta Bools
         float triggerDistance = 40.f;  // studs — distância máxima pra ativar
         float reactionDelay   = 0.05f; // segundos de delay (simula reação)
         float cooldownSec     = 1.2f;  // cooldown entre dives
@@ -60,18 +62,18 @@ public:
     struct DebugInfo {
         float distToBall   = 0.f;
         float approachDot  = 0.f;
-        float predictedX   = 0.f; // posição X prevista da bola na linha do gol
+        float predictedX   = 0.f; // posição lateral prevista da bola na linha do gol
         float goalCenterX  = 0.f;
         float lateralOffset = 0.f;
         bool  approaching  = false;
         std::string blockReason; // por que não deu dive
     } debug;
 
-private:
-    // Prediz posição X (ou Z) da bola quando ela chega na linha Z (ou X) do gol
+// Exposto para poder usar no ESP (linhas de ajuda visual se quisermos)
     float PredictBallAtGoalLine(const BallState& ball, const GoalState& goal) const;
 
-    bool  BallApproaching(const GKState& gk, const BallState& ball) const;
+private:
+    bool  BallApproaching(const GKState& gk, const BallState& ball, const GoalState& goal) const;
     void  PressKey(WORD vk);
 
     std::chrono::steady_clock::time_point m_lastDiveTime;

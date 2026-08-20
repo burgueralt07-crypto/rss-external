@@ -194,6 +194,7 @@ static void DrawMenu()
         if (g_dive.cfg.enabled)
         {
             ImGui::Indent();
+            ImGui::Checkbox("Forcar GK (Ignorar pasta Bools)", &g_dive.cfg.forceGK);
             ImGui::SliderFloat("Trigger dist",    &g_dive.cfg.triggerDistance,  5.f,  80.f, "%.0f studs");
             ImGui::SliderFloat("Reaction delay",  &g_dive.cfg.reactionDelay,    0.0f, 0.3f, "%.2f s");
             ImGui::SliderFloat("Cooldown",         &g_dive.cfg.cooldownSec,      0.8f, 3.0f, "%.1f s");
@@ -293,7 +294,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         overlay.SetClickThrough(!g_menuOpen);
 
         if (g_mem.IsValid())
+        {
+            g_rbx->SetForceGK(g_dive.cfg.forceGK);
             g_rbx->Update();
+        }
 
         // AutoDive — roda mesmo com menu fechado, só precisa de Roblox ativo
         if (g_mem.IsValid())

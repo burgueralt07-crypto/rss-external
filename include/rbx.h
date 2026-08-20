@@ -26,6 +26,7 @@ public:
     const BallState&               GetBall()       const { return m_ball; }
     const GKState&                 GetGKState()    const { return m_gkState; }
     const GoalState&               GetGoal()       const { return m_goalState; }
+    void                           SetForceGK(bool force) { m_forceGK = force; }
 
 private:
     template<typename T>
@@ -60,6 +61,7 @@ private:
     uintptr_t                m_playersService = 0;
     uintptr_t                m_localPlayer    = 0;
     bool                     m_isAPG          = false; // true = APG (AwayGoal), false = HPG (HomeGoal)
+    bool                     m_forceGK        = false;
     BallState                m_ball;
     GKState                  m_gkState;
     GoalState                m_goalState;

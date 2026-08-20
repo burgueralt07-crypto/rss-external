@@ -1,5 +1,6 @@
 #include "rbx.h"
 #include <algorithm>
+#include <cctype>
 
 // --------------------------------------------------------------------------
 // ReadRbxString — baseado em memory_t::read_string do base de referência
@@ -181,7 +182,6 @@ bool RobloxReader::Update()
         pd.health    = ReadT<float>(humanoid + Offsets::Humanoid::Health);
         pd.maxHealth = ReadT<float>(humanoid + Offsets::Humanoid::MaxHealth);
         pd.isAlive   = pd.health > 0.f;
-        // Não filtra por HP — inclui todos os players com personagem spawned
 
         // HumanoidRootPart
         uintptr_t hrp = ReadPtr(humanoid + Offsets::Humanoid::HumanoidRootPart);
@@ -201,15 +201,30 @@ bool RobloxReader::Update()
 }
 
 // --------------------------------------------------------------------------
-// ReadBallState — lê posição e velocidade de game.Workspace.ball
+// ReadBallState — lê posição e velocidade da bola no Workspace (robusto)
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadBallState()
 {
     m_ball = {};
     if (!m_workspace) return false;
 
-    uintptr_t ballInst = FindChild(m_workspace, "ball");
+    // Busca pela bola com comparação case-insensitive
+    uintptr_t ballInst = 0;
+    for (uintptr_t child : GetChildren(m_workspace))
+    {
+        std::string name = GetInstanceName(child);
+        std::string lowerName = name;
+        std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+        if (lowerName == "ball" || lowerName == "football" || lowerName == "soccerball" || lowerName == "soccer_ball")
+        {
+            ballInst = child;
+            break;
+        }
+    }
+
     if (!ballInst) return false;
+
+    m_ball.isWelded = (FindChild(ballInst, "playerWeld") != 0);
 
     uintptr_t primitive = ReadPtr(ballInst + Offsets::BasePart::Primitive);
     if (!primitive) return false;
@@ -224,8 +239,7 @@ bool RobloxReader::ReadBallState()
 // ReadGKState — verifica se o local player é goleiro
 //
 // APG = Away PenaltyGoalie, HPG = Home PenaltyGoalie
-// São ObjectValues em Workspace.Bools — .Value aponta pro Player instance.
-// Offsets::Misc::Value (0xb8) é o offset padrão para ObjectValue.Value.
+// Se m_forceGK estiver ativado, assume que somos GK e determina gol mais próximo.
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadGKState()
 {
@@ -234,24 +248,43 @@ bool RobloxReader::ReadGKState()
 
     if (!m_workspace || !m_localPlayer) return false;
 
+    bool foundInBools = false;
     uintptr_t boolsFolder = FindChild(m_workspace, "Bools");
-    if (!boolsFolder) return false;
+    if (boolsFolder)
+    {
+        uintptr_t apgObj = FindChild(boolsFolder, "APG");
+        uintptr_t hpgObj = FindChild(boolsFolder, "HPG");
 
-    uintptr_t apgObj = FindChild(boolsFolder, "APG");
-    uintptr_t hpgObj = FindChild(boolsFolder, "HPG");
+        uintptr_t apgPlayer = apgObj ? ReadPtr(apgObj + Offsets::Misc::Value) : 0;
+        uintptr_t hpgPlayer = hpgObj ? ReadPtr(hpgObj + Offsets::Misc::Value) : 0;
 
-    uintptr_t apgPlayer = apgObj ? ReadPtr(apgObj + Offsets::Misc::Value) : 0;
-    uintptr_t hpgPlayer = hpgObj ? ReadPtr(hpgObj + Offsets::Misc::Value) : 0;
+        if (apgPlayer == m_localPlayer)
+        {
+            m_gkState.isGK = true;
+            m_isAPG        = true;
+            foundInBools   = true;
+        }
+        else if (hpgPlayer == m_localPlayer)
+        {
+            m_gkState.isGK = true;
+            m_isAPG        = false;
+            foundInBools   = true;
+        }
+    }
 
-    bool isAPG = (apgPlayer == m_localPlayer);
-    bool isHPG = (hpgPlayer == m_localPlayer);
+    if (!foundInBools)
+    {
+        if (m_forceGK)
+        {
+            m_gkState.isGK = true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
-    m_gkState.isGK = (isAPG || isHPG);
-    m_isAPG        = isAPG;
-
-    if (!m_gkState.isGK) return false;
-
-    // Posição do GK (só precisa de posição agora — não mais de rotation)
+    // Posição do GK
     uintptr_t model = ReadPtr(m_localPlayer + Offsets::Player::ModelInstance);
     if (!model) return false;
 
@@ -259,6 +292,74 @@ bool RobloxReader::ReadGKState()
     if (!hrp) return false;
 
     m_gkState.position = ReadPartPosition(hrp);
+
+    // Se forçado (não encontrado na pasta Bools), determina gol por proximidade
+    if (!foundInBools && m_forceGK)
+    {
+        uintptr_t awayGoal = FindChild(m_workspace, "AwayGoal");
+        uintptr_t homeGoal = FindChild(m_workspace, "HomeGoal");
+
+        Vector3 awayPos, homePos;
+        bool hasAway = false, hasHome = false;
+
+        if (awayGoal)
+        {
+            uintptr_t primaryPart = ReadPtr(awayGoal + Offsets::Model::PrimaryPart);
+            if (!primaryPart)
+            {
+                for (uintptr_t child : GetChildren(awayGoal))
+                {
+                    if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
+                }
+            }
+            if (primaryPart)
+            {
+                uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
+                if (primitive)
+                {
+                    awayPos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+                    hasAway = true;
+                }
+            }
+        }
+
+        if (homeGoal)
+        {
+            uintptr_t primaryPart = ReadPtr(homeGoal + Offsets::Model::PrimaryPart);
+            if (!primaryPart)
+            {
+                for (uintptr_t child : GetChildren(homeGoal))
+                {
+                    if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
+                }
+            }
+            if (primaryPart)
+            {
+                uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
+                if (primitive)
+                {
+                    homePos = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+                    hasHome = true;
+                }
+            }
+        }
+
+        if (hasAway && hasHome)
+        {
+            float distAway = (m_gkState.position - awayPos).Length();
+            float distHome = (m_gkState.position - homePos).Length();
+            m_isAPG = (distAway < distHome);
+        }
+        else if (hasAway)
+        {
+            m_isAPG = true;
+        }
+        else
+        {
+            m_isAPG = false;
+        }
+    }
+
     return true;
 }
 
@@ -266,15 +367,12 @@ bool RobloxReader::ReadGKState()
 // ReadGoalState — lê posição e tamanho do gol que o GK defende
 //
 // APG defende AwayGoal, HPG defende HomeGoal.
-// O gol é um Model no Workspace. Lemos o PrimaryPart ou o primeiro BasePart.
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadGoalState()
 {
     m_goalState = {};
     if (!m_workspace || !m_gkState.isGK) return false;
 
-    // APG = goleiro do time Away → defende AwayGoal
-    // HPG = goleiro do time Home → defende HomeGoal
     const std::string goalName = m_isAPG ? "AwayGoal" : "HomeGoal";
 
     uintptr_t goalModel = FindChild(m_workspace, goalName);

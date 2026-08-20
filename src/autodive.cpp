@@ -2,58 +2,80 @@
 #include <cmath>
 
 // --------------------------------------------------------------------------
-// BallApproaching — verifica se a bola está se aproximando do GK
+// BallApproaching — verifica se a bola está se aproximando do gol que o GK defende
 // --------------------------------------------------------------------------
-bool AutoDive::BallApproaching(const GKState& gk, const BallState& ball) const
+bool AutoDive::BallApproaching(const GKState& gk, const BallState& ball, const GoalState& goal) const
 {
-    Vector3 toBall = ball.position - gk.position;
-    float   dist   = toBall.Length();
+    if (!ball.exists || !goal.exists) return false;
 
-    if (dist < 0.001f) return false;
+    // Se o gol é mais largo no eixo X (orientação padrão do RSS)
+    if (goal.size.x >= goal.size.z)
+    {
+        float dz = goal.position.z - ball.position.z;
+        float vz = ball.velocity.z;
 
-    // Normaliza
-    Vector3 dir    = toBall * (1.f / dist);
+        if (std::fabsf(vz) < cfg.approachMinSpeed) return false;
 
-    // Dot entre velocidade da bola e direção bola→GK
-    // Se positivo, a bola está se movendo em direção ao GK
-    Vector3 toGK   = { -dir.x, -dir.y, -dir.z };
-    float   dot    = ball.velocity.Dot(toGK);
+        // Se dz e vz têm o mesmo sinal, a bola está indo em direção à linha do gol (Z)
+        return (dz * vz > 0.f);
+    }
+    else // O gol é mais largo no eixo Z (campo orientado em X)
+    {
+        float dx = goal.position.x - ball.position.x;
+        float vx = ball.velocity.x;
 
-    return dot > cfg.approachMinSpeed;
+        if (std::fabsf(vx) < cfg.approachMinSpeed) return false;
+
+        // Se dx e vx têm o mesmo sinal, a bola está indo em direção à linha do gol (X)
+        return (dx * vx > 0.f);
+    }
 }
 
 // --------------------------------------------------------------------------
 // PredictBallAtGoalLine
 //
-// O campo do RSS é orientado no eixo Z — o gol fica numa posição Z fixa.
-// Prevê a posição X da bola quando ela cruzar o Z do gol.
-//
-// Se a velocidade Z for quase zero, usa a posição X atual da bola.
+// Prevê a posição lateral da bola quando ela cruzar a linha de gol.
+// Suporta de forma robusta campos orientados tanto em Z quanto em X.
 // --------------------------------------------------------------------------
 float AutoDive::PredictBallAtGoalLine(const BallState& ball, const GoalState& goal) const
 {
-    float goalZ = goal.position.z;
-    float dz    = goalZ - ball.position.z;
+    if (!ball.exists || !goal.exists) return 0.f;
 
-    // Velocidade Z da bola
-    float vz = ball.velocity.z;
-
-    if (std::fabsf(vz) < 0.5f)
+    // Se o gol é mais largo no eixo X (campo orientado em Z, gol no plano Z fixo)
+    if (goal.size.x >= goal.size.z)
     {
-        // Bola quase sem velocidade Z — usa posição X atual
-        return ball.position.x;
+        float goalZ = goal.position.z;
+        float dz    = goalZ - ball.position.z;
+        float vz    = ball.velocity.z;
+
+        if (std::fabsf(vz) < 0.5f)
+        {
+            return ball.position.x;
+        }
+
+        float t = dz / vz;
+        if (t < 0.f) t = 0.f;
+        if (t > 3.f) t = 3.f;
+
+        return ball.position.x + ball.velocity.x * t;
     }
+    else // O gol é mais largo no eixo Z (campo orientado em X, gol no plano X fixo)
+    {
+        float goalX = goal.position.x;
+        float dx    = goalX - ball.position.x;
+        float vx    = ball.velocity.x;
 
-    // Tempo até cruzar a linha Z do gol
-    float t = dz / vz;
+        if (std::fabsf(vx) < 0.5f)
+        {
+            return ball.position.z;
+        }
 
-    // Se tempo negativo, a bola já passou ou está indo pra direção errada
-    // Clamp: máximo 3 segundos de predição pra não exagerar
-    if (t < 0.f) t = 0.f;
-    if (t > 3.f) t = 3.f;
+        float t = dx / vx;
+        if (t < 0.f) t = 0.f;
+        if (t > 3.f) t = 3.f;
 
-    // Posição X prevista
-    return ball.position.x + ball.velocity.x * t;
+        return ball.position.z + ball.velocity.z * t;
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -126,7 +148,16 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
     Vector3 toBall = ball.position - gk.position;
     float   dist   = toBall.Length();
     debug.distToBall = dist;
-    debug.goalCenterX = goal.position.x;
+
+    // Pega o centro do gol dependendo da orientação
+    if (goal.size.x >= goal.size.z)
+    {
+        debug.goalCenterX = goal.position.x;
+    }
+    else
+    {
+        debug.goalCenterX = goal.position.z;
+    }
 
     if (dist > 0.001f)
     {
@@ -135,7 +166,7 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
         debug.approachDot = ball.velocity.Dot(toGK);
     }
 
-    debug.approaching = BallApproaching(gk, ball);
+    debug.approaching = BallApproaching(gk, ball, goal);
 
     // --- Verifica distância ---
     if (dist > cfg.triggerDistance)
@@ -152,15 +183,24 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
     }
 
     // --- Prediz lado ---
-    float predictedX = PredictBallAtGoalLine(ball, goal);
-    float lateral    = predictedX - goal.position.x; // positivo = direita do gol, negativo = esquerda
+    float predictedLateral = PredictBallAtGoalLine(ball, goal);
+    float lateral = 0.f;
 
-    debug.predictedX    = predictedX;
+    if (goal.size.x >= goal.size.z)
+    {
+        lateral = predictedLateral - goal.position.x; // positivo = direita do gol, negativo = esquerda
+    }
+    else
+    {
+        lateral = predictedLateral - goal.position.z;
+    }
+
+    debug.predictedX    = predictedLateral;
     debug.lateralOffset = lateral;
 
     // Threshold mínimo — ignora se a bola vai pro centro do gol
     // Usa metade da largura do gol como referência para "lado"
-    float halfGoalWidth = goal.size.x * 0.5f;
+    float halfGoalWidth = (goal.size.x >= goal.size.z) ? goal.size.x * 0.5f : goal.size.z * 0.5f;
     float threshold     = halfGoalWidth * 0.15f; // 15% da metade = evita false positives centrais
     if (threshold < 0.5f) threshold = 0.5f;
 
