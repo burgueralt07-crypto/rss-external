@@ -181,7 +181,7 @@ bool RobloxReader::Update()
         pd.health    = ReadT<float>(humanoid + Offsets::Humanoid::Health);
         pd.maxHealth = ReadT<float>(humanoid + Offsets::Humanoid::MaxHealth);
         pd.isAlive   = pd.health > 0.f;
-        if (!pd.isAlive) continue;
+        // Não filtra por HP — inclui todos os players com personagem spawned
 
         // HumanoidRootPart
         uintptr_t hrp = ReadPtr(humanoid + Offsets::Humanoid::HumanoidRootPart);

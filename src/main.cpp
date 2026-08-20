@@ -89,16 +89,21 @@ static void DrawESP(ImDrawList* dl,
 {
     if (!g_cfg.enabled || players.empty()) return;
 
-    constexpr float CHAR_HEIGHT = 5.0f;
+    // HumanoidRootPart fica na cintura (~metade da altura do personagem)
+    // Personagem Roblox tem ~5 studs de altura total
+    // HRP está a ~2.5 studs do chão → pés em -2.5, cabeça em +2.8
+    constexpr float OFFSET_TOP    =  2.8f;  // da cintura até o topo da cabeça
+    constexpr float OFFSET_BOTTOM = -2.5f;  // da cintura até os pés
 
     for (const auto& p : players)
     {
+        // Distância (0,0,0 se localPos não disponível — ignora filtro)
         Vector3 diff = p.position - localPos;
         float   dist = diff.Length();
-        if (dist > g_cfg.maxDistance) continue;
+        if (localPos.x != 0.f && dist > g_cfg.maxDistance) continue;
 
-        Vector3 posTop    = { p.position.x, p.position.y + CHAR_HEIGHT, p.position.z };
-        Vector3 posBottom = { p.position.x, p.position.y - 0.5f,        p.position.z };
+        Vector3 posTop    = { p.position.x, p.position.y + OFFSET_TOP,    p.position.z };
+        Vector3 posBottom = { p.position.x, p.position.y + OFFSET_BOTTOM, p.position.z };
 
         Vector2 screenCenter, screenTop, screenBottom;
         if (!WorldToScreen(viewMatrix, p.position, viewport, screenCenter)) continue;
@@ -106,47 +111,76 @@ static void DrawESP(ImDrawList* dl,
         if (!WorldToScreen(viewMatrix, posBottom,   viewport, screenBottom)) continue;
 
         float boxH = screenBottom.y - screenTop.y;
-        if (boxH < 5.f) continue;
+        if (boxH < 4.f || boxH > 2000.f) continue; // ignora se muito pequeno ou gigante
 
-        float boxW = boxH * 0.45f;
+        float boxW = boxH * 0.4f;
         float x1 = screenCenter.x - boxW * 0.5f;
         float y1 = screenTop.y;
         float x2 = screenCenter.x + boxW * 0.5f;
         float y2 = screenBottom.y;
 
-        // Box
+        // Cor da box baseada no HP
+        ImU32 boxColor = p.maxHealth > 0.f
+            ? HealthColor(p.health, p.maxHealth)
+            : IM_COL32(255, 255, 255, 220);
+
+        // Box — corner style (4 cantos ao invés de retângulo completo)
         if (g_cfg.showBox)
         {
-            dl->AddRect(ImVec2(x1-1,y1-1), ImVec2(x2+1,y2+1), IM_COL32(0,0,0,200), 0.f, 0, 3.f);
-            dl->AddRect(ImVec2(x1,  y1  ), ImVec2(x2,  y2  ), IM_COL32(255,255,255,220), 0.f, 0, 1.5f);
+            float cw = boxW * 0.25f; // tamanho do canto
+            float ch = boxH * 0.20f;
+
+            // Outline preta
+            dl->AddRect(ImVec2(x1-1, y1-1), ImVec2(x2+1, y2+1), IM_COL32(0,0,0,180), 0.f, 0, 3.f);
+
+            // Cantos coloridos
+            // Canto superior esquerdo
+            dl->AddLine(ImVec2(x1, y1),      ImVec2(x1+cw, y1),    boxColor, 2.f);
+            dl->AddLine(ImVec2(x1, y1),      ImVec2(x1, y1+ch),    boxColor, 2.f);
+            // Canto superior direito
+            dl->AddLine(ImVec2(x2-cw, y1),   ImVec2(x2, y1),       boxColor, 2.f);
+            dl->AddLine(ImVec2(x2, y1),      ImVec2(x2, y1+ch),    boxColor, 2.f);
+            // Canto inferior esquerdo
+            dl->AddLine(ImVec2(x1, y2-ch),   ImVec2(x1, y2),       boxColor, 2.f);
+            dl->AddLine(ImVec2(x1, y2),      ImVec2(x1+cw, y2),    boxColor, 2.f);
+            // Canto inferior direito
+            dl->AddLine(ImVec2(x2, y2-ch),   ImVec2(x2, y2),       boxColor, 2.f);
+            dl->AddLine(ImVec2(x2-cw, y2),   ImVec2(x2, y2),       boxColor, 2.f);
         }
 
-        // Barra de vida
+        // Barra de vida (lado esquerdo)
         if (g_cfg.showHealth && p.maxHealth > 0.f)
         {
             float hpRatio = p.health / p.maxHealth;
             float barX    = x1 - 5.f;
-            float barFill = y1 + (y2 - y1) * (1.f - hpRatio);
+            float barFill = y2 - (y2 - y1) * hpRatio; // cresce de baixo pra cima
+
+            // Fundo
             dl->AddRectFilled(ImVec2(barX-1, y1-1), ImVec2(barX+3, y2+1), IM_COL32(0,0,0,180));
-            dl->AddRectFilled(ImVec2(barX,   barFill), ImVec2(barX+2, y2), HealthColor(p.health, p.maxHealth));
+            // Preenchimento
+            dl->AddRectFilled(ImVec2(barX, barFill), ImVec2(barX+2, y2), HealthColor(p.health, p.maxHealth));
         }
 
-        // Nome
+        // Nome (acima da box)
         if (g_cfg.showName && !p.name.empty())
         {
             ImVec2 sz = ImGui::CalcTextSize(p.name.c_str());
-            dl->AddText(ImVec2(screenCenter.x - sz.x * 0.5f, y1 - sz.y - 2.f),
+            // Sombra
+            dl->AddText(ImVec2(screenCenter.x - sz.x*0.5f + 1, y1 - sz.y - 3.f + 1),
+                        IM_COL32(0,0,0,200), p.name.c_str());
+            // Texto
+            dl->AddText(ImVec2(screenCenter.x - sz.x*0.5f, y1 - sz.y - 3.f),
                         IM_COL32(255,255,255,255), p.name.c_str());
         }
 
-        // Distância
-        if (g_cfg.showDistance)
+        // Distância (abaixo da box)
+        if (g_cfg.showDistance && localPos.x != 0.f)
         {
             char buf[32];
             std::snprintf(buf, sizeof(buf), "%.0fm", dist);
             ImVec2 sz = ImGui::CalcTextSize(buf);
-            dl->AddText(ImVec2(screenCenter.x - sz.x * 0.5f, y2 + 2.f),
-                        IM_COL32(200,200,200,220), buf);
+            dl->AddText(ImVec2(screenCenter.x - sz.x*0.5f, y2 + 2.f),
+                        IM_COL32(180,180,180,220), buf);
         }
     }
 }
