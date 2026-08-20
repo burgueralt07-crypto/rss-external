@@ -230,12 +230,28 @@ static void DrawMenu()
         if (ImGui::CollapsingHeader("Scanner (FindChild)") && g_rbx->GetDataModel())
         {
             uintptr_t dm = g_rbx->GetDataModel();
-            ImGui::Text("Escaneando DataModel 0x%llX", (unsigned long long)dm);
-            ImGui::Text("Procurando vetor de filhos com nome 'Players'...");
+            ImGui::Text("DataModel: 0x%llX", (unsigned long long)dm);
             ImGui::Separator();
 
-            // Varre offsets 0x60 a 0xC0 procurando vetor begin/end valido
-            for (int off = 0x60; off <= 0xC0; off += 8)
+            // Dump raw de todos os ponteiros do DataModel (0x00 a 0x200)
+            if (ImGui::CollapsingHeader("Raw ptrs DataModel"))
+            {
+                for (int off = 0x00; off <= 0x200; off += 8)
+                {
+                    uintptr_t v = 0;
+                    g_mem.ReadRaw(dm + off, &v, 8);
+                    if (v > 0x10000000000ULL && v < 0x7FFFFFFFFFFF ULL)
+                        ImGui::Text("+0x%03X = 0x%llX", off, (unsigned long long)v);
+                }
+            }
+
+            ImGui::Separator();
+            ImGui::Text("Procurando vetor begin/end (range 0x00-0x300):");
+
+            // Varre range maior com múltiplos offsets de NameContainer
+            static const int nameOffsets[] = { 0x60, 0x68, 0x70, 0x78, 0x80, 0x88 };
+
+            for (int off = 0x00; off <= 0x300; off += 8)
             {
                 uintptr_t begin = 0, end = 0;
                 g_mem.ReadRaw(dm + off,     &begin, 8);
@@ -243,38 +259,42 @@ static void DrawMenu()
 
                 if (!begin || !end || end <= begin) continue;
                 size_t cnt = (end - begin) / 8;
-                if (cnt == 0 || cnt > 64) continue;
+                if (cnt == 0 || cnt > 128) continue;
+                // ponteiros devem parecer endereços userspace válidos
+                if (begin < 0x10000 || begin > 0x7FFFFFFFFFFF ULL) continue;
 
-                // Tenta ler nome do primeiro filho
+                // Tenta ler nome do primeiro filho com vários offsets
                 uintptr_t firstChild = 0;
                 g_mem.ReadRaw(begin, &firstChild, 8);
-                if (!firstChild) continue;
+                if (!firstChild || firstChild < 0x10000) continue;
 
-                // Testa NameContainer em +0x70
-                uintptr_t nc = 0;
-                g_mem.ReadRaw(firstChild + 0x70, &nc, 8);
-                if (!nc) continue;
+                for (int noff : nameOffsets)
+                {
+                    uintptr_t nc = 0;
+                    g_mem.ReadRaw(firstChild + noff, &nc, 8);
+                    if (!nc || nc < 0x10000) continue;
 
-                // Tenta ler string
-                size_t slen = 0, scap = 0;
-                g_mem.ReadRaw(nc + 0x10, &slen, 8);
-                g_mem.ReadRaw(nc + 0x18, &scap, 8);
-                if (slen == 0 || slen > 32) continue;
+                    size_t slen = 0, scap = 0;
+                    g_mem.ReadRaw(nc + 0x10, &slen, 8);
+                    g_mem.ReadRaw(nc + 0x18, &scap, 8);
+                    if (slen == 0 || slen > 32) continue;
 
-                char nameBuf[64]{};
-                uintptr_t dataPtr = (scap > 15) ? 0 : nc;
-                if (scap > 15) g_mem.ReadRaw(nc, &dataPtr, 8);
-                if (!dataPtr) continue;
-                g_mem.ReadRaw(dataPtr, nameBuf, slen);
+                    char nameBuf[64]{};
+                    uintptr_t dataPtr = nc;
+                    if (scap > 15) g_mem.ReadRaw(nc, &dataPtr, 8);
+                    if (!dataPtr || dataPtr < 0x10000) continue;
+                    g_mem.ReadRaw(dataPtr, nameBuf, slen);
 
-                // Verifica se é ASCII printável
-                bool ascii = true;
-                for (size_t k = 0; k < slen; k++)
-                    if (nameBuf[k] < 0x20 || nameBuf[k] > 0x7e) { ascii = false; break; }
-                if (!ascii) continue;
+                    bool ascii = true;
+                    for (size_t k = 0; k < slen; k++)
+                        if ((unsigned char)nameBuf[k] < 0x20 || (unsigned char)nameBuf[k] > 0x7e)
+                            { ascii = false; break; }
+                    if (!ascii) continue;
 
-                ImGui::TextColored(ImVec4(1,1,0,1),
-                    "+0x%02X: cnt=%zu filho[0]='%s'", off, cnt, nameBuf);
+                    ImGui::TextColored(ImVec4(0,1,1,1),
+                        "vec+0x%03X nameOff+0x%02X cnt=%zu [0]='%s'",
+                        off, noff, cnt, nameBuf);
+                }
             }
         }
     }
