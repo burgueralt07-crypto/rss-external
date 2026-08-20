@@ -284,8 +284,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     g_rbx = new RobloxReader(g_mem);
     TryAttach();
 
-    // Controla se a thread de scan já foi iniciada (só inicia quando attach OK)
+    // Se já conectou antes do loop, inicia a thread imediatamente
     bool diveStarted = false;
+    if (g_mem.IsValid())
+    {
+        g_dive.Start(g_rbx);
+        diveStarted = true;
+    }
 
     while (overlay.IsRunning())
     {
