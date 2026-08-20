@@ -275,13 +275,15 @@ static void DrawMenu()
                     if (!nc || nc < 0x10000) continue;
 
                     size_t slen = 0, scap = 0;
-                    g_mem.ReadRaw(nc + 0x10, &slen, 8);
-                    g_mem.ReadRaw(nc + 0x18, &scap, 8);
+                    // NameContainer + 0x8 = string (Instance::Name = 0x8)
+                    uintptr_t strAddr = nc + 0x8;
+                    g_mem.ReadRaw(strAddr + 0x10, &slen, 8);
+                    g_mem.ReadRaw(strAddr + 0x18, &scap, 8);
                     if (slen == 0 || slen > 32) continue;
 
                     char nameBuf[64]{};
-                    uintptr_t dataPtr = nc;
-                    if (scap > 15) g_mem.ReadRaw(nc, &dataPtr, 8);
+                    uintptr_t dataPtr = strAddr;
+                    if (scap > 15) g_mem.ReadRaw(strAddr, &dataPtr, 8);
                     if (!dataPtr || dataPtr < 0x10000) continue;
                     g_mem.ReadRaw(dataPtr, nameBuf, slen);
 

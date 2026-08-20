@@ -72,7 +72,7 @@ uintptr_t RobloxReader::FindChild(uintptr_t instance, const std::string& name) c
         uintptr_t nameContainer = ReadPtr(child + Offsets::Instance::NameContainer);
         if (!nameContainer) continue;
 
-        std::string childName = ReadRbxString(nameContainer);
+        std::string childName = ReadRbxString(nameContainer + Offsets::Instance::Name);
         if (childName == name)
             return child;
     }
@@ -155,8 +155,7 @@ bool RobloxReader::Update()
 
         uintptr_t nameContainer = ReadPtr(playerInst + Offsets::Instance::NameContainer);
         if (nameContainer)
-            pd.name = ReadRbxString(nameContainer + Offsets::Instance::Name);
-        if (pd.name.empty()) continue;
+            pd.name = ReadRbxString(nameContainer + Offsets::Instance::Name);        if (pd.name.empty()) continue;
 
         uintptr_t model = ReadPtr(playerInst + Offsets::Player::ModelInstance);
         if (!model) continue;
