@@ -225,6 +225,58 @@ static void DrawMenu()
                     p.position.x, p.position.y, p.position.z);
             }
         }
+
+        // ---- Scanner de estrutura ----
+        if (ImGui::CollapsingHeader("Scanner (FindChild)") && g_rbx->GetDataModel())
+        {
+            uintptr_t dm = g_rbx->GetDataModel();
+            ImGui::Text("Escaneando DataModel 0x%llX", (unsigned long long)dm);
+            ImGui::Text("Procurando vetor de filhos com nome 'Players'...");
+            ImGui::Separator();
+
+            // Varre offsets 0x60 a 0xC0 procurando vetor begin/end valido
+            for (int off = 0x60; off <= 0xC0; off += 8)
+            {
+                uintptr_t begin = 0, end = 0;
+                g_mem.ReadRaw(dm + off,     &begin, 8);
+                g_mem.ReadRaw(dm + off + 8, &end,   8);
+
+                if (!begin || !end || end <= begin) continue;
+                size_t cnt = (end - begin) / 8;
+                if (cnt == 0 || cnt > 64) continue;
+
+                // Tenta ler nome do primeiro filho
+                uintptr_t firstChild = 0;
+                g_mem.ReadRaw(begin, &firstChild, 8);
+                if (!firstChild) continue;
+
+                // Testa NameContainer em +0x70
+                uintptr_t nc = 0;
+                g_mem.ReadRaw(firstChild + 0x70, &nc, 8);
+                if (!nc) continue;
+
+                // Tenta ler string
+                size_t slen = 0, scap = 0;
+                g_mem.ReadRaw(nc + 0x10, &slen, 8);
+                g_mem.ReadRaw(nc + 0x18, &scap, 8);
+                if (slen == 0 || slen > 32) continue;
+
+                char nameBuf[64]{};
+                uintptr_t dataPtr = (scap > 15) ? 0 : nc;
+                if (scap > 15) g_mem.ReadRaw(nc, &dataPtr, 8);
+                if (!dataPtr) continue;
+                g_mem.ReadRaw(dataPtr, nameBuf, slen);
+
+                // Verifica se é ASCII printável
+                bool ascii = true;
+                for (size_t k = 0; k < slen; k++)
+                    if (nameBuf[k] < 0x20 || nameBuf[k] > 0x7e) { ascii = false; break; }
+                if (!ascii) continue;
+
+                ImGui::TextColored(ImVec4(1,1,0,1),
+                    "+0x%02X: cnt=%zu filho[0]='%s'", off, cnt, nameBuf);
+            }
+        }
     }
     ImGui::End();
 }
