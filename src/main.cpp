@@ -240,7 +240,7 @@ static void DrawMenu()
                 {
                     uintptr_t v = 0;
                     g_mem.ReadRaw(dm + off, &v, 8);
-                    if (v > 0x10000000000ULL && v < 0x7FFFFFFFFFFF ULL)
+                    if (v > 0x10000000000ULL && v 0x7FFFFFFFFFFFULL)
                         ImGui::Text("+0x%03X = 0x%llX", off, (unsigned long long)v);
                 }
             }
@@ -261,7 +261,7 @@ static void DrawMenu()
                 size_t cnt = (end - begin) / 8;
                 if (cnt == 0 || cnt > 128) continue;
                 // ponteiros devem parecer endereços userspace válidos
-                if (begin < 0x10000 || begin > 0x7FFFFFFFFFFF ULL) continue;
+                if (begin < 0x10000 || begin > 0x7FFFFFFFFFFFULL) continue;
 
                 // Tenta ler nome do primeiro filho com vários offsets
                 uintptr_t firstChild = 0;
