@@ -240,7 +240,7 @@ static void DrawMenu()
                 {
                     uintptr_t v = 0;
                     g_mem.ReadRaw(dm + off, &v, 8);
-                    if (v > 0x10000000000ULL && v 0x7FFFFFFFFFFFULL)
+                    if (v > 0x10000000000ULL && v < 0x7FFFFFFFFFFFULL)
                         ImGui::Text("+0x%03X = 0x%llX", off, (unsigned long long)v);
                 }
             }
