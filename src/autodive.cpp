@@ -8,18 +8,24 @@ bool AutoDive::BallApproaching(const GKState& gk, const BallState& ball, const G
 {
     if (!ball.exists || !goal.exists) return false;
 
-    // Se o gol é mais largo no eixo X (orientação padrão do RSS)
+    // Se o gol é mais largo no eixo X (orientação padrão do RSS - gol no plano Z)
     if (goal.size.x >= goal.size.z)
     {
+        // A linha do gol está no centro do gol (goal.position.z) para gols finos
+        // Mas para ser mais robusto, usamos a posição Z do gol como referência
         float dz = goal.position.z - ball.position.z;
         float vz = ball.velocity.z;
 
         if (std::fabsf(vz) < cfg.approachMinSpeed) return false;
 
         // Se dz e vz têm o mesmo sinal, a bola está indo em direção à linha do gol (Z)
-        return (dz * vz > 0.f);
+        bool approaching = (dz * vz > 0.f);
+        
+        // Debug
+        (void)gk; // unused
+        return approaching;
     }
-    else // O gol é mais largo no eixo Z (campo orientado em X)
+    else // O gol é mais largo no eixo Z (campo orientado em X - gol no plano X)
     {
         float dx = goal.position.x - ball.position.x;
         float vx = ball.velocity.x;
@@ -148,6 +154,16 @@ void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState&
     Vector3 toBall = ball.position - gk.position;
     float   dist   = toBall.Length();
     debug.distToBall = dist;
+
+    // Debug: posição da bola, velocidade, posição do gol, tamanho do gol
+    debug.ballPosX = ball.position.x;
+    debug.ballPosZ = ball.position.z;
+    debug.ballVelX = ball.velocity.x;
+    debug.ballVelZ = ball.velocity.z;
+    debug.goalPosX = goal.position.x;
+    debug.goalPosZ = goal.position.z;
+    debug.goalSizeX = goal.size.x;
+    debug.goalSizeZ = goal.size.z;
 
     // Pega o centro do gol dependendo da orientação
     if (goal.size.x >= goal.size.z)

@@ -67,6 +67,16 @@ public:
         float lateralOffset = 0.f;
         bool  approaching  = false;
         std::string blockReason; // por que não deu dive
+        
+        // Debug extra para diagnosticar
+        float ballPosX = 0.f;
+        float ballPosZ = 0.f;
+        float ballVelX = 0.f;
+        float ballVelZ = 0.f;
+        float goalPosX = 0.f;
+        float goalPosZ = 0.f;
+        float goalSizeX = 0.f;
+        float goalSizeZ = 0.f;
     } debug;
 
 // Exposto para poder usar no ESP (linhas de ajuda visual se quisermos)
