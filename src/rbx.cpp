@@ -23,14 +23,18 @@ std::string RobloxReader::ReadRbxString(uintptr_t addr) const
 }
 
 // --------------------------------------------------------------------------
-// GetInstanceName — Instance + Name(0x8) é ponteiro direto para std::string
+// GetInstanceName — usa NameContainer + Name conforme indicado pelo fornecedor
+//
+// string GetName(uintptr_t Instance):
+//   namePtr = read(Instance + NameContainer)  // 0x70
+//   return ReadString(namePtr + Name)          // 0x8
 // --------------------------------------------------------------------------
 std::string RobloxReader::GetInstanceName(uintptr_t instance) const
 {
     if (!instance) return {};
-    uintptr_t namePtr = ReadPtr(instance + Offsets::Instance::Name);
-    if (!namePtr) return {};
-    return ReadRbxString(namePtr);
+    uintptr_t nameContainer = ReadPtr(instance + Offsets::Instance::NameContainer); // 0x70
+    if (!nameContainer) return {};
+    return ReadRbxString(nameContainer + Offsets::Instance::Name); // + 0x8
 }
 
 // --------------------------------------------------------------------------
