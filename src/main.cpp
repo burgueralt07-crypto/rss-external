@@ -68,17 +68,12 @@ static void DrawESP(ImDrawList* dl,
     float winOffsetX = 0.f, winOffsetY = 0.f;
     if (targetHwnd)
     {
-        RECT wr{};
-        GetWindowRect(targetHwnd, &wr);
-        RECT cr{};
-        GetClientRect(targetHwnd, &cr);
-
-        // Diferença entre WindowRect e ClientRect = bordas + título
-        int borderX = ((wr.right - wr.left) - cr.right) / 2;
-        int titleH  =  (wr.bottom - wr.top) - cr.bottom - borderX;
-
-        winOffsetX = static_cast<float>(wr.left + borderX);
-        winOffsetY = static_cast<float>(wr.top  + titleH);
+        // ClientToScreen converte o ponto (0,0) da área cliente para coordenadas de tela
+        // Isso é exato independente de bordas, título ou DPI
+        POINT pt{ 0, 0 };
+        ClientToScreen(targetHwnd, &pt);
+        winOffsetX = static_cast<float>(pt.x);
+        winOffsetY = static_cast<float>(pt.y);
     }
 
     // HumanoidRootPart fica na cintura do personagem Roblox

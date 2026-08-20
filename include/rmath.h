@@ -21,41 +21,32 @@ struct Vector3 {
     float Dot(const Vector3& o) const { return x*o.x + y*o.y + z*o.z; }
 };
 
-// Matriz 4x4 flat (16 floats) — mesmo layout do base de referência
+// Matriz 4x4 flat — mesmo layout do base de referência (data[0..15])
 struct Matrix4x4 {
-    float m[4][4] = {};
-
-    // Acesso flat para compatibilidade
-    float& at(int row, int col) { return m[row][col]; }
+    float data[16] = {};
 };
 
 // --------------------------------------------------------------------------
-// WorldToScreen
-//
-// Transforma uma posição 3D (mundo) em coordenadas 2D de tela.
-// Retorna false se o ponto está atrás da câmera.
-//
-// viewMatrix : Camera::ViewMatrix lida da memória (4x4 row-major)
-// worldPos   : posição 3D do alvo
-// screenSize : tamanho da viewport (Camera::ViewportSize)
-// outScreen  : coordenada 2D resultante
+// WorldToScreen — baseado em RenderEngine::WorldToViewport do base
 // --------------------------------------------------------------------------
-inline bool WorldToScreen(const Matrix4x4& viewMatrix,
+inline bool WorldToScreen(const Matrix4x4& vm,
                            const Vector3&   worldPos,
                            const Vector2&   screenSize,
                            Vector2&         outScreen)
 {
-    const auto& m = viewMatrix.m;
+    float x = (worldPos.x * vm.data[0]) + (worldPos.y * vm.data[1])
+            + (worldPos.z * vm.data[2])  + vm.data[3];
 
-    // Mesmo cálculo do RenderEngine::WorldToViewport do base de referência
-    float x = (worldPos.x * m[0][0]) + (worldPos.y * m[0][1]) + (worldPos.z * m[0][2]) + m[0][3];
-    float y = (worldPos.x * m[1][0]) + (worldPos.y * m[1][1]) + (worldPos.z * m[1][2]) + m[1][3];
-    float w = (worldPos.x * m[3][0]) + (worldPos.y * m[3][1]) + (worldPos.z * m[3][2]) + m[3][3];
+    float y = (worldPos.x * vm.data[4]) + (worldPos.y * vm.data[5])
+            + (worldPos.z * vm.data[6])  + vm.data[7];
+
+    float w = (worldPos.x * vm.data[12]) + (worldPos.y * vm.data[13])
+            + (worldPos.z * vm.data[14]) + vm.data[15];
 
     if (w < 0.1f) return false;
 
-    outScreen.x = (screenSize.x / 2.f * (x / w)) + (screenSize.x / 2.f);
-    outScreen.y = -(screenSize.y / 2.f * (y / w)) + (screenSize.y / 2.f);
+    outScreen.x =  (screenSize.x / 2.f) * (x / w) + (screenSize.x / 2.f);
+    outScreen.y = -(screenSize.y / 2.f) * (y / w) + (screenSize.y / 2.f);
 
     return true;
 }
