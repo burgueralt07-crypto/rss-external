@@ -43,38 +43,42 @@ std::string RobloxReader::ReadRbxString(uintptr_t addr) const
 // --------------------------------------------------------------------------
 // FindChild — percorre a lista de filhos de uma Instance pelo nome
 //
-// Estrutura do vetor de filhos no Roblox:
-//   instance + 0x70  = NameContainer (ptr para std::string do nome)
-//   instance + 0x78  = ptr para início do vetor de filhos (std::vector begin)
-//   instance + 0x80  = ptr para fim do vetor de filhos   (std::vector end)
+// No Roblox o vetor de filhos armazena shared_ptr<Instance>:
+//   cada elemento = 16 bytes: [ptr Instance (8)] [ptr refcount (8)]
 //
-// Cada elemento do vetor é um ponteiro de 8 bytes para outra Instance.
+// instance + 0x78 = begin do vetor
+// instance + 0x80 = end do vetor
 // --------------------------------------------------------------------------
 uintptr_t RobloxReader::FindChild(uintptr_t instance, const std::string& name) const
 {
     if (!instance) return 0;
 
-    // O vetor de filhos está em instance+0x78 (begin) e instance+0x80 (end)
     uintptr_t vecBegin = ReadPtr(instance + Offsets::Instance::ChildrenStart);
     uintptr_t vecEnd   = ReadPtr(instance + Offsets::Instance::ChildrenStart + 0x8);
 
     if (!vecBegin || !vecEnd || vecEnd <= vecBegin) return 0;
 
-    size_t count = (vecEnd - vecBegin) / sizeof(uintptr_t);
-    if (count == 0 || count > 1024) return 0;
+    size_t bytes = vecEnd - vecBegin;
+    if (bytes > 0x1000) return 0;
 
-    for (size_t i = 0; i < count; ++i)
+    // Tenta stride 16 (shared_ptr) primeiro, depois stride 8 (raw ptr)
+    for (int stride : { 16, 8 })
     {
-        uintptr_t child = ReadPtr(vecBegin + i * sizeof(uintptr_t));
-        if (!child) continue;
+        size_t count = bytes / stride;
+        if (count == 0 || count > 256) continue;
 
-        // Nome da instância: child + 0x70 = NameContainer, NameContainer + 0x8 = std::string
-        uintptr_t nameContainer = ReadPtr(child + Offsets::Instance::NameContainer);
-        if (!nameContainer) continue;
+        for (size_t i = 0; i < count; ++i)
+        {
+            uintptr_t child = ReadPtr(vecBegin + i * stride);
+            if (!child || child < 0x10000) continue;
 
-        std::string childName = ReadRbxString(nameContainer + Offsets::Instance::Name);
-        if (childName == name)
-            return child;
+            uintptr_t nameContainer = ReadPtr(child + Offsets::Instance::NameContainer);
+            if (!nameContainer || nameContainer < 0x10000) continue;
+
+            std::string childName = ReadRbxString(nameContainer + Offsets::Instance::Name);
+            if (childName == name)
+                return child;
+        }
     }
 
     return 0;
