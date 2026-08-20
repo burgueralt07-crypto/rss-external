@@ -96,20 +96,16 @@ public:
 private:
     static void SendVKey(HWND targetHwnd, WORD vk)
     {
-        if (targetHwnd && IsWindow(targetHwnd) && GetForegroundWindow() != targetHwnd)
-            SetForegroundWindow(targetHwnd);
+        // PostMessage não requer foco e não é bloqueado por UIPI entre processos
+        // do mesmo nível de integridade. Funciona mesmo com o overlay em foreground.
+        if (!targetHwnd || !IsWindow(targetHwnd)) return;
 
         UINT sc = MapVirtualKeyW(vk, MAPVK_VK_TO_VSC);
-        INPUT inputs[2] = {};
-        inputs[0].type       = INPUT_KEYBOARD;
-        inputs[0].ki.wVk     = vk;
-        inputs[0].ki.wScan   = static_cast<WORD>(sc);
-        inputs[0].ki.dwFlags = KEYEVENTF_SCANCODE;
-        inputs[1].type       = INPUT_KEYBOARD;
-        inputs[1].ki.wVk     = vk;
-        inputs[1].ki.wScan   = static_cast<WORD>(sc);
-        inputs[1].ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-        SendInput(2, inputs, sizeof(INPUT));
+        LPARAM lparamDown = 1 | (sc << 16);
+        LPARAM lparamUp   = 1 | (sc << 16) | (1 << 30) | (1 << 31);
+
+        PostMessageW(targetHwnd, WM_KEYDOWN, vk, lparamDown);
+        PostMessageW(targetHwnd, WM_KEYUP,   vk, lparamUp);
     }
 
     void PressKey(WORD vk) { m_pendingKey.store(vk); }
