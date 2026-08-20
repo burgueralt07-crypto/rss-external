@@ -25,6 +25,7 @@ public:
     Vector2                        GetViewport()   const { return m_viewport; }
     const BallState&               GetBall()       const { return m_ball; }
     const GKState&                 GetGKState()    const { return m_gkState; }
+    const GoalState&               GetGoal()       const { return m_goalState; }
 
 private:
     template<typename T>
@@ -46,6 +47,7 @@ private:
     Vector3                ReadPartPosition(uintptr_t basePart) const;
     bool                   ReadBallState();
     bool                   ReadGKState();
+    bool                   ReadGoalState();
 
     Memory&                  m_mem;
     std::vector<PlayerData>  m_players;
@@ -57,6 +59,8 @@ private:
     uintptr_t                m_camera         = 0;
     uintptr_t                m_playersService = 0;
     uintptr_t                m_localPlayer    = 0;
+    bool                     m_isAPG          = false; // true = APG (AwayGoal), false = HPG (HomeGoal)
     BallState                m_ball;
     GKState                  m_gkState;
+    GoalState                m_goalState;
 };

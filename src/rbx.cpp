@@ -195,6 +195,7 @@ bool RobloxReader::Update()
     // Lê bola e estado do GK para AutoDive
     ReadBallState();
     ReadGKState();
+    ReadGoalState();
 
     return true;
 }
@@ -220,53 +221,89 @@ bool RobloxReader::ReadBallState()
 }
 
 // --------------------------------------------------------------------------
-// ReadGKState — verifica se o local player é goleiro e lê seus vetores
+// ReadGKState — verifica se o local player é goleiro
 //
-// Workspace.Bools.APG.Value e HPG.Value são ObjectValues que guardam
-// o player que é goleiro. Usa Offsets::Misc::Value para ler o ponteiro.
-// Depois compara com m_localPlayer para saber se somos o GK.
+// APG = Away PenaltyGoalie, HPG = Home PenaltyGoalie
+// São ObjectValues em Workspace.Bools — .Value aponta pro Player instance.
+// Offsets::Misc::Value (0xb8) é o offset padrão para ObjectValue.Value.
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadGKState()
 {
     m_gkState = {};
+    m_isAPG   = false;
+
     if (!m_workspace || !m_localPlayer) return false;
 
-    // Workspace.Bools
     uintptr_t boolsFolder = FindChild(m_workspace, "Bools");
     if (!boolsFolder) return false;
 
-    // APG e HPG são ObjectValues — .Value aponta pro Player instance
     uintptr_t apgObj = FindChild(boolsFolder, "APG");
     uintptr_t hpgObj = FindChild(boolsFolder, "HPG");
 
     uintptr_t apgPlayer = apgObj ? ReadPtr(apgObj + Offsets::Misc::Value) : 0;
     uintptr_t hpgPlayer = hpgObj ? ReadPtr(hpgObj + Offsets::Misc::Value) : 0;
 
-    bool isGK = (apgPlayer == m_localPlayer || hpgPlayer == m_localPlayer);
-    m_gkState.isGK = isGK;
+    bool isAPG = (apgPlayer == m_localPlayer);
+    bool isHPG = (hpgPlayer == m_localPlayer);
 
-    if (!isGK) return false;
+    m_gkState.isGK = (isAPG || isHPG);
+    m_isAPG        = isAPG;
 
-    // Pega o modelo do local player
+    if (!m_gkState.isGK) return false;
+
+    // Posição do GK (só precisa de posição agora — não mais de rotation)
     uintptr_t model = ReadPtr(m_localPlayer + Offsets::Player::ModelInstance);
     if (!model) return false;
 
     uintptr_t hrp = FindChild(model, "HumanoidRootPart");
     if (!hrp) return false;
 
-    uintptr_t primitive = ReadPtr(hrp + Offsets::BasePart::Primitive);
+    m_gkState.position = ReadPartPosition(hrp);
+    return true;
+}
+
+// --------------------------------------------------------------------------
+// ReadGoalState — lê posição e tamanho do gol que o GK defende
+//
+// APG defende AwayGoal, HPG defende HomeGoal.
+// O gol é um Model no Workspace. Lemos o PrimaryPart ou o primeiro BasePart.
+// --------------------------------------------------------------------------
+bool RobloxReader::ReadGoalState()
+{
+    m_goalState = {};
+    if (!m_workspace || !m_gkState.isGK) return false;
+
+    // APG = goleiro do time Away → defende AwayGoal
+    // HPG = goleiro do time Home → defende HomeGoal
+    const std::string goalName = m_isAPG ? "AwayGoal" : "HomeGoal";
+
+    uintptr_t goalModel = FindChild(m_workspace, goalName);
+    if (!goalModel) return false;
+
+    // Tenta PrimaryPart do Model primeiro
+    uintptr_t primaryPart = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
+
+    // Se não tiver, pega o primeiro BasePart filho
+    if (!primaryPart)
+    {
+        for (uintptr_t child : GetChildren(goalModel))
+        {
+            uintptr_t prim = ReadPtr(child + Offsets::BasePart::Primitive);
+            if (prim)
+            {
+                primaryPart = child;
+                break;
+            }
+        }
+    }
+
+    if (!primaryPart) return false;
+
+    uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
     if (!primitive) return false;
 
-    m_gkState.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
-
-    // Rotation no Primitive é uma Matrix3 (3x4 floats = CFrame rotation part)
-    // Layout: [RightX, RightY, RightZ, UpX, UpY, UpZ, LookX, LookY, LookZ] × 4 bytes
-    // No Roblox: CFrame.RightVector = coluna 0, LookVector = -coluna 2
-    struct RotMatrix { float m[9]; };
-    RotMatrix rot = ReadT<RotMatrix>(primitive + Offsets::Primitive::Rotation);
-
-    m_gkState.rightVector = { rot.m[0], rot.m[1], rot.m[2] };
-    m_gkState.lookVector  = { -rot.m[6], -rot.m[7], -rot.m[8] }; // LookVector = -Back
-
+    m_goalState.exists   = true;
+    m_goalState.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    m_goalState.size     = ReadT<Vector3>(primitive + Offsets::Primitive::Size);
     return true;
 }

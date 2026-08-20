@@ -2,72 +2,62 @@
 #include <cmath>
 
 // --------------------------------------------------------------------------
-// BallApproaching
-//
-// A bola está "chegando" se o dot product entre a velocidade dela e o vetor
-// do GK até a bola for negativo — ou seja, a bola vai na direção do GK.
-//
-// Também verifica distância mínima pra não agir quando a bola está longe.
+// BallApproaching — verifica se a bola está se aproximando do GK
 // --------------------------------------------------------------------------
 bool AutoDive::BallApproaching(const GKState& gk, const BallState& ball) const
 {
     Vector3 toBall = ball.position - gk.position;
     float   dist   = toBall.Length();
 
-    if (dist > cfg.triggerDistance || dist < 2.f)
-        return false;
-
-    // Normaliza o vetor GK→bola
     if (dist < 0.001f) return false;
-    Vector3 dir = toBall * (1.f / dist);
 
-    // dot(velocidade_da_bola, direção_bola→GK)
-    // Se positivo, a bola está indo em direção ao GK
-    Vector3 toGK = { -dir.x, -dir.y, -dir.z };
-    float   dot  = ball.velocity.Dot(toGK);
+    // Normaliza
+    Vector3 dir    = toBall * (1.f / dist);
 
-    return dot > 2.f; // mínimo de 2 studs/s em direção ao GK
+    // Dot entre velocidade da bola e direção bola→GK
+    // Se positivo, a bola está se movendo em direção ao GK
+    Vector3 toGK   = { -dir.x, -dir.y, -dir.z };
+    float   dot    = ball.velocity.Dot(toGK);
+
+    return dot > cfg.approachMinSpeed;
 }
 
 // --------------------------------------------------------------------------
-// PredictLateralOffset
+// PredictBallAtGoalLine
 //
-// Usa cinemática simples (sem gravidade lateral) pra prever onde a bola
-// vai estar lateralmente quando chegar na "linha de defesa" do GK.
+// O campo do RSS é orientado no eixo Z — o gol fica numa posição Z fixa.
+// Prevê a posição X da bola quando ela cruzar o Z do gol.
 //
-// A "linha de defesa" é definida como a posição do GK projetada no look vector:
-// prediz o tempo até a bola cruzar essa linha e aplica a velocidade lateral.
-//
-// Retorna o deslocamento lateral (positivo = direita do GK, negativo = esquerda).
+// Se a velocidade Z for quase zero, usa a posição X atual da bola.
 // --------------------------------------------------------------------------
-float AutoDive::PredictLateralOffset(const GKState& gk, const BallState& ball) const
+float AutoDive::PredictBallAtGoalLine(const BallState& ball, const GoalState& goal) const
 {
-    // Vetor do GK até a bola
-    Vector3 delta = ball.position - gk.position;
+    float goalZ = goal.position.z;
+    float dz    = goalZ - ball.position.z;
 
-    // Componente da velocidade da bola ao longo do lookVector do GK
-    // (velocidade de aproximação na profundidade)
-    float   approachSpeed = ball.velocity.Dot({ -gk.lookVector.x, -gk.lookVector.y, -gk.lookVector.z });
-    if (approachSpeed < 0.1f) approachSpeed = 0.1f; // evita divisão por zero
+    // Velocidade Z da bola
+    float vz = ball.velocity.z;
 
-    // Distância de profundidade (quanto falta pra bola chegar na linha do GK)
-    float depthDist = delta.Dot({ -gk.lookVector.x, -gk.lookVector.y, -gk.lookVector.z });
-    if (depthDist < 0.f) depthDist = 0.f;
+    if (std::fabsf(vz) < 0.5f)
+    {
+        // Bola quase sem velocidade Z — usa posição X atual
+        return ball.position.x;
+    }
 
-    // Tempo previsto de chegada
-    float timeToArrive = depthDist / approachSpeed;
+    // Tempo até cruzar a linha Z do gol
+    float t = dz / vz;
 
-    // Posição lateral futura da bola
-    // lateral = posição lateral atual + velocidade lateral * tempo
-    float currentLateral = delta.Dot(gk.rightVector);
-    float lateralVelocity = ball.velocity.Dot(gk.rightVector);
-    float predictedLateral = currentLateral + lateralVelocity * timeToArrive;
+    // Se tempo negativo, a bola já passou ou está indo pra direção errada
+    // Clamp: máximo 3 segundos de predição pra não exagerar
+    if (t < 0.f) t = 0.f;
+    if (t > 3.f) t = 3.f;
 
-    return predictedLateral;
+    // Posição X prevista
+    return ball.position.x + ball.velocity.x * t;
 }
 
 // --------------------------------------------------------------------------
-// PressKey — simula keydown + keyup via SendInput
+// PressKey
 // --------------------------------------------------------------------------
 void AutoDive::PressKey(WORD vk)
 {
@@ -75,7 +65,7 @@ void AutoDive::PressKey(WORD vk)
 
     inputs[0].type       = INPUT_KEYBOARD;
     inputs[0].ki.wVk     = vk;
-    inputs[0].ki.dwFlags = 0; // KEYDOWN
+    inputs[0].ki.dwFlags = 0;
 
     inputs[1].type       = INPUT_KEYBOARD;
     inputs[1].ki.wVk     = vk;
@@ -85,66 +75,104 @@ void AutoDive::PressKey(WORD vk)
 }
 
 // --------------------------------------------------------------------------
-// Update — lógica principal, chamada a cada frame
+// Update
 // --------------------------------------------------------------------------
-void AutoDive::Update(const GKState& gk, const BallState& ball)
+void AutoDive::Update(const GKState& gk, const BallState& ball, const GoalState& goal)
 {
     m_firedThisFrame = false;
+    debug = {};
 
-    if (!cfg.enabled)           return;
-    if (!gk.isGK)               return;
-    if (!ball.exists)           return;
+    if (!cfg.enabled)    { debug.blockReason = "disabled";     return; }
+    if (!gk.isGK)        { debug.blockReason = "not GK";       return; }
+    if (!ball.exists)    { debug.blockReason = "no ball";       return; }
+    if (!goal.exists)    { debug.blockReason = "no goal";       return; }
 
     auto now = std::chrono::steady_clock::now();
 
-    // --- Verifica se há um dive pendente esperando o delay de reação ---
+    // --- Processa dive pendente (delay de reação) ---
     if (m_pendingFire)
     {
         float elapsed = std::chrono::duration<float>(now - m_pendingFireTime).count();
-        if (elapsed >= m_pendingDelay)
+        if (elapsed >= cfg.reactionDelay)
         {
-            m_pendingFire = false;
+            m_pendingFire    = false;
+            m_firedThisFrame = true;
+            m_lastDiveTime   = now;
 
-            // Decide a direção com base no offset lateral calculado
-            if (m_pendingLateral > 0.5f)
+            if (m_pendingLateral > 0.f)
             {
-                PressKey('E'); // right dive
+                PressKey('E');
                 m_lastKey = "E (Right)";
-            }
-            else if (m_pendingLateral < -0.5f)
-            {
-                PressKey('Q'); // left dive
-                m_lastKey = "Q (Left)";
             }
             else
             {
-                // Bola indo pro centro — não diva, ou pode ser um front dive
-                // Por ora não faz nada (evita false positives)
-                m_lastKey = "Center (skip)";
+                PressKey('Q');
+                m_lastKey = "Q (Left)";
             }
-
-            m_lastDiveTime  = now;
-            m_firedThisFrame = true;
         }
-        return; // enquanto pendente, não analisa novos frames
+        debug.blockReason = "pending fire...";
+        return;
     }
 
     // --- Cooldown ---
     float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
-    if (sinceLast < cfg.cooldownSec) return;
+    if (sinceLast < cfg.cooldownSec)
+    {
+        debug.blockReason = "cooldown";
+        return;
+    }
 
-    // --- Verifica se a bola está chegando ---
-    if (!BallApproaching(gk, ball)) return;
+    // --- Preenche debug ---
+    Vector3 toBall = ball.position - gk.position;
+    float   dist   = toBall.Length();
+    debug.distToBall = dist;
+    debug.goalCenterX = goal.position.x;
 
-    // --- Prediz o lado ---
-    float lateral = PredictLateralOffset(gk, ball);
+    if (dist > 0.001f)
+    {
+        Vector3 dir  = toBall * (1.f / dist);
+        Vector3 toGK = { -dir.x, -dir.y, -dir.z };
+        debug.approachDot = ball.velocity.Dot(toGK);
+    }
 
-    // Ignora se lateral for muito pequeno (bola indo central)
-    if (std::fabsf(lateral) < 0.5f) return;
+    debug.approaching = BallApproaching(gk, ball);
 
-    // --- Arma o disparo com delay de reação ---
+    // --- Verifica distância ---
+    if (dist > cfg.triggerDistance)
+    {
+        debug.blockReason = "too far";
+        return;
+    }
+
+    // --- Verifica aproximação ---
+    if (!debug.approaching)
+    {
+        debug.blockReason = "not approaching";
+        return;
+    }
+
+    // --- Prediz lado ---
+    float predictedX = PredictBallAtGoalLine(ball, goal);
+    float lateral    = predictedX - goal.position.x; // positivo = direita do gol, negativo = esquerda
+
+    debug.predictedX    = predictedX;
+    debug.lateralOffset = lateral;
+
+    // Threshold mínimo — ignora se a bola vai pro centro do gol
+    // Usa metade da largura do gol como referência para "lado"
+    float halfGoalWidth = goal.size.x * 0.5f;
+    float threshold     = halfGoalWidth * 0.15f; // 15% da metade = evita false positives centrais
+    if (threshold < 0.5f) threshold = 0.5f;
+
+    if (std::fabsf(lateral) < threshold)
+    {
+        debug.blockReason = "ball going center";
+        return;
+    }
+
+    // --- Arma o disparo ---
     m_pendingFire     = true;
     m_pendingLateral  = lateral;
-    m_pendingDelay    = cfg.reactionDelay;
     m_pendingFireTime = now;
+    debug.blockReason = "FIRED";
 }

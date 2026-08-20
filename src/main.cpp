@@ -194,26 +194,49 @@ static void DrawMenu()
         if (g_dive.cfg.enabled)
         {
             ImGui::Indent();
-            ImGui::SliderFloat("Trigger dist",    &g_dive.cfg.triggerDistance, 5.f,  80.f,  "%.0f studs");
-            ImGui::SliderFloat("Reaction delay",  &g_dive.cfg.reactionDelay,   0.0f, 0.3f,  "%.2f s");
-            ImGui::SliderFloat("Cooldown",         &g_dive.cfg.cooldownSec,     0.8f, 3.0f,  "%.1f s");
+            ImGui::SliderFloat("Trigger dist",    &g_dive.cfg.triggerDistance,  5.f,  80.f, "%.0f studs");
+            ImGui::SliderFloat("Reaction delay",  &g_dive.cfg.reactionDelay,    0.0f, 0.3f, "%.2f s");
+            ImGui::SliderFloat("Cooldown",         &g_dive.cfg.cooldownSec,      0.8f, 3.0f, "%.1f s");
+            ImGui::SliderFloat("Min approach spd", &g_dive.cfg.approachMinSpeed, 1.f, 30.f, "%.0f s/s");
 
-            // Info de status
             if (g_rbx)
             {
-                const GKState&   gk   = g_rbx->GetGKState();
-                const BallState& ball = g_rbx->GetBall();
+                const GKState&         gk   = g_rbx->GetGKState();
+                const BallState&       ball = g_rbx->GetBall();
+                const GoalState&       goal = g_rbx->GetGoal();
+                const AutoDive::DebugInfo& dbg = g_dive.debug;
 
-                ImGui::Spacing();
+                ImGui::Separator();
+
+                // GK status
                 if (gk.isGK)
-                    ImGui::TextColored(ImVec4(0.2f, 1.f, 0.2f, 1.f), "GK: Ativo");
+                    ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "GK: ATIVO");
                 else
-                    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.f), "GK: Nao detectado");
+                    ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "GK: nao detectado");
 
-                ImGui::Text("Bola: %s  vel=(%.1f,%.1f,%.1f)",
-                    ball.exists ? "sim" : "nao",
+                // Bola
+                ImGui::Text("Bola: %s  pos=(%.1f,%.1f,%.1f)",
+                    ball.exists ? "sim" : "NAO",
+                    ball.position.x, ball.position.y, ball.position.z);
+                ImGui::Text("      vel=(%.1f,%.1f,%.1f)",
                     ball.velocity.x, ball.velocity.y, ball.velocity.z);
 
+                // Gol
+                if (goal.exists)
+                    ImGui::Text("Gol:  pos=(%.1f,%.1f,%.1f) tam=%.1f",
+                        goal.position.x, goal.position.y, goal.position.z, goal.size.x);
+                else
+                    ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "Gol: NAO encontrado");
+
+                // Debug do AutoDive
+                ImGui::Separator();
+                ImGui::Text("Dist bola: %.1f  approach: %.1f", dbg.distToBall, dbg.approachDot);
+                ImGui::Text("Aprox: %s", dbg.approaching ? "SIM" : "nao");
+                ImGui::Text("PredX: %.2f  GolX: %.2f  Lat: %.2f",
+                    dbg.predictedX, dbg.goalCenterX, dbg.lateralOffset);
+
+                ImGui::Spacing();
+                ImGui::Text("Status: %s", dbg.blockReason.c_str());
                 ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());
             }
             ImGui::Unindent();
@@ -274,7 +297,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
         // AutoDive — roda mesmo com menu fechado, só precisa de Roblox ativo
         if (g_mem.IsValid())
-            g_dive.Update(g_rbx->GetGKState(), g_rbx->GetBall());
+            g_dive.Update(g_rbx->GetGKState(), g_rbx->GetBall(), g_rbx->GetGoal());
 
         renderer.BeginFrame();
 

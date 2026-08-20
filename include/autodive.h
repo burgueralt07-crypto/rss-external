@@ -2,15 +2,14 @@
 #include "rmath.h"
 #include <Windows.h>
 #include <chrono>
+#include <string>
 
 // --------------------------------------------------------------------------
 // GKState — estado do goleiro lido da memória a cada frame
 // --------------------------------------------------------------------------
 struct GKState {
-    bool    isGK        = false;   // local player é goleiro (APG ou HPG)
-    Vector3 position;              // HumanoidRootPart.Position
-    Vector3 rightVector;           // HumanoidRootPart right vector (coluna X da rotação)
-    Vector3 lookVector;            // HumanoidRootPart look vector (coluna -Z da rotação)
+    bool    isGK     = false;
+    Vector3 position;
 };
 
 // --------------------------------------------------------------------------
@@ -23,54 +22,62 @@ struct BallState {
 };
 
 // --------------------------------------------------------------------------
-// AutoDive — decide e executa dives automáticos para o goleiro
+// GoalState — posição e tamanho do gol que o GK defende
+// --------------------------------------------------------------------------
+struct GoalState {
+    bool    exists   = false;
+    Vector3 position; // centro do gol (Primitive::Position)
+    Vector3 size;     // tamanho (Primitive::Size)
+};
+
+// --------------------------------------------------------------------------
+// AutoDive
 //
-// Lógica:
-//   1. Só age se isGK == true
-//   2. A bola precisa estar se aproximando (velocidade em direção ao GK)
-//   3. Prediz onde a bola vai cruzar a linha do GK (eixo Z ou X dependendo
-//      da orientação do campo)
-//   4. Calcula o lado (dot com rightVector do GK)
-//   5. Pressiona Q (left) ou E (right) via SendInput
-//   6. Cooldown interno de 1.2s para evitar spam (alinhado com o debounce
-//      do servidor que é ~1s)
+// Lógica baseada no gol — mais robusta que depender dos vetores do GK:
+//   1. Sabe qual gol o GK defende (APG = AwayGoal, HPG = HomeGoal)
+//   2. Prediz onde a bola vai cruzar a linha do gol (usando velocidade)
+//   3. Compara com o centro do gol pra saber se é esquerda ou direita
+//   4. Pressiona Q (left) ou E (right) via SendInput
 // --------------------------------------------------------------------------
 class AutoDive {
 public:
     struct Config {
         bool  enabled         = false;
-        float triggerDistance = 30.f;  // studs — distância máxima pra ativar
-        float reactionDelay   = 0.08f; // segundos de delay artificial (simula reação humana)
+        float triggerDistance = 40.f;  // studs — distância máxima pra ativar
+        float reactionDelay   = 0.05f; // segundos de delay (simula reação)
         float cooldownSec     = 1.2f;  // cooldown entre dives
+        float approachMinSpeed = 5.f;  // velocidade mínima de aproximação (studs/s)
     };
 
     Config cfg;
 
-    // Chama a cada frame com os dados atuais
-    void Update(const GKState& gk, const BallState& ball);
+    void Update(const GKState& gk, const BallState& ball, const GoalState& goal);
 
-    // Retorna true se um dive foi executado neste frame
-    bool DiveFiredThisFrame() const { return m_firedThisFrame; }
+    const char* LastDiveKey()    const { return m_lastKey; }
+    bool        DiveFired()      const { return m_firedThisFrame; }
 
-    // Para debug/UI: qual tecla foi pressionada por último
-    const char* LastDiveKey() const { return m_lastKey; }
+    // Debug — exposto pro menu
+    struct DebugInfo {
+        float distToBall   = 0.f;
+        float approachDot  = 0.f;
+        float predictedX   = 0.f; // posição X prevista da bola na linha do gol
+        float goalCenterX  = 0.f;
+        float lateralOffset = 0.f;
+        bool  approaching  = false;
+        std::string blockReason; // por que não deu dive
+    } debug;
 
 private:
-    // Prediz a posição lateral da bola quando ela chega na profundidade do GK.
-    // Retorna o deslocamento lateral em relação ao GK (positivo = direita, negativo = esquerda)
-    float PredictLateralOffset(const GKState& gk, const BallState& ball) const;
+    // Prediz posição X (ou Z) da bola quando ela chega na linha Z (ou X) do gol
+    float PredictBallAtGoalLine(const BallState& ball, const GoalState& goal) const;
 
-    // Verifica se a bola está se aproximando do GK
-    bool BallApproaching(const GKState& gk, const BallState& ball) const;
-
-    void PressKey(WORD vk);
+    bool  BallApproaching(const GKState& gk, const BallState& ball) const;
+    void  PressKey(WORD vk);
 
     std::chrono::steady_clock::time_point m_lastDiveTime;
+    std::chrono::steady_clock::time_point m_pendingFireTime;
     bool        m_firedThisFrame = false;
     bool        m_pendingFire    = false;
     float       m_pendingLateral = 0.f;
-    float       m_pendingDelay   = 0.f;
     const char* m_lastKey        = "-";
-
-    std::chrono::steady_clock::time_point m_pendingFireTime;
 };
