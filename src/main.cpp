@@ -198,7 +198,7 @@ static void DrawMenu()
             ImGui::Checkbox("Apenas No Alvo (Gol)",            &g_dive.cfg.onlyInGoal);
             ImGui::Checkbox("Pular em Bola Alta",               &g_dive.cfg.highJump);
             ImGui::SliderFloat("Dist reacao",   &g_dive.cfg.triggerDistance, 5.f,  35.f, "%.0f studs");
-            ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  30.f, "%.0f studs/s");
+            ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  50.f, "%.0f studs/s");
             ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.5f,  3.f, "%.1f s");
             ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   6.f, "%.0f studs");
 
