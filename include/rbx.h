@@ -1,6 +1,7 @@
 #pragma once
 #include "memory.h"
 #include "rmath.h"
+#include "autodive.h"
 #include "offsets.h"
 #include <vector>
 #include <string>
@@ -22,6 +23,8 @@ public:
     const std::vector<PlayerData>& GetPlayers()    const { return m_players; }
     const Matrix4x4&               GetViewMatrix() const { return m_viewMatrix; }
     Vector2                        GetViewport()   const { return m_viewport; }
+    const BallState&               GetBall()       const { return m_ball; }
+    const GKState&                 GetGKState()    const { return m_gkState; }
 
 private:
     template<typename T>
@@ -41,6 +44,8 @@ private:
     uintptr_t              FindChild(uintptr_t instance, const std::string& name) const;
     uintptr_t              FindChildByClass(uintptr_t instance, const std::string& cls) const;
     Vector3                ReadPartPosition(uintptr_t basePart) const;
+    bool                   ReadBallState();
+    bool                   ReadGKState();
 
     Memory&                  m_mem;
     std::vector<PlayerData>  m_players;
@@ -52,4 +57,6 @@ private:
     uintptr_t                m_camera         = 0;
     uintptr_t                m_playersService = 0;
     uintptr_t                m_localPlayer    = 0;
+    BallState                m_ball;
+    GKState                  m_gkState;
 };

@@ -192,5 +192,81 @@ bool RobloxReader::Update()
         m_players.push_back(pd);
     }
 
+    // Lê bola e estado do GK para AutoDive
+    ReadBallState();
+    ReadGKState();
+
+    return true;
+}
+
+// --------------------------------------------------------------------------
+// ReadBallState — lê posição e velocidade de game.Workspace.ball
+// --------------------------------------------------------------------------
+bool RobloxReader::ReadBallState()
+{
+    m_ball = {};
+    if (!m_workspace) return false;
+
+    uintptr_t ballInst = FindChild(m_workspace, "ball");
+    if (!ballInst) return false;
+
+    uintptr_t primitive = ReadPtr(ballInst + Offsets::BasePart::Primitive);
+    if (!primitive) return false;
+
+    m_ball.exists   = true;
+    m_ball.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+    m_ball.velocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyLinearVelocity);
+    return true;
+}
+
+// --------------------------------------------------------------------------
+// ReadGKState — verifica se o local player é goleiro e lê seus vetores
+//
+// Workspace.Bools.APG.Value e HPG.Value são ObjectValues que guardam
+// o player que é goleiro. Usa Offsets::Misc::Value para ler o ponteiro.
+// Depois compara com m_localPlayer para saber se somos o GK.
+// --------------------------------------------------------------------------
+bool RobloxReader::ReadGKState()
+{
+    m_gkState = {};
+    if (!m_workspace || !m_localPlayer) return false;
+
+    // Workspace.Bools
+    uintptr_t boolsFolder = FindChild(m_workspace, "Bools");
+    if (!boolsFolder) return false;
+
+    // APG e HPG são ObjectValues — .Value aponta pro Player instance
+    uintptr_t apgObj = FindChild(boolsFolder, "APG");
+    uintptr_t hpgObj = FindChild(boolsFolder, "HPG");
+
+    uintptr_t apgPlayer = apgObj ? ReadPtr(apgObj + Offsets::Misc::Value) : 0;
+    uintptr_t hpgPlayer = hpgObj ? ReadPtr(hpgObj + Offsets::Misc::Value) : 0;
+
+    bool isGK = (apgPlayer == m_localPlayer || hpgPlayer == m_localPlayer);
+    m_gkState.isGK = isGK;
+
+    if (!isGK) return false;
+
+    // Pega o modelo do local player
+    uintptr_t model = ReadPtr(m_localPlayer + Offsets::Player::ModelInstance);
+    if (!model) return false;
+
+    uintptr_t hrp = FindChild(model, "HumanoidRootPart");
+    if (!hrp) return false;
+
+    uintptr_t primitive = ReadPtr(hrp + Offsets::BasePart::Primitive);
+    if (!primitive) return false;
+
+    m_gkState.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
+
+    // Rotation no Primitive é uma Matrix3 (3x4 floats = CFrame rotation part)
+    // Layout: [RightX, RightY, RightZ, UpX, UpY, UpZ, LookX, LookY, LookZ] × 4 bytes
+    // No Roblox: CFrame.RightVector = coluna 0, LookVector = -coluna 2
+    struct RotMatrix { float m[9]; };
+    RotMatrix rot = ReadT<RotMatrix>(primitive + Offsets::Primitive::Rotation);
+
+    m_gkState.rightVector = { rot.m[0], rot.m[1], rot.m[2] };
+    m_gkState.lookVector  = { -rot.m[6], -rot.m[7], -rot.m[8] }; // LookVector = -Back
+
     return true;
 }

@@ -45,6 +45,7 @@ set(PROJECT_SOURCES
     src/renderer.cpp
     src/memory.cpp
     src/rbx.cpp
+    src/autodive.cpp
 )
 
 add_executable(${PROJECT_NAME} WIN32

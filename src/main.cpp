@@ -3,6 +3,7 @@
 #include "memory.h"
 #include "rbx.h"
 #include "rmath.h"
+#include "autodive.h"
 
 #include <imgui.h>
 #include <Windows.h>
@@ -25,6 +26,7 @@ struct ESPConfig {
     float maxDistance  = 500.f;
 };
 static ESPConfig g_cfg;
+static AutoDive  g_dive;
 
 // --------------------------------------------------------------------------
 static ImU32 HealthColor(float hp, float maxHp)
@@ -184,6 +186,38 @@ static void DrawMenu()
             ImGui::SliderFloat("Max dist", &g_cfg.maxDistance, 50.f, 2000.f, "%.0f studs");
             ImGui::Unindent();
         }
+
+        ImGui::Separator();
+
+        // --- AutoDive ---
+        ImGui::Checkbox("Auto Dive (GK)", &g_dive.cfg.enabled);
+        if (g_dive.cfg.enabled)
+        {
+            ImGui::Indent();
+            ImGui::SliderFloat("Trigger dist",    &g_dive.cfg.triggerDistance, 5.f,  80.f,  "%.0f studs");
+            ImGui::SliderFloat("Reaction delay",  &g_dive.cfg.reactionDelay,   0.0f, 0.3f,  "%.2f s");
+            ImGui::SliderFloat("Cooldown",         &g_dive.cfg.cooldownSec,     0.8f, 3.0f,  "%.1f s");
+
+            // Info de status
+            if (g_rbx)
+            {
+                const GKState&   gk   = g_rbx->GetGKState();
+                const BallState& ball = g_rbx->GetBall();
+
+                ImGui::Spacing();
+                if (gk.isGK)
+                    ImGui::TextColored(ImVec4(0.2f, 1.f, 0.2f, 1.f), "GK: Ativo");
+                else
+                    ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.2f, 1.f), "GK: Nao detectado");
+
+                ImGui::Text("Bola: %s  vel=(%.1f,%.1f,%.1f)",
+                    ball.exists ? "sim" : "nao",
+                    ball.velocity.x, ball.velocity.y, ball.velocity.z);
+
+                ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());
+            }
+            ImGui::Unindent();
+        }
     }
     ImGui::End();
 }
@@ -237,6 +271,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
         if (g_mem.IsValid())
             g_rbx->Update();
+
+        // AutoDive — roda mesmo com menu fechado, só precisa de Roblox ativo
+        if (g_mem.IsValid())
+            g_dive.Update(g_rbx->GetGKState(), g_rbx->GetBall());
 
         renderer.BeginFrame();
 
