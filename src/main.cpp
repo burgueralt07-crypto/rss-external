@@ -364,10 +364,7 @@ static void DrawMenu(Overlay& overlay)
 static bool TryAttach()
 {
     if (g_mem.IsValid()) return true;
-    bool ok = g_mem.Attach(TARGET_PROCESS);
-    if (ok && g_rbx)
-        g_rbx->InvalidateStructure(); // novo processo → descarta ponteiros antigos
-    return ok;
+    return g_mem.Attach(TARGET_PROCESS);
 }
 
 // --------------------------------------------------------------------------

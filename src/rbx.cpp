@@ -182,6 +182,24 @@ bool RobloxReader::Update()
         if (!UpdateStructure()) return false;
     }
 
+    // Detecta troca de jogo: re-lê o DataModel e compara com o cacheado.
+    // Quando o jogador troca de partida, o Roblox mantém o mesmo PID mas
+    // substitui o DataModel — os ponteiros antigos viram lixo.
+    if (m_base)
+    {
+        uintptr_t fakeDataModel = ReadPtr(m_base + Offsets::FakeDataModel::Pointer);
+        if (fakeDataModel)
+        {
+            uintptr_t currentDataModel = ReadPtr(fakeDataModel + Offsets::FakeDataModel::RealDataModel);
+            if (currentDataModel && currentDataModel != m_dataModel)
+            {
+                // DataModel mudou → re-escaneia tudo do zero
+                InvalidateStructure();
+                if (!UpdateStructure()) return false;
+            }
+        }
+    }
+
     // VisualEngine — lê ViewMatrix (ponteiro estático, leve)
     uintptr_t visualEngine = ReadPtr(m_base + Offsets::VisualEngine::Pointer);
     if (visualEngine)
