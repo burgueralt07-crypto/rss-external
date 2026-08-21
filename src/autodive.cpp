@@ -55,15 +55,21 @@ Vector3 AutoDive::PointToObjectSpace(const Vector3& origin,
 }
 
 // --------------------------------------------------------------------------
-// IsBallTargetingGoal — simulação física com gravidade
-// Portado do Lua isBallTargetingGoal()
+// IsBallTargetingGoal — previsão de trajetória até o plano do gol
+//
+// Lógica: simula a física da bola passo a passo e verifica se ela vai
+// cruzar o plano frontal do gol (localZ passa de positivo para negativo
+// no espaço local do gol). Quando esse cruzamento é detectado, interpola
+// a posição exata no plano (localZ == 0) e verifica se está dentro da
+// abertura do gol (com margem). Isso permite disparar o dive com
+// antecedência — quando a bola ainda está a caminho, não quando já chegou.
 // --------------------------------------------------------------------------
 bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal) const
 {
     if (!cfg.onlyInGoal) return true;
     if (!ball.exists || !goal.exists) return true;
 
-    // Se bola se afastando do gol → descarta
+    // Descarta se a bola está se afastando do gol
     Vector3 toGoal = goal.position - ball.position;
     if (ball.velocity.Dot(toGoal) <= 0.f) return false;
 
@@ -72,8 +78,17 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
     const float dt      = cfg.simDt;
     const int   steps   = cfg.simSteps;
 
+    // Half-sizes da abertura do gol
+    const float halfW = goal.size.x * 0.5f + margin;   // lateral
+    const float halfH = goal.size.y * 0.5f + margin;   // vertical
+
     Vector3 simPos = ball.position;
     Vector3 simVel = ball.velocity;
+
+    // localZ da posição inicial no espaço local do gol
+    Vector3 localPrev = PointToObjectSpace(
+        goal.position, goal.rightVec, goal.upVec, goal.lookVec, simPos);
+    float prevLocalZ = localPrev.z;
 
     for (int i = 0; i < steps; ++i)
     {
@@ -85,10 +100,32 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
         Vector3 localPos = PointToObjectSpace(
             goal.position, goal.rightVec, goal.upVec, goal.lookVec, simPos);
 
-        if (std::fabsf(localPos.x) <= (goal.size.x * 0.5f + margin) &&
-            std::fabsf(localPos.y) <= (goal.size.y * 0.5f + margin) &&
-            std::fabsf(localPos.z) <= (goal.size.z * 0.5f + 3.f))
-            return true;
+        float currLocalZ = localPos.z;
+
+        // Detecta cruzamento do plano frontal (localZ de + para -)
+        if (prevLocalZ >= 0.f && currLocalZ < 0.f)
+        {
+            // Interpola a fração do passo onde localZ == 0
+            float t = prevLocalZ / (prevLocalZ - currLocalZ);  // [0,1]
+
+            // Posição interpolada no espaço local no momento do cruzamento
+            Vector3 localPrevFull = PointToObjectSpace(
+                goal.position, goal.rightVec, goal.upVec, goal.lookVec,
+                { simPos.x - simVel.x * dt,
+                  simPos.y - simVel.y * dt,
+                  simPos.z - simVel.z * dt });
+
+            float crossX = localPrevFull.x + (localPos.x - localPrevFull.x) * t;
+            float crossY = localPrevFull.y + (localPos.y - localPrevFull.y) * t;
+
+            if (std::fabsf(crossX) <= halfW && std::fabsf(crossY) <= halfH)
+                return true;
+
+            // Já cruzou o plano mas fora da abertura — não vai entrar
+            return false;
+        }
+
+        prevLocalZ = currLocalZ;
     }
 
     return false;
