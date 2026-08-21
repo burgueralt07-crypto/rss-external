@@ -342,6 +342,15 @@ static void DrawMenu(Overlay& overlay)
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Oculta o overlay em gravacoes,\ntransmissoes (OBS, Discord, etc.)");
 
+                ImGui::Separator();
+
+                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.6f, 0.1f, 0.1f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(1.0f, 0.3f, 0.3f, 1.f));
+                if (ImGui::Button("Fechar External", ImVec2(-1, 0)))
+                    PostQuitMessage(0);
+                ImGui::PopStyleColor(3);
+
                 ImGui::EndTabItem();
             }
 
@@ -355,7 +364,10 @@ static void DrawMenu(Overlay& overlay)
 static bool TryAttach()
 {
     if (g_mem.IsValid()) return true;
-    return g_mem.Attach(TARGET_PROCESS);
+    bool ok = g_mem.Attach(TARGET_PROCESS);
+    if (ok && g_rbx)
+        g_rbx->InvalidateStructure(); // novo processo → descarta ponteiros antigos
+    return ok;
 }
 
 // --------------------------------------------------------------------------
