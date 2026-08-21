@@ -196,11 +196,44 @@ static void DrawMenu()
             ImGui::Indent();
             ImGui::Checkbox("Forcar GK (Ignorar pasta Bools)", &g_dive.cfg.forceGK);
             ImGui::Checkbox("Apenas No Alvo (Gol)",            &g_dive.cfg.onlyInGoal);
-            ImGui::Checkbox("Pular em Bola Alta",               &g_dive.cfg.highJump);
-            ImGui::SliderFloat("Dist reacao",   &g_dive.cfg.triggerDistance, 5.f,  35.f, "%.0f studs");
+
+            // Seletor de modo
+            static const char* kModeNames[] = { "4v4  (gol pequeno)", "7v7  (gol grande)" };
+            int modeIdx = static_cast<int>(g_dive.cfg.gameMode);
+            if (ImGui::Combo("Modo", &modeIdx, kModeNames, 2))
+                g_dive.cfg.gameMode = static_cast<GameMode>(modeIdx);
+
+            ImGui::Separator();
+
+            // Sliders comuns
+            ImGui::SliderFloat("Dist reacao",   &g_dive.cfg.triggerDistance, 5.f,  40.f, "%.0f studs");
             ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  50.f, "%.0f studs/s");
-            ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.5f,  3.f, "%.1f s");
-            ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   6.f, "%.0f studs");
+            ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.3f,  3.f, "%.1f s");
+            ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   8.f, "%.0f studs");
+
+            if (g_dive.cfg.gameMode == GameMode::Mode4v4)
+            {
+                ImGui::Separator();
+                ImGui::TextDisabled("-- 4v4 --");
+                ImGui::Checkbox("Pular em Bola Alta (Space)", &g_dive.cfg.highJump);
+                ImGui::SliderFloat("relX dive   [4v4]", &g_dive.cfg.diveXThreshold,  0.5f, 8.f,  "%.1f");
+                if (g_dive.cfg.highJump)
+                {
+                    ImGui::SliderFloat("relY jump   [4v4]", &g_dive.cfg.jumpYThreshold,  2.f, 12.f, "%.1f");
+                    ImGui::SliderFloat("|relX| max jump [4v4]", &g_dive.cfg.jumpXMaxForPure, 1.f, 10.f, "%.1f");
+                }
+            }
+            else
+            {
+                ImGui::Separator();
+                ImGui::TextDisabled("-- 7v7 --");
+                ImGui::SliderFloat("relX dive      [7v7]", &g_dive.cfg.diveXThreshold7v7,  1.f, 12.f, "%.1f");
+                ImGui::SliderFloat("relY Jump+Dive [7v7]", &g_dive.cfg.jumpYThreshold7v7,  2.f, 15.f, "%.1f");
+                ImGui::SliderFloat("relY Jump puro [7v7]", &g_dive.cfg.jumpPureYThreshold, 4.f, 18.f, "%.1f");
+                ImGui::SliderFloat("|relX| min J+D [7v7]", &g_dive.cfg.jumpDiveXMin7v7,    0.f,  6.f, "%.1f");
+                ImGui::SliderFloat("|relX| max J+D [7v7]", &g_dive.cfg.jumpDiveXMax7v7,    2.f, 12.f, "%.1f");
+                ImGui::SliderInt("Delay Space->Q/E (ms)",  &g_dive.cfg.jumpDiveDelayMs,    50,  400);
+            }
 
             if (g_rbx)
             {

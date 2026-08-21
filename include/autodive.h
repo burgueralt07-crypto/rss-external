@@ -43,6 +43,14 @@ struct GoalState {
 class RobloxReader;
 
 // --------------------------------------------------------------------------
+// GameMode — seleciona os thresholds e a lógica de dive
+// --------------------------------------------------------------------------
+enum class GameMode : int {
+    Mode4v4 = 0,   // gol pequeno, sem Jump+Dive
+    Mode7v7 = 1,   // gol grande, suporta Space+Q/E para chutes altos
+};
+
+// --------------------------------------------------------------------------
 // AutoDive
 //
 // Thread dedicada ao scan — lê memória diretamente e decide dive sem
@@ -59,18 +67,38 @@ public:
     AutoDive& operator=(const AutoDive&) = delete;
 
     struct Config {
-        bool  enabled         = false;
-        bool  forceGK         = false;
-        bool  onlyInGoal      = true;
-        bool  highJump        = true;
-        float triggerDistance = 18.f;
-        float cooldownSec     = 1.2f;
-        float minBallSpeed    = 8.f;
-        float goalMargin      = 2.f;
-        int   simSteps        = 45;
-        float simDt           = 0.035f;
-        float gravity         = 156.96f;  // workspace.Gravity * 0.8, igual ao Lua
-        int   scanRate        = 240;    // scans por segundo
+        bool      enabled         = false;
+        bool      forceGK         = false;
+        bool      onlyInGoal      = true;
+        bool      highJump        = true;
+        GameMode  gameMode        = GameMode::Mode4v4;
+
+        // ── 4v4 ──────────────────────────────────────────────────────────
+        float triggerDistance     = 18.f;
+        float cooldownSec         = 1.2f;
+        float minBallSpeed        = 8.f;
+        float goalMargin          = 2.f;
+        // relPos.x acima deste valor → dive direita/esquerda
+        float diveXThreshold      = 3.f;
+        // relPos.y acima deste valor → Jump (Space)
+        float jumpYThreshold      = 5.5f;
+        // |relPos.x| máximo para o Jump puro ter efeito
+        float jumpXMaxForPure     = 6.f;
+
+        // ── 7v7 (gol maior) ──────────────────────────────────────────────
+        // Usar valores abaixo quando gameMode == Mode7v7
+        float diveXThreshold7v7   = 5.f;   // relX para dive direita/esquerda
+        float jumpYThreshold7v7   = 7.f;   // relY para Jump+Dive lateral
+        float jumpPureYThreshold  = 9.f;   // relY para Jump puro (bola no centro)
+        float jumpDiveXMin7v7     = 2.f;   // |relX| mínimo para acionar Jump+Dive
+        float jumpDiveXMax7v7     = 7.f;   // |relX| máximo para acionar Jump+Dive
+        // Delay entre Space e Q/E no combo Jump+Dive (ms)
+        int   jumpDiveDelayMs     = 180;
+
+        int   simSteps            = 45;
+        float simDt               = 0.035f;
+        float gravity             = 156.96f; // workspace.Gravity * 0.8
+        int   scanRate            = 240;     // scans por segundo
     };
 
     Config cfg;

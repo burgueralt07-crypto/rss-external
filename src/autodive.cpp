@@ -93,8 +93,8 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
 // --------------------------------------------------------------------------
 // Evaluate — lógica de decisão (chamada pelo ScanLoop)
 //
-// Espelho exato do Lua attemptAutoDive():
-//   HighJump → Right (E) → Left (Q) → Front (F)
+// 4v4:  Jump → Right (E) → Left (Q) → Front (F)
+// 7v7:  Jump+Dive lateral (Space→Q/E) → Jump puro central → Right (E) → Left (Q) → Front (F)
 // --------------------------------------------------------------------------
 void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalState& goal)
 {
@@ -124,7 +124,6 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     debug.goalPosX  = goal.position.x; debug.goalPosZ  = goal.position.z;
     debug.goalSizeX = goal.size.x;     debug.goalSizeZ = goal.size.z;
 
-    // LocalZ inicial da bola no espaço do gol (útil para debug do plano de cruzamento)
     if (goal.exists && ball.exists)
     {
         Vector3 lp = PointToObjectSpace(goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
@@ -139,35 +138,104 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     debug.relPosY = relPos.y;
     debug.relPosZ = relPos.z;
 
-    // High Jump
-    if (cfg.highJump && relPos.y >= 5.5f && std::fabsf(relPos.x) <= 6.f)
+    const bool is7v7 = (cfg.gameMode == GameMode::Mode7v7);
+
+    if (is7v7)
     {
-        PressKey(VK_SPACE);
-        m_lastKey = "Space (Jump)"; m_firedThisFrame = true; m_lastDiveTime = now;
-        debug.blockReason = "FIRED - Jump";
-        return;
+        // ── 7v7: Jump+Dive lateral ────────────────────────────────────────
+        // Bola alta (Y ≥ jumpYThreshold7v7) E lateral (jumpDiveXMin ≤ |X| ≤ jumpDiveXMax)
+        // → Space primeiro, depois Q (esquerda) ou E (direita) com delay
+        if (relPos.y >= cfg.jumpYThreshold7v7)
+        {
+            float absX = std::fabsf(relPos.x);
+
+            if (absX >= cfg.jumpDiveXMin7v7 && absX <= cfg.jumpDiveXMax7v7)
+            {
+                // Determina a tecla de dive lateral
+                WORD  diveKey  = (relPos.x > 0.f) ? 'E' : 'Q';
+                const char* keyName = (relPos.x > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
+                int delayMs = cfg.jumpDiveDelayMs;
+
+                // Dispara Space imediatamente
+                PressKey(VK_SPACE);
+
+                // Dispara Q/E após delay em thread separada (não trava o scan loop)
+                std::thread([diveKey, delayMs]() {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+                    WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
+                    INPUT down = {};
+                    down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
+                    down.ki.dwFlags = KEYEVENTF_SCANCODE;
+                    SendInput(1, &down, sizeof(INPUT));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+                    INPUT up = down;
+                    up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
+                    SendInput(1, &up, sizeof(INPUT));
+                }).detach();
+
+                m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
+                debug.blockReason = std::string("FIRED - ") + keyName;
+                return;
+            }
+
+            // ── 7v7: Jump puro central ────────────────────────────────────
+            // Bola muito alta (Y ≥ jumpPureYThreshold) e no centro (|X| < jumpDiveXMin)
+            if (cfg.highJump && relPos.y >= cfg.jumpPureYThreshold && absX < cfg.jumpDiveXMin7v7)
+            {
+                PressKey(VK_SPACE);
+                m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                debug.blockReason = "FIRED - Jump 7v7";
+                return;
+            }
+        }
+
+        // ── 7v7: Dives laterais normais ───────────────────────────────────
+        if (relPos.x > cfg.diveXThreshold7v7)
+        {
+            PressKey('E');
+            m_lastKey = "E (Right 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+            debug.blockReason = "FIRED - Right 7v7";
+            return;
+        }
+        if (relPos.x < -cfg.diveXThreshold7v7)
+        {
+            PressKey('Q');
+            m_lastKey = "Q (Left 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+            debug.blockReason = "FIRED - Left 7v7";
+            return;
+        }
+    }
+    else
+    {
+        // ── 4v4: High Jump ────────────────────────────────────────────────
+        if (cfg.highJump && relPos.y >= cfg.jumpYThreshold && std::fabsf(relPos.x) <= cfg.jumpXMaxForPure)
+        {
+            PressKey(VK_SPACE);
+            m_lastKey = "Space (Jump)"; m_firedThisFrame = true; m_lastDiveTime = now;
+            debug.blockReason = "FIRED - Jump";
+            return;
+        }
+
+        // ── 4v4: Dives laterais ───────────────────────────────────────────
+        if (relPos.x > cfg.diveXThreshold)
+        {
+            PressKey('E');
+            m_lastKey = "E (Right)"; m_firedThisFrame = true; m_lastDiveTime = now;
+            debug.blockReason = "FIRED - Right";
+            return;
+        }
+        if (relPos.x < -cfg.diveXThreshold)
+        {
+            PressKey('Q');
+            m_lastKey = "Q (Left)"; m_firedThisFrame = true; m_lastDiveTime = now;
+            debug.blockReason = "FIRED - Left";
+            return;
+        }
     }
 
-    // Right
-    if (relPos.x > 3.f)
-    {
-        PressKey('E');
-        m_lastKey = "E (Right)"; m_firedThisFrame = true; m_lastDiveTime = now;
-        debug.blockReason = "FIRED - Right";
-        return;
-    }
-
-    // Left
-    if (relPos.x < -3.f)
-    {
-        PressKey('Q');
-        m_lastKey = "Q (Left)"; m_firedThisFrame = true; m_lastDiveTime = now;
-        debug.blockReason = "FIRED - Left";
-        return;
-    }
-
-    // Front
-    if (std::fabsf(relPos.x) <= 3.f && relPos.z < 0.f)
+    // ── Ambos os modos: Front ─────────────────────────────────────────────
+    float diveX = is7v7 ? cfg.diveXThreshold7v7 : cfg.diveXThreshold;
+    if (std::fabsf(relPos.x) <= diveX && relPos.z < 0.f)
     {
         PressKey('F');
         m_lastKey = "F (Front)"; m_firedThisFrame = true; m_lastDiveTime = now;
