@@ -237,6 +237,7 @@ static void DrawMenu()
                 ImGui::Separator();
                 ImGui::Text("Dist bola: %.1f", dbg.distToBall);
                 ImGui::Text("Bola->Gol: %s", dbg.approaching ? "SIM (no alvo)" : "nao");
+                ImGui::Text("BallLocalZ (gol): %.2f", dbg.ballLocalZ);
                 ImGui::Text("RelPos (GK space): X=%.1f  Y=%.1f  Z=%.1f",
                     dbg.relPosX, dbg.relPosY, dbg.relPosZ);
                 ImGui::Text("Bola pos: (%.1f, %.1f)  vel: (%.1f, %.1f)",

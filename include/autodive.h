@@ -91,6 +91,7 @@ public:
         float relPosZ     = 0.f;
         bool  approaching = false;
         bool  isAPG       = false;
+        float ballLocalZ  = 0.f;   // localZ inicial da bola no espaço do gol (debug da previsão)
         std::string blockReason;
 
         float ballPosX  = 0.f, ballPosZ  = 0.f;

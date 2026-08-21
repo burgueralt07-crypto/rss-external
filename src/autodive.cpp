@@ -85,13 +85,18 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
     Vector3 simPos = ball.position;
     Vector3 simVel = ball.velocity;
 
-    // localZ da posição inicial no espaço local do gol
+    // localZ da posição inicial no espaço local do gol.
+    // Nota: Look() já é negado em rmath.h (LookVector Roblox = -Z local),
+    // então a bola vinda de fora pode ter localZ positivo OU negativo
+    // dependendo da orientação do gol — detectamos cruzamento em ambas direções.
     Vector3 localPrev = PointToObjectSpace(
         goal.position, goal.rightVec, goal.upVec, goal.lookVec, simPos);
     float prevLocalZ = localPrev.z;
 
     for (int i = 0; i < steps; ++i)
     {
+        Vector3 prevSimPos = simPos;
+
         simPos.x += simVel.x * dt;
         simPos.y += simVel.y * dt;
         simPos.z += simVel.z * dt;
@@ -102,18 +107,16 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
 
         float currLocalZ = localPos.z;
 
-        // Detecta cruzamento do plano frontal (localZ de + para -)
-        if (prevLocalZ >= 0.f && currLocalZ < 0.f)
+        // Detecta cruzamento do plano frontal (localZ muda de sinal)
+        if ((prevLocalZ >= 0.f && currLocalZ < 0.f) ||
+            (prevLocalZ <= 0.f && currLocalZ > 0.f))
         {
             // Interpola a fração do passo onde localZ == 0
-            float t = prevLocalZ / (prevLocalZ - currLocalZ);  // [0,1]
+            float dz = prevLocalZ - currLocalZ;
+            float t  = (std::fabsf(dz) > 1e-6f) ? (prevLocalZ / dz) : 0.f;
 
-            // Posição interpolada no espaço local no momento do cruzamento
             Vector3 localPrevFull = PointToObjectSpace(
-                goal.position, goal.rightVec, goal.upVec, goal.lookVec,
-                { simPos.x - simVel.x * dt,
-                  simPos.y - simVel.y * dt,
-                  simPos.z - simVel.z * dt });
+                goal.position, goal.rightVec, goal.upVec, goal.lookVec, prevSimPos);
 
             float crossX = localPrevFull.x + (localPos.x - localPrevFull.x) * t;
             float crossY = localPrevFull.y + (localPos.y - localPrevFull.y) * t;
@@ -121,7 +124,7 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
             if (std::fabsf(crossX) <= halfW && std::fabsf(crossY) <= halfH)
                 return true;
 
-            // Já cruzou o plano mas fora da abertura — não vai entrar
+            // Cruzou o plano mas fora da abertura — não vai entrar
             return false;
         }
 
@@ -164,6 +167,13 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     debug.ballVelX  = ball.velocity.x; debug.ballVelZ  = ball.velocity.z;
     debug.goalPosX  = goal.position.x; debug.goalPosZ  = goal.position.z;
     debug.goalSizeX = goal.size.x;     debug.goalSizeZ = goal.size.z;
+
+    // LocalZ inicial da bola no espaço do gol (útil para debug do plano de cruzamento)
+    if (goal.exists && ball.exists)
+    {
+        Vector3 lp = PointToObjectSpace(goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
+        debug.ballLocalZ = lp.z;
+    }
 
     if (!targeting) { debug.blockReason = "not targeting goal"; return; }
 
