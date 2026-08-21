@@ -55,83 +55,40 @@ Vector3 AutoDive::PointToObjectSpace(const Vector3& origin,
 }
 
 // --------------------------------------------------------------------------
-// IsBallTargetingGoal — previsão de trajetória até o plano do gol
+// IsBallTargetingGoal — projeção linear da trajetória até o plano do gol
 //
-// Lógica: simula a física da bola passo a passo e verifica se ela vai
-// cruzar o plano frontal do gol (localZ passa de positivo para negativo
-// no espaço local do gol). Quando esse cruzamento é detectado, interpola
-// a posição exata no plano (localZ == 0) e verifica se está dentro da
-// abertura do gol (com margem). Isso permite disparar o dive com
-// antecedência — quando a bola ainda está a caminho, não quando já chegou.
+// Projeta a velocidade da bola e calcula onde ela cruza o plano frontal
+// do gol (localZ == 0 no espaço local do gol). Se o ponto de cruzamento
+// estiver dentro da abertura (com margem), a bola vai bater no gol.
 // --------------------------------------------------------------------------
 bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal) const
 {
     if (!cfg.onlyInGoal) return true;
     if (!ball.exists || !goal.exists) return true;
 
-    // Descarta se a bola está se afastando do gol
-    Vector3 toGoal = goal.position - ball.position;
-    if (ball.velocity.Dot(toGoal) <= 0.f) return false;
+    // Posição e velocidade da bola no espaço local do gol
+    Vector3 localPos = PointToObjectSpace(
+        goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
 
-    const float gravity = cfg.gravity;
-    const float margin  = cfg.goalMargin;
-    const float dt      = cfg.simDt;
-    const int   steps   = cfg.simSteps;
+    // Velocidade projetada nos eixos locais do gol
+    float velX = ball.velocity.Dot(goal.rightVec);
+    float velY = ball.velocity.Dot(goal.upVec);
+    float velZ = ball.velocity.Dot(goal.lookVec);
 
-    // Half-sizes da abertura do gol
-    const float halfW = goal.size.x * 0.5f + margin;   // lateral
-    const float halfH = goal.size.y * 0.5f + margin;   // vertical
+    // Bola precisa estar se movendo em direção ao plano (velZ e localZ com sinais opostos)
+    if (velZ == 0.f) return false;
+    float t = -localPos.z / velZ;
+    if (t <= 0.f) return false;   // cruzamento no passado
 
-    Vector3 simPos = ball.position;
-    Vector3 simVel = ball.velocity;
+    // Ponto de cruzamento no plano do gol
+    float crossX = localPos.x + velX * t;
+    float crossY = localPos.y + velY * t;
 
-    // localZ da posição inicial no espaço local do gol.
-    // Nota: Look() já é negado em rmath.h (LookVector Roblox = -Z local),
-    // então a bola vinda de fora pode ter localZ positivo OU negativo
-    // dependendo da orientação do gol — detectamos cruzamento em ambas direções.
-    Vector3 localPrev = PointToObjectSpace(
-        goal.position, goal.rightVec, goal.upVec, goal.lookVec, simPos);
-    float prevLocalZ = localPrev.z;
+    float halfW = goal.size.x * 0.5f + cfg.goalMargin;
+    float halfH = goal.size.y * 0.5f + cfg.goalMargin;
 
-    for (int i = 0; i < steps; ++i)
-    {
-        Vector3 prevSimPos = simPos;
-
-        simPos.x += simVel.x * dt;
-        simPos.y += simVel.y * dt;
-        simPos.z += simVel.z * dt;
-        simVel.y -= gravity * dt;
-
-        Vector3 localPos = PointToObjectSpace(
-            goal.position, goal.rightVec, goal.upVec, goal.lookVec, simPos);
-
-        float currLocalZ = localPos.z;
-
-        // Detecta cruzamento do plano frontal (localZ muda de sinal)
-        if ((prevLocalZ >= 0.f && currLocalZ < 0.f) ||
-            (prevLocalZ <= 0.f && currLocalZ > 0.f))
-        {
-            // Interpola a fração do passo onde localZ == 0
-            float dz = prevLocalZ - currLocalZ;
-            float t  = (std::fabsf(dz) > 1e-6f) ? (prevLocalZ / dz) : 0.f;
-
-            Vector3 localPrevFull = PointToObjectSpace(
-                goal.position, goal.rightVec, goal.upVec, goal.lookVec, prevSimPos);
-
-            float crossX = localPrevFull.x + (localPos.x - localPrevFull.x) * t;
-            float crossY = localPrevFull.y + (localPos.y - localPrevFull.y) * t;
-
-            if (std::fabsf(crossX) <= halfW && std::fabsf(crossY) <= halfH)
-                return true;
-
-            // Cruzou o plano mas fora da abertura — não vai entrar
-            return false;
-        }
-
-        prevLocalZ = currLocalZ;
-    }
-
-    return false;
+    return std::fabsf(crossX) <= halfW && std::fabsf(crossY) <= halfH;
+}
 }
 
 // --------------------------------------------------------------------------
