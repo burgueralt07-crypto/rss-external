@@ -90,11 +90,9 @@ public:
 
         // ── 7v7 (gol maior) ──────────────────────────────────────────────
         // Usar valores abaixo quando gameMode == Mode7v7
-        float diveXThreshold7v7   = 5.f;   // relX para dive direita/esquerda
-        float jumpYThreshold7v7   = 7.f;   // relY para Jump+Dive lateral
-        float jumpPureYThreshold  = 9.f;   // relY para Jump puro (bola no centro)
-        float jumpDiveXMin7v7     = 2.f;   // |relX| mínimo para acionar Jump+Dive
-        float jumpDiveXMax7v7     = 7.f;   // |relX| máximo para acionar Jump+Dive
+        float diveXThreshold7v7   = 5.f;   // relX para dive direita/esquerda (zona baixa)
+        float jumpDiveXMin7v7     = 2.f;   // |relX| mínimo para acionar Jump+Dive (zona alta)
+        float jumpPureXMax7v7     = 2.f;   // |relX| máximo para Jump puro (sem dive lateral)
         // Delay entre Space e Q/E no combo Jump+Dive (ms)
         int   jumpDiveDelayMs     = 180;
 

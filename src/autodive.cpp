@@ -207,70 +207,82 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     {
         float absX = std::fabsf(relPos.x);
 
-        // ── 7v7: Jump puro central ────────────────────────────────────────
-        // Bola muito alta E no centro → só Space
-        if (cfg.highJump && relPos.y >= cfg.jumpPureYThreshold && absX < cfg.jumpDiveXMin7v7)
+        // Posição da bola no espaço local do gol — usado para dividir metade
+        // superior (Jump+Dive) da metade inferior (dive normal).
+        // goalLocalY > 0 = acima do centro do gol → metade superior.
+        float goalLocalY = 0.f;
+        if (goal.exists)
         {
-            PressKey(VK_SPACE);
-            m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
-            debug.blockReason = "FIRED - Jump 7v7";
-            return;
+            Vector3 ballInGoal = PointToObjectSpace(
+                goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
+            goalLocalY = ballInGoal.y;
         }
 
-        // ── 7v7: Jump+Dive lateral ────────────────────────────────────────
-        // Bola alta (Y ≥ jumpYThreshold7v7) E lateral (jumpDiveXMin ≤ |X| ≤ jumpDiveXMax)
-        // → Space primeiro, depois Q (esquerda) ou E (direita) com delay
-        if (relPos.y >= cfg.jumpYThreshold7v7 && absX >= cfg.jumpDiveXMin7v7 && absX <= cfg.jumpDiveXMax7v7)
+        // Meio do gol em Y — bola acima disso está na metade superior
+        float halfGoalH = goal.exists ? (goal.size.y * 0.5f) : 0.f;
+        bool  ballHigh  = (goalLocalY > 0.f);   // acima do centro do gol
+
+        debug.blockReason = ballHigh ? "[zona alta]" : "[zona baixa]";
+
+        if (ballHigh)
         {
-            WORD  diveKey  = (relPos.x > 0.f) ? 'E' : 'Q';
-            const char* keyName = (relPos.x > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
-            int delayMs = cfg.jumpDiveDelayMs;
+            // ── Metade SUPERIOR do gol → Jump+Dive (Space+Q/E) ───────────
+            // Bola no centro → Jump puro
+            if (cfg.highJump && absX <= cfg.jumpPureXMax7v7)
+            {
+                PressKey(VK_SPACE);
+                m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                debug.blockReason = "FIRED - Jump 7v7";
+                return;
+            }
 
-            // Dispara Space imediatamente
-            PressKey(VK_SPACE);
+            // Bola lateral → Space + Q/E com delay
+            if (absX >= cfg.jumpDiveXMin7v7)
+            {
+                WORD        diveKey = (relPos.x > 0.f) ? 'E' : 'Q';
+                const char* keyName = (relPos.x > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
+                int         delayMs = cfg.jumpDiveDelayMs;
 
-            // Dispara Q/E após delay em thread separada (não trava o scan loop)
-            std::thread([diveKey, delayMs]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
-                WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
-                INPUT down = {};
-                down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
-                down.ki.dwFlags = KEYEVENTF_SCANCODE;
-                SendInput(1, &down, sizeof(INPUT));
-                std::this_thread::sleep_for(std::chrono::milliseconds(25));
-                INPUT up = down;
-                up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-                SendInput(1, &up, sizeof(INPUT));
-            }).detach();
+                PressKey(VK_SPACE);
 
-            m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
-            debug.blockReason = std::string("FIRED - ") + keyName;
-            return;
+                std::thread([diveKey, delayMs]() {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+                    WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
+                    INPUT down = {};
+                    down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
+                    down.ki.dwFlags = KEYEVENTF_SCANCODE;
+                    SendInput(1, &down, sizeof(INPUT));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+                    INPUT up = down;
+                    up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
+                    SendInput(1, &up, sizeof(INPUT));
+                }).detach();
+
+                m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
+                debug.blockReason = std::string("FIRED - ") + keyName;
+                return;
+            }
         }
-
-        // ── 7v7: Dives laterais normais (bola baixa E fora da faixa de Jump+Dive) ──
-        // Se a bola está na faixa X do Jump+Dive mas Y ainda não chegou, aguarda
-        // (não dispara dive normal pra não desperdiçar o cooldown antes do pulo)
-        bool inJumpDiveXRange = (absX >= cfg.jumpDiveXMin7v7 && absX <= cfg.jumpDiveXMax7v7);
-
-        if (!inJumpDiveXRange && relPos.x > cfg.diveXThreshold7v7)
+        else
         {
-            PressKey('E');
-            m_lastKey = "E (Right 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
-            debug.blockReason = "FIRED - Right 7v7";
-            return;
-        }
-        if (!inJumpDiveXRange && relPos.x < -cfg.diveXThreshold7v7)
-        {
-            PressKey('Q');
-            m_lastKey = "Q (Left 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
-            debug.blockReason = "FIRED - Left 7v7";
-            return;
-        }
+            // ── Metade INFERIOR do gol → dive normal (Q/E) ───────────────
+            if (relPos.x > cfg.diveXThreshold7v7)
+            {
+                PressKey('E');
+                m_lastKey = "E (Right 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                debug.blockReason = "FIRED - Right 7v7";
+                return;
+            }
+            if (relPos.x < -cfg.diveXThreshold7v7)
+            {
+                PressKey('Q');
+                m_lastKey = "Q (Left 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                debug.blockReason = "FIRED - Left 7v7";
+                return;
+            }
 
-        // Bola na faixa X do Jump+Dive mas Y ainda não chegou — aguarda
-        if (inJumpDiveXRange)
-            debug.blockReason = "aguardando Y p/ Jump+Dive";
+            debug.blockReason = "ball not in dive zone (baixo)";
+        }
     }
     else
     {
