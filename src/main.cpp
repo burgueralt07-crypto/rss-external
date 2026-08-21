@@ -158,7 +158,7 @@ static void DrawESP(ImDrawList* dl,
 }
 
 // --------------------------------------------------------------------------
-static void DrawMenu()
+static void DrawMenu(Overlay& overlay)
 {
     if (!g_menuOpen) return;
 
@@ -167,6 +167,7 @@ static void DrawMenu()
 
     if (ImGui::Begin("RSS External  [HOME]", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        // Status de conexão e FPS
         if (g_mem.IsValid())
             ImGui::TextColored(ImVec4(0,1,0,1), "Conectado  PID: %lu", g_mem.GetPID());
         else
@@ -175,149 +176,176 @@ static void DrawMenu()
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
         ImGui::Separator();
 
-        ImGui::Checkbox("ESP",       &g_cfg.enabled);
-        if (g_cfg.enabled)
+        if (ImGui::BeginTabBar("MainTabs"))
         {
-            ImGui::Indent();
-            ImGui::Checkbox("Box",        &g_cfg.showBox);
-            ImGui::Checkbox("Vida",       &g_cfg.showHealth);
-            ImGui::Checkbox("Nome",       &g_cfg.showName);
-            ImGui::Checkbox("Distancia",  &g_cfg.showDistance);
-            ImGui::SliderFloat("Max dist", &g_cfg.maxDistance, 50.f, 2000.f, "%.0f studs");
-            ImGui::Unindent();
-        }
-
-        ImGui::Separator();
-
-        // --- AutoDive ---
-        ImGui::Checkbox("Auto Dive (GK)", &g_dive.cfg.enabled);
-        if (g_dive.cfg.enabled)
-        {
-            ImGui::Indent();
-            ImGui::Checkbox("Forcar GK (Ignorar pasta Bools)", &g_dive.cfg.forceGK);
-            ImGui::Checkbox("Apenas No Alvo (Gol)",            &g_dive.cfg.onlyInGoal);
-
-            // Seletor de modo
-            static const char* kModeNames[] = { "4v4  (gol pequeno)", "7v7  (gol grande)" };
-            int modeIdx = static_cast<int>(g_dive.cfg.gameMode);
-            if (ImGui::Combo("Modo", &modeIdx, kModeNames, 2))
-                g_dive.cfg.gameMode = static_cast<GameMode>(modeIdx);
-
-            ImGui::Separator();
-
-            // Sliders comuns
-            ImGui::SliderFloat("Dist reacao",   &g_dive.cfg.triggerDistance, 5.f,  40.f, "%.0f studs");
-            ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  50.f, "%.0f studs/s");
-            ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.3f,  3.f, "%.1f s");
-            ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   8.f, "%.0f studs");
-
-            if (g_dive.cfg.gameMode == GameMode::Mode4v4)
+            // ── Aba: Visuals ─────────────────────────────────────────────
+            if (ImGui::BeginTabItem("Visuals"))
             {
-                ImGui::Separator();
-                ImGui::TextDisabled("-- 4v4 --");
-                ImGui::Checkbox("Pular em Bola Alta (Space)", &g_dive.cfg.highJump);
-                ImGui::SliderFloat("relX dive   [4v4]", &g_dive.cfg.diveXThreshold,  0.5f, 8.f,  "%.1f");
-                if (g_dive.cfg.highJump)
+                ImGui::Checkbox("ESP", &g_cfg.enabled);
+                if (g_cfg.enabled)
                 {
-                    ImGui::SliderFloat("relY jump   [4v4]", &g_dive.cfg.jumpYThreshold,  2.f, 12.f, "%.1f");
-                    ImGui::SliderFloat("|relX| max jump [4v4]", &g_dive.cfg.jumpXMaxForPure, 1.f, 10.f, "%.1f");
+                    ImGui::Indent();
+                    ImGui::Checkbox("Box",       &g_cfg.showBox);
+                    ImGui::Checkbox("Vida",      &g_cfg.showHealth);
+                    ImGui::Checkbox("Nome",      &g_cfg.showName);
+                    ImGui::Checkbox("Distancia", &g_cfg.showDistance);
+                    ImGui::SliderFloat("Max dist", &g_cfg.maxDistance, 50.f, 2000.f, "%.0f studs");
+                    ImGui::Unindent();
                 }
-            }
-            else
-            {
-                ImGui::Separator();
-                ImGui::TextDisabled("-- 7v7 --");
-                ImGui::Checkbox("Pular em Bola Alta (Space) [7v7]", &g_dive.cfg.highJump);
-                ImGui::SliderFloat("relX dive      [7v7]", &g_dive.cfg.diveXThreshold7v7,  1.f, 12.f, "%.1f");
-                ImGui::SliderFloat("|relX| Jump puro[7v7]",&g_dive.cfg.jumpPureXMax7v7,    0.f,  6.f, "%.1f");
-                ImGui::SliderFloat("|relX| min J+D [7v7]", &g_dive.cfg.jumpDiveXMin7v7,    0.f,  6.f, "%.1f");
-                ImGui::SliderInt("Delay Space->Q/E (ms)",  &g_dive.cfg.jumpDiveDelayMs,     0,  400);
+                ImGui::EndTabItem();
             }
 
-            if (g_rbx)
+            // ── Aba: Realistic Street Soccer ─────────────────────────────
+            if (ImGui::BeginTabItem("Realistic Street Soccer"))
             {
-                const GKState&             gk   = g_rbx->GetGKState();
-                const BallState&           ball = g_rbx->GetBall();
-                const GoalState&           goal = g_rbx->GetGoal();
-                const AutoDive::DebugInfo& dbg  = g_dive.debug;
-
-                ImGui::Separator();
-
-                // GK status
-                if (gk.isGK)
-                    ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "GK: ATIVO");
-                else
-                    ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "GK: nao detectado");
-
-                // Hitbox
-                if (gk.hitboxSize.x > 0.f || gk.hitboxSize.y > 0.f || gk.hitboxSize.z > 0.f)
-                    ImGui::Text("Hitbox: pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
-                        gk.hitboxPos.x, gk.hitboxPos.y, gk.hitboxPos.z,
-                        gk.hitboxSize.x, gk.hitboxSize.y, gk.hitboxSize.z);
-                else
-                    ImGui::TextColored(ImVec4(1.f,0.8f,0.f,1.f), "Hitbox: nao encontrada");
-
-                // Bola
-                ImGui::Text("Bola: %s%s  pos=(%.1f,%.1f,%.1f)",
-                    ball.exists ? "sim" : "NAO",
-                    ball.isWelded ? " [welded]" : "",
-                    ball.position.x, ball.position.y, ball.position.z);
-                ImGui::Text("      vel=(%.1f,%.1f,%.1f)  spd=%.1f",
-                    ball.velocity.x, ball.velocity.y, ball.velocity.z, ball.velocity.Length());
-
-                // Gol
-                if (goal.exists)
-                    ImGui::Text("Gol:  pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
-                        goal.position.x, goal.position.y, goal.position.z,
-                        goal.size.x, goal.size.y, goal.size.z);
-                else
-                    ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "Gol: NAO encontrado");
-
-                // Debug do AutoDive
-                ImGui::Separator();
-                ImGui::Text("Dist bola: %.1f", dbg.distToBall);
-                ImGui::Text("Bola->Gol: %s", dbg.approaching ? "SIM (no alvo)" : "nao");
-                ImGui::Text("BallLocalZ (gol): %.2f", dbg.ballLocalZ);
-                ImGui::Text("RelPos (GK space): X=%.1f  Y=%.1f  Z=%.1f",
-                    dbg.relPosX, dbg.relPosY, dbg.relPosZ);
-                ImGui::Text("Bola pos: (%.1f, %.1f)  vel: (%.1f, %.1f)",
-                    dbg.ballPosX, dbg.ballPosZ, dbg.ballVelX, dbg.ballVelZ);
-                ImGui::Text("Gol pos: (%.1f, %.1f)  tam: (%.1f, %.1f)",
-                    dbg.goalPosX, dbg.goalPosZ, dbg.goalSizeX, dbg.goalSizeZ);
-
-                ImGui::Spacing();
-                ImGui::Text("Status: %s", dbg.blockReason.c_str());
-                ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());
-
-                // --- Debug: lista parts do gol ---
-                ImGui::Separator();
-                static std::vector<RobloxReader::GoalPartInfo> s_goalParts;
-                static bool s_showGoalParts = false;
-                static bool s_debugAway = false;
-                if (ImGui::Button("Listar parts do gol"))
+                ImGui::Checkbox("Auto Dive (GK)", &g_dive.cfg.enabled);
+                if (g_dive.cfg.enabled)
                 {
-                    s_goalParts = g_rbx->GetGoalPartsDebug(s_debugAway);
-                    s_showGoalParts = true;
-                }
-                ImGui::SameLine();
-                ImGui::Checkbox("Away", &s_debugAway);
+                    ImGui::Indent();
+                    ImGui::Checkbox("Forcar GK (Ignorar pasta Bools)", &g_dive.cfg.forceGK);
+                    ImGui::Checkbox("Apenas No Alvo (Gol)",            &g_dive.cfg.onlyInGoal);
 
-                if (s_showGoalParts && !s_goalParts.empty())
-                {
-                    ImGui::BeginChild("GoalParts", ImVec2(0, 180), true);
-                    for (const auto& p : s_goalParts)
+                    // Seletor de modo
+                    static const char* kModeNames[] = { "4v4  (gol pequeno)", "7v7  (gol grande)" };
+                    int modeIdx = static_cast<int>(g_dive.cfg.gameMode);
+                    if (ImGui::Combo("Modo", &modeIdx, kModeNames, 2))
+                        g_dive.cfg.gameMode = static_cast<GameMode>(modeIdx);
+
+                    ImGui::Separator();
+
+                    // Sliders comuns
+                    ImGui::SliderFloat("Dist reacao",   &g_dive.cfg.triggerDistance, 5.f,  40.f, "%.0f studs");
+                    ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  50.f, "%.0f studs/s");
+                    ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.3f,  3.f, "%.1f s");
+                    ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   8.f, "%.0f studs");
+
+                    if (g_dive.cfg.gameMode == GameMode::Mode4v4)
                     {
-                        ImGui::Text("[%s] %s", p.cls.c_str(), p.name.c_str());
-                        if (p.size.x > 0.f || p.size.y > 0.f || p.size.z > 0.f)
-                            ImGui::Text("  sz=(%.1f,%.1f,%.1f) pos=(%.1f,%.1f,%.1f)",
-                                p.size.x, p.size.y, p.size.z,
-                                p.position.x, p.position.y, p.position.z);
+                        ImGui::Separator();
+                        ImGui::TextDisabled("-- 4v4 --");
+                        ImGui::Checkbox("Pular em Bola Alta (Space)", &g_dive.cfg.highJump);
+                        ImGui::SliderFloat("relX dive   [4v4]", &g_dive.cfg.diveXThreshold,  0.5f, 8.f,  "%.1f");
+                        if (g_dive.cfg.highJump)
+                        {
+                            ImGui::SliderFloat("relY jump   [4v4]", &g_dive.cfg.jumpYThreshold,  2.f, 12.f, "%.1f");
+                            ImGui::SliderFloat("|relX| max jump [4v4]", &g_dive.cfg.jumpXMaxForPure, 1.f, 10.f, "%.1f");
+                        }
                     }
-                    ImGui::EndChild();
-                    if (ImGui::Button("Fechar")) s_showGoalParts = false;
+                    else
+                    {
+                        ImGui::Separator();
+                        ImGui::TextDisabled("-- 7v7 --");
+                        ImGui::Checkbox("Pular em Bola Alta (Space) [7v7]", &g_dive.cfg.highJump);
+                        ImGui::SliderFloat("relX dive      [7v7]", &g_dive.cfg.diveXThreshold7v7,  1.f, 12.f, "%.1f");
+                        ImGui::SliderFloat("|relX| Jump puro[7v7]",&g_dive.cfg.jumpPureXMax7v7,    0.f,  6.f, "%.1f");
+                        ImGui::SliderFloat("|relX| min J+D [7v7]", &g_dive.cfg.jumpDiveXMin7v7,    0.f,  6.f, "%.1f");
+                        ImGui::SliderInt("Delay Space->Q/E (ms)",  &g_dive.cfg.jumpDiveDelayMs,     0,  400);
+                    }
+
+                    if (g_rbx)
+                    {
+                        const GKState&             gk   = g_rbx->GetGKState();
+                        const BallState&           ball = g_rbx->GetBall();
+                        const GoalState&           goal = g_rbx->GetGoal();
+                        const AutoDive::DebugInfo& dbg  = g_dive.debug;
+
+                        ImGui::Separator();
+
+                        // GK status
+                        if (gk.isGK)
+                            ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "GK: ATIVO");
+                        else
+                            ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "GK: nao detectado");
+
+                        // Hitbox
+                        if (gk.hitboxSize.x > 0.f || gk.hitboxSize.y > 0.f || gk.hitboxSize.z > 0.f)
+                            ImGui::Text("Hitbox: pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
+                                gk.hitboxPos.x, gk.hitboxPos.y, gk.hitboxPos.z,
+                                gk.hitboxSize.x, gk.hitboxSize.y, gk.hitboxSize.z);
+                        else
+                            ImGui::TextColored(ImVec4(1.f,0.8f,0.f,1.f), "Hitbox: nao encontrada");
+
+                        // Bola
+                        ImGui::Text("Bola: %s%s  pos=(%.1f,%.1f,%.1f)",
+                            ball.exists ? "sim" : "NAO",
+                            ball.isWelded ? " [welded]" : "",
+                            ball.position.x, ball.position.y, ball.position.z);
+                        ImGui::Text("      vel=(%.1f,%.1f,%.1f)  spd=%.1f",
+                            ball.velocity.x, ball.velocity.y, ball.velocity.z, ball.velocity.Length());
+
+                        // Gol
+                        if (goal.exists)
+                            ImGui::Text("Gol:  pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
+                                goal.position.x, goal.position.y, goal.position.z,
+                                goal.size.x, goal.size.y, goal.size.z);
+                        else
+                            ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "Gol: NAO encontrado");
+
+                        // Debug do AutoDive
+                        ImGui::Separator();
+                        ImGui::Text("Dist bola: %.1f", dbg.distToBall);
+                        ImGui::Text("Bola->Gol: %s", dbg.approaching ? "SIM (no alvo)" : "nao");
+                        ImGui::Text("BallLocalZ (gol): %.2f", dbg.ballLocalZ);
+                        ImGui::Text("RelPos (GK space): X=%.1f  Y=%.1f  Z=%.1f",
+                            dbg.relPosX, dbg.relPosY, dbg.relPosZ);
+                        ImGui::Text("Bola pos: (%.1f, %.1f)  vel: (%.1f, %.1f)",
+                            dbg.ballPosX, dbg.ballPosZ, dbg.ballVelX, dbg.ballVelZ);
+                        ImGui::Text("Gol pos: (%.1f, %.1f)  tam: (%.1f, %.1f)",
+                            dbg.goalPosX, dbg.goalPosZ, dbg.goalSizeX, dbg.goalSizeZ);
+
+                        ImGui::Spacing();
+                        ImGui::Text("Status: %s", dbg.blockReason.c_str());
+                        ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());
+
+                        // --- Debug: lista parts do gol ---
+                        ImGui::Separator();
+                        static std::vector<RobloxReader::GoalPartInfo> s_goalParts;
+                        static bool s_showGoalParts = false;
+                        static bool s_debugAway = false;
+                        if (ImGui::Button("Listar parts do gol"))
+                        {
+                            s_goalParts = g_rbx->GetGoalPartsDebug(s_debugAway);
+                            s_showGoalParts = true;
+                        }
+                        ImGui::SameLine();
+                        ImGui::Checkbox("Away", &s_debugAway);
+
+                        if (s_showGoalParts && !s_goalParts.empty())
+                        {
+                            ImGui::BeginChild("GoalParts", ImVec2(0, 180), true);
+                            for (const auto& p : s_goalParts)
+                            {
+                                ImGui::Text("[%s] %s", p.cls.c_str(), p.name.c_str());
+                                if (p.size.x > 0.f || p.size.y > 0.f || p.size.z > 0.f)
+                                    ImGui::Text("  sz=(%.1f,%.1f,%.1f) pos=(%.1f,%.1f,%.1f)",
+                                        p.size.x, p.size.y, p.size.z,
+                                        p.position.x, p.position.y, p.position.z);
+                            }
+                            ImGui::EndChild();
+                            if (ImGui::Button("Fechar")) s_showGoalParts = false;
+                        }
+                    }
+                    ImGui::Unindent();
                 }
+                ImGui::EndTabItem();
             }
-            ImGui::Unindent();
+
+            // ── Aba: Misc ─────────────────────────────────────────────────
+            if (ImGui::BeginTabItem("Misc"))
+            {
+                static bool s_streamproof = false;
+                if (ImGui::Checkbox("Streamproof", &s_streamproof))
+                    overlay.SetStreamproof(s_streamproof);
+
+                ImGui::SameLine();
+                ImGui::TextDisabled("(?)");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Oculta o overlay em gravacoes,\ntransmissoes (OBS, Discord, etc.)");
+
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
         }
     }
     ImGui::End();
@@ -409,7 +437,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
                     g_rbx->GetViewport(),
                     overlay.GetTargetHWND());
 
-        DrawMenu();
+        DrawMenu(overlay);
         renderer.EndFrame();
     }
 

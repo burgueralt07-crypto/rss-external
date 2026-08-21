@@ -186,3 +186,24 @@ void Overlay::SetClickThrough(bool clickThrough)
 
     SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, exStyle);
 }
+
+// --------------------------------------------------------------------------
+// SetStreamproof — usa SetWindowDisplayAffinity para ocultar a janela de
+// software de captura (OBS, Discord, gravações de tela, etc.)
+//
+// WDA_EXCLUDEFROMCAPTURE (0x11) → janela fica preta/invisível nas capturas.
+// WDA_NONE (0x00)               → comportamento padrão.
+//
+// Requer Windows 10 build 2004+ para WDA_EXCLUDEFROMCAPTURE.
+// Em versões anteriores cai silenciosamente para WDA_MONITOR (0x01).
+// --------------------------------------------------------------------------
+void Overlay::SetStreamproof(bool enable)
+{
+    if (m_streamproof == enable) return;
+    m_streamproof = enable;
+
+    // WDA_EXCLUDEFROMCAPTURE = 0x00000011
+    // WDA_NONE               = 0x00000000
+    DWORD affinity = enable ? 0x00000011 : 0x00000000;
+    SetWindowDisplayAffinity(m_hwnd, affinity);
+}

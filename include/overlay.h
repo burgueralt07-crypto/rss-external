@@ -19,6 +19,11 @@ public:
     // false = overlay recebe input (menu arrastável)
     void SetClickThrough(bool clickThrough);
 
+    // Streamproof: oculta a janela de capturas de tela, OBS, Discord, etc.
+    // true  = janela invisível para software de captura
+    // false = comportamento normal (visível para capturas)
+    void SetStreamproof(bool enable);
+
     HWND  GetHWND()        const { return m_hwnd; }
     HWND  GetTargetHWND()  const { return m_targetHwnd; }
     int   GetWidth()       const { return m_width; }
@@ -38,6 +43,7 @@ private:
     bool         m_running     = false;
     bool         m_visible     = true;
     bool         m_clickThrough = true;
+    bool         m_streamproof  = false;
 
     std::wstring m_className  = L"OverlayClass";
     std::wstring m_targetName;
