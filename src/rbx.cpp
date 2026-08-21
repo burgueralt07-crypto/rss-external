@@ -353,30 +353,22 @@ GoalState RobloxReader::ReadGoalDirect()
         isAPG = m_isAPG;
     }
 
-    uintptr_t goalModel = 0;
+    // Away: Workspace.AwayAntiOwnGoal (direto no workspace)
+    // Home: Workspace.HomePosition.HomeAntiOwnGoal
+    uintptr_t part = 0;
     if (isAPG)
     {
-        goalModel = FindChild(m_workspace, "AwayGoal");
-        if (!goalModel) goalModel = FindChild(m_workspace, "AwayGoalDetector");
+        part = FindChild(m_workspace, "AwayAntiOwnGoal");
     }
     else
     {
-        goalModel = FindChild(m_workspace, "HomeGoal");
-        if (!goalModel) goalModel = FindChild(m_workspace, "HomeGoalDetector");
+        uintptr_t homePosition = FindChild(m_workspace, "HomePosition");
+        if (homePosition)
+            part = FindChild(homePosition, "HomeAntiOwnGoal");
     }
-    if (!goalModel) return goal;
+    if (!part) return goal;
 
-    uintptr_t primaryPart = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
-    if (!primaryPart)
-    {
-        for (uintptr_t child : GetChildren(goalModel))
-        {
-            if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
-        }
-    }
-    if (!primaryPart) return goal;
-
-    uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
+    uintptr_t primitive = ReadPtr(part + Offsets::BasePart::Primitive);
     if (!primitive) return goal;
 
     goal.exists   = true;
@@ -535,9 +527,8 @@ bool RobloxReader::ReadGKState()
 // --------------------------------------------------------------------------
 // ReadGoalState — lê posição, tamanho e rotação do gol que o GK defende
 //
-// APG defende AwayGoal, HPG defende HomeGoal.
-// Busca pelo goalModel; tenta PrimaryPart, senão primeiro BasePart filho.
-// Também lê a Matrix3x3 de rotação para PointToObjectSpace correto.
+// Away: Workspace.AwayAntiOwnGoal
+// Home: Workspace.HomePosition.HomeAntiOwnGoal
 // --------------------------------------------------------------------------
 bool RobloxReader::ReadGoalState()
 {
@@ -549,30 +540,21 @@ bool RobloxReader::ReadGoalState()
         return false;
     }
 
-    uintptr_t goalModel = 0;
+    uintptr_t part = 0;
     if (m_isAPG)
     {
-        goalModel = FindChild(m_workspace, "AwayGoal");
-        if (!goalModel) goalModel = FindChild(m_workspace, "AwayGoalDetector");
+        part = FindChild(m_workspace, "AwayAntiOwnGoal");
     }
     else
     {
-        goalModel = FindChild(m_workspace, "HomeGoal");
-        if (!goalModel) goalModel = FindChild(m_workspace, "HomeGoalDetector");
+        uintptr_t homePosition = FindChild(m_workspace, "HomePosition");
+        if (homePosition)
+            part = FindChild(homePosition, "HomeAntiOwnGoal");
     }
-    if (!goalModel) { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; return false; }
 
-    uintptr_t primaryPart = ReadPtr(goalModel + Offsets::Model::PrimaryPart);
-    if (!primaryPart)
-    {
-        for (uintptr_t child : GetChildren(goalModel))
-        {
-            if (ReadPtr(child + Offsets::BasePart::Primitive)) { primaryPart = child; break; }
-        }
-    }
-    if (!primaryPart) { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; return false; }
+    if (!part) { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; return false; }
 
-    uintptr_t primitive = ReadPtr(primaryPart + Offsets::BasePart::Primitive);
+    uintptr_t primitive = ReadPtr(part + Offsets::BasePart::Primitive);
     if (!primitive) { std::lock_guard<std::mutex> lk(m_stateMtx); m_goalState = newGoal; return false; }
 
     newGoal.exists   = true;
