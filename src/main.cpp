@@ -16,6 +16,7 @@ static constexpr wchar_t TARGET_PROCESS[] = L"RobloxPlayerBeta.exe";
 static Memory        g_mem;
 static RobloxReader* g_rbx      = nullptr;
 static bool          g_menuOpen = true;
+static int           g_menuKey  = VK_HOME; // tecla para abrir/fechar o menu
 
 struct ESPConfig {
     bool  enabled      = true;
@@ -40,11 +41,23 @@ static ImU32 HealthColor(float hp, float maxHp)
 // --------------------------------------------------------------------------
 static void PollHotkeys()
 {
-    static bool homePrev = false;
-    bool homeNow = (GetAsyncKeyState(VK_HOME) & 0x8000) != 0;
-    if (homeNow && !homePrev)
+    static int  prevKey  = -1;
+    static bool prevDown = false;
+
+    bool down = (GetAsyncKeyState(g_menuKey) & 0x8000) != 0;
+    if (down && !prevDown)
         g_menuOpen = !g_menuOpen;
-    homePrev = homeNow;
+
+    // Reseta estado se a tecla configurada mudou
+    if (g_menuKey != prevKey)
+    {
+        prevDown = false;
+        prevKey  = g_menuKey;
+    }
+    else
+    {
+        prevDown = down;
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -165,7 +178,15 @@ static void DrawMenu(Overlay& overlay)
     ImGui::SetNextWindowBgAlpha(0.85f);
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
 
-    if (ImGui::Begin("RSS External  [HOME]", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    // Monta título com a tecla atual
+    char menuTitle[64];
+    // GetKeyNameText precisa do scancode no formato LPARAM de WM_KEYDOWN
+    UINT sc = MapVirtualKeyW(static_cast<UINT>(g_menuKey), MAPVK_VK_TO_VSC);
+    char keyName[32] = "?";
+    GetKeyNameTextA(static_cast<LONG>(sc << 16), keyName, sizeof(keyName));
+    std::snprintf(menuTitle, sizeof(menuTitle), "RSS External  [%s]", keyName);
+
+    if (ImGui::Begin(menuTitle, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         // Status de conexão e FPS
         if (g_mem.IsValid())
@@ -277,6 +298,52 @@ static void DrawMenu(Overlay& overlay)
                 ImGui::TextDisabled("(?)");
                 if (ImGui::IsItemHovered())
                     ImGui::SetTooltip("Oculta o overlay em gravacoes,\ntransmissoes (OBS, Discord, etc.)");
+
+                ImGui::Separator();
+
+                // ── Seletor de tecla do menu ──────────────────────────────
+                // Lista de teclas disponíveis: VK e nome para exibição
+                static const struct { int vk; const char* name; } kKeys[] = {
+                    { VK_HOME,   "Home"   },
+                    { VK_INSERT, "Insert" },
+                    { VK_DELETE, "Delete" },
+                    { VK_END,    "End"    },
+                    { VK_PRIOR,  "PgUp"   },
+                    { VK_NEXT,   "PgDn"   },
+                    { VK_F1,     "F1"     },
+                    { VK_F2,     "F2"     },
+                    { VK_F3,     "F3"     },
+                    { VK_F4,     "F4"     },
+                    { VK_F5,     "F5"     },
+                    { VK_F6,     "F6"     },
+                    { VK_F7,     "F7"     },
+                    { VK_F8,     "F8"     },
+                    { VK_F9,     "F9"     },
+                    { VK_F10,    "F10"    },
+                    { VK_F11,    "F11"    },
+                    { VK_F12,    "F12"    },
+                };
+                static constexpr int kKeyCount = static_cast<int>(sizeof(kKeys) / sizeof(kKeys[0]));
+
+                // Encontra o índice atual
+                int curIdx = 0;
+                for (int i = 0; i < kKeyCount; ++i)
+                    if (kKeys[i].vk == g_menuKey) { curIdx = i; break; }
+
+                ImGui::Text("Tecla do menu:");
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(90.f);
+                if (ImGui::BeginCombo("##menukey", kKeys[curIdx].name))
+                {
+                    for (int i = 0; i < kKeyCount; ++i)
+                    {
+                        bool selected = (kKeys[i].vk == g_menuKey);
+                        if (ImGui::Selectable(kKeys[i].name, selected))
+                            g_menuKey = kKeys[i].vk;
+                        if (selected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
 
                 ImGui::Separator();
 
