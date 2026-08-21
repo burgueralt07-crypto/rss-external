@@ -44,6 +44,15 @@ public:
     // Debug: lista filhos do Workspace com nomes e classes
     std::vector<std::pair<std::string, std::string>> GetWorkspaceChildrenDebug() const;
 
+    struct GoalPartInfo {
+        std::string name;
+        std::string cls;
+        Vector3     position;
+        Vector3     size;
+    };
+    // Debug: lista todas as parts do HomeGoal e AwayGoal com posição e tamanho
+    std::vector<GoalPartInfo> GetGoalPartsDebug(bool awayGoal) const;
+
 private:
     template<typename T>
     T ReadT(uintptr_t addr, T def = {}) const {

@@ -222,7 +222,43 @@ bool RobloxReader::Update()
 }
 
 // --------------------------------------------------------------------------
-// ReadBallDirect / ReadGKDirect / ReadGoalDirect
+// GetGoalPartsDebug — lista todas as parts de HomeGoal ou AwayGoal
+// com nome, classe, posição e tamanho para identificar a part correta
+// --------------------------------------------------------------------------
+std::vector<RobloxReader::GoalPartInfo> RobloxReader::GetGoalPartsDebug(bool awayGoal) const
+{
+    std::vector<GoalPartInfo> result;
+    if (!m_workspace) return result;
+
+    uintptr_t goalModel = 0;
+    if (awayGoal)
+    {
+        goalModel = FindChild(m_workspace, "AwayGoal");
+        if (!goalModel) goalModel = FindChild(m_workspace, "AwayGoalDetector");
+    }
+    else
+    {
+        goalModel = FindChild(m_workspace, "HomeGoal");
+        if (!goalModel) goalModel = FindChild(m_workspace, "HomeGoalDetector");
+    }
+    if (!goalModel) return result;
+
+    for (uintptr_t child : GetChildren(goalModel))
+    {
+        GoalPartInfo info;
+        info.name = GetInstanceName(child);
+        info.cls  = GetInstanceClass(child);
+
+        uintptr_t prim = ReadPtr(child + Offsets::BasePart::Primitive);
+        if (prim)
+        {
+            info.position = ReadT<Vector3>(prim + Offsets::Primitive::Position);
+            info.size     = ReadT<Vector3>(prim + Offsets::Primitive::Size);
+        }
+        result.push_back(info);
+    }
+    return result;
+}
 //
 // Versões públicas para uso direto pela ScanLoop do AutoDive (240 Hz).
 // Não atualizam m_ball/m_gkState/m_goalState — retornam o estado como valor.

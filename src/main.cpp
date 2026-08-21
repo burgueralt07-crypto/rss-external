@@ -248,6 +248,34 @@ static void DrawMenu()
                 ImGui::Spacing();
                 ImGui::Text("Status: %s", dbg.blockReason.c_str());
                 ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());
+
+                // --- Debug: lista parts do gol ---
+                ImGui::Separator();
+                static std::vector<RobloxReader::GoalPartInfo> s_goalParts;
+                static bool s_showGoalParts = false;
+                static bool s_debugAway = false;
+                if (ImGui::Button("Listar parts do gol"))
+                {
+                    s_goalParts = g_rbx->GetGoalPartsDebug(s_debugAway);
+                    s_showGoalParts = true;
+                }
+                ImGui::SameLine();
+                ImGui::Checkbox("Away", &s_debugAway);
+
+                if (s_showGoalParts && !s_goalParts.empty())
+                {
+                    ImGui::BeginChild("GoalParts", ImVec2(0, 180), true);
+                    for (const auto& p : s_goalParts)
+                    {
+                        ImGui::Text("[%s] %s", p.cls.c_str(), p.name.c_str());
+                        if (p.size.x > 0.f || p.size.y > 0.f || p.size.z > 0.f)
+                            ImGui::Text("  sz=(%.1f,%.1f,%.1f) pos=(%.1f,%.1f,%.1f)",
+                                p.size.x, p.size.y, p.size.z,
+                                p.position.x, p.position.y, p.position.z);
+                    }
+                    ImGui::EndChild();
+                    if (ImGui::Button("Fechar")) s_showGoalParts = false;
+                }
             }
             ImGui::Unindent();
         }
