@@ -142,54 +142,50 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
     if (is7v7)
     {
+        float absX = std::fabsf(relPos.x);
+
+        // ── 7v7: Jump puro central ────────────────────────────────────────
+        // Bola muito alta E no centro → só Space
+        if (cfg.highJump && relPos.y >= cfg.jumpPureYThreshold && absX < cfg.jumpDiveXMin7v7)
+        {
+            PressKey(VK_SPACE);
+            m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+            debug.blockReason = "FIRED - Jump 7v7";
+            return;
+        }
+
         // ── 7v7: Jump+Dive lateral ────────────────────────────────────────
         // Bola alta (Y ≥ jumpYThreshold7v7) E lateral (jumpDiveXMin ≤ |X| ≤ jumpDiveXMax)
         // → Space primeiro, depois Q (esquerda) ou E (direita) com delay
-        if (relPos.y >= cfg.jumpYThreshold7v7)
+        if (relPos.y >= cfg.jumpYThreshold7v7 && absX >= cfg.jumpDiveXMin7v7 && absX <= cfg.jumpDiveXMax7v7)
         {
-            float absX = std::fabsf(relPos.x);
+            WORD  diveKey  = (relPos.x > 0.f) ? 'E' : 'Q';
+            const char* keyName = (relPos.x > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
+            int delayMs = cfg.jumpDiveDelayMs;
 
-            if (absX >= cfg.jumpDiveXMin7v7 && absX <= cfg.jumpDiveXMax7v7)
-            {
-                // Determina a tecla de dive lateral
-                WORD  diveKey  = (relPos.x > 0.f) ? 'E' : 'Q';
-                const char* keyName = (relPos.x > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
-                int delayMs = cfg.jumpDiveDelayMs;
+            // Dispara Space imediatamente
+            PressKey(VK_SPACE);
 
-                // Dispara Space imediatamente
-                PressKey(VK_SPACE);
+            // Dispara Q/E após delay em thread separada (não trava o scan loop)
+            std::thread([diveKey, delayMs]() {
+                std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+                WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
+                INPUT down = {};
+                down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
+                down.ki.dwFlags = KEYEVENTF_SCANCODE;
+                SendInput(1, &down, sizeof(INPUT));
+                std::this_thread::sleep_for(std::chrono::milliseconds(25));
+                INPUT up = down;
+                up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
+                SendInput(1, &up, sizeof(INPUT));
+            }).detach();
 
-                // Dispara Q/E após delay em thread separada (não trava o scan loop)
-                std::thread([diveKey, delayMs]() {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
-                    WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
-                    INPUT down = {};
-                    down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
-                    down.ki.dwFlags = KEYEVENTF_SCANCODE;
-                    SendInput(1, &down, sizeof(INPUT));
-                    std::this_thread::sleep_for(std::chrono::milliseconds(25));
-                    INPUT up = down;
-                    up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-                    SendInput(1, &up, sizeof(INPUT));
-                }).detach();
-
-                m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
-                debug.blockReason = std::string("FIRED - ") + keyName;
-                return;
-            }
-
-            // ── 7v7: Jump puro central ────────────────────────────────────
-            // Bola muito alta (Y ≥ jumpPureYThreshold) e no centro (|X| < jumpDiveXMin)
-            if (cfg.highJump && relPos.y >= cfg.jumpPureYThreshold && absX < cfg.jumpDiveXMin7v7)
-            {
-                PressKey(VK_SPACE);
-                m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
-                debug.blockReason = "FIRED - Jump 7v7";
-                return;
-            }
+            m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
+            debug.blockReason = std::string("FIRED - ") + keyName;
+            return;
         }
 
-        // ── 7v7: Dives laterais normais ───────────────────────────────────
+        // ── 7v7: Dives laterais normais (bola baixa ou fora da faixa de Jump+Dive) ──
         if (relPos.x > cfg.diveXThreshold7v7)
         {
             PressKey('E');

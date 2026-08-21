@@ -227,6 +227,7 @@ static void DrawMenu()
             {
                 ImGui::Separator();
                 ImGui::TextDisabled("-- 7v7 --");
+                ImGui::Checkbox("Pular em Bola Alta (Space) [7v7]", &g_dive.cfg.highJump);
                 ImGui::SliderFloat("relX dive      [7v7]", &g_dive.cfg.diveXThreshold7v7,  1.f, 12.f, "%.1f");
                 ImGui::SliderFloat("relY Jump+Dive [7v7]", &g_dive.cfg.jumpYThreshold7v7,  2.f, 15.f, "%.1f");
                 ImGui::SliderFloat("relY Jump puro [7v7]", &g_dive.cfg.jumpPureYThreshold, 4.f, 18.f, "%.1f");
