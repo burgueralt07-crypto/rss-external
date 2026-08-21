@@ -245,9 +245,7 @@ static void DrawMenu(Overlay& overlay)
                     if (g_rbx)
                     {
                         const GKState&             gk   = g_rbx->GetGKState();
-                        const BallState&           ball = g_rbx->GetBall();
                         const GoalState&           goal = g_rbx->GetGoal();
-                        const AutoDive::DebugInfo& dbg  = g_dive.debug;
 
                         ImGui::Separator();
 
@@ -257,73 +255,11 @@ static void DrawMenu(Overlay& overlay)
                         else
                             ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "GK: nao detectado");
 
-                        // Hitbox
-                        if (gk.hitboxSize.x > 0.f || gk.hitboxSize.y > 0.f || gk.hitboxSize.z > 0.f)
-                            ImGui::Text("Hitbox: pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
-                                gk.hitboxPos.x, gk.hitboxPos.y, gk.hitboxPos.z,
-                                gk.hitboxSize.x, gk.hitboxSize.y, gk.hitboxSize.z);
-                        else
-                            ImGui::TextColored(ImVec4(1.f,0.8f,0.f,1.f), "Hitbox: nao encontrada");
-
-                        // Bola
-                        ImGui::Text("Bola: %s%s  pos=(%.1f,%.1f,%.1f)",
-                            ball.exists ? "sim" : "NAO",
-                            ball.isWelded ? " [welded]" : "",
-                            ball.position.x, ball.position.y, ball.position.z);
-                        ImGui::Text("      vel=(%.1f,%.1f,%.1f)  spd=%.1f",
-                            ball.velocity.x, ball.velocity.y, ball.velocity.z, ball.velocity.Length());
-
                         // Gol
                         if (goal.exists)
-                            ImGui::Text("Gol:  pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
-                                goal.position.x, goal.position.y, goal.position.z,
-                                goal.size.x, goal.size.y, goal.size.z);
+                            ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "Gol: encontrado");
                         else
                             ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "Gol: NAO encontrado");
-
-                        // Debug do AutoDive
-                        ImGui::Separator();
-                        ImGui::Text("Dist bola: %.1f", dbg.distToBall);
-                        ImGui::Text("Bola->Gol: %s", dbg.approaching ? "SIM (no alvo)" : "nao");
-                        ImGui::Text("BallLocalZ (gol): %.2f", dbg.ballLocalZ);
-                        ImGui::Text("RelPos (GK space): X=%.1f  Y=%.1f  Z=%.1f",
-                            dbg.relPosX, dbg.relPosY, dbg.relPosZ);
-                        ImGui::Text("Bola pos: (%.1f, %.1f)  vel: (%.1f, %.1f)",
-                            dbg.ballPosX, dbg.ballPosZ, dbg.ballVelX, dbg.ballVelZ);
-                        ImGui::Text("Gol pos: (%.1f, %.1f)  tam: (%.1f, %.1f)",
-                            dbg.goalPosX, dbg.goalPosZ, dbg.goalSizeX, dbg.goalSizeZ);
-
-                        ImGui::Spacing();
-                        ImGui::Text("Status: %s", dbg.blockReason.c_str());
-                        ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());
-
-                        // --- Debug: lista parts do gol ---
-                        ImGui::Separator();
-                        static std::vector<RobloxReader::GoalPartInfo> s_goalParts;
-                        static bool s_showGoalParts = false;
-                        static bool s_debugAway = false;
-                        if (ImGui::Button("Listar parts do gol"))
-                        {
-                            s_goalParts = g_rbx->GetGoalPartsDebug(s_debugAway);
-                            s_showGoalParts = true;
-                        }
-                        ImGui::SameLine();
-                        ImGui::Checkbox("Away", &s_debugAway);
-
-                        if (s_showGoalParts && !s_goalParts.empty())
-                        {
-                            ImGui::BeginChild("GoalParts", ImVec2(0, 180), true);
-                            for (const auto& p : s_goalParts)
-                            {
-                                ImGui::Text("[%s] %s", p.cls.c_str(), p.name.c_str());
-                                if (p.size.x > 0.f || p.size.y > 0.f || p.size.z > 0.f)
-                                    ImGui::Text("  sz=(%.1f,%.1f,%.1f) pos=(%.1f,%.1f,%.1f)",
-                                        p.size.x, p.size.y, p.size.z,
-                                        p.position.x, p.position.y, p.position.z);
-                            }
-                            ImGui::EndChild();
-                            if (ImGui::Button("Fechar")) s_showGoalParts = false;
-                        }
                     }
                     ImGui::Unindent();
                 }
