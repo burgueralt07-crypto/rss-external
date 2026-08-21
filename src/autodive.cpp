@@ -248,21 +248,29 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             return;
         }
 
-        // ── 7v7: Dives laterais normais (bola baixa ou fora da faixa de Jump+Dive) ──
-        if (relPos.x > cfg.diveXThreshold7v7)
+        // ── 7v7: Dives laterais normais (bola baixa E fora da faixa de Jump+Dive) ──
+        // Se a bola está na faixa X do Jump+Dive mas Y ainda não chegou, aguarda
+        // (não dispara dive normal pra não desperdiçar o cooldown antes do pulo)
+        bool inJumpDiveXRange = (absX >= cfg.jumpDiveXMin7v7 && absX <= cfg.jumpDiveXMax7v7);
+
+        if (!inJumpDiveXRange && relPos.x > cfg.diveXThreshold7v7)
         {
             PressKey('E');
             m_lastKey = "E (Right 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
             debug.blockReason = "FIRED - Right 7v7";
             return;
         }
-        if (relPos.x < -cfg.diveXThreshold7v7)
+        if (!inJumpDiveXRange && relPos.x < -cfg.diveXThreshold7v7)
         {
             PressKey('Q');
             m_lastKey = "Q (Left 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
             debug.blockReason = "FIRED - Left 7v7";
             return;
         }
+
+        // Bola na faixa X do Jump+Dive mas Y ainda não chegou — aguarda
+        if (inJumpDiveXRange)
+            debug.blockReason = "aguardando Y p/ Jump+Dive";
     }
     else
     {
