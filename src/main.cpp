@@ -251,6 +251,14 @@ static void DrawMenu()
                 else
                     ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "GK: nao detectado");
 
+                // Hitbox
+                if (gk.hitboxSize.x > 0.f || gk.hitboxSize.y > 0.f || gk.hitboxSize.z > 0.f)
+                    ImGui::Text("Hitbox: pos=(%.1f,%.1f,%.1f) sz=(%.1f,%.1f,%.1f)",
+                        gk.hitboxPos.x, gk.hitboxPos.y, gk.hitboxPos.z,
+                        gk.hitboxSize.x, gk.hitboxSize.y, gk.hitboxSize.z);
+                else
+                    ImGui::TextColored(ImVec4(1.f,0.8f,0.f,1.f), "Hitbox: nao encontrada");
+
                 // Bola
                 ImGui::Text("Bola: %s%s  pos=(%.1f,%.1f,%.1f)",
                     ball.exists ? "sim" : "NAO",

@@ -71,6 +71,7 @@ private:
     uintptr_t              FindChild(uintptr_t instance, const std::string& name) const;
     uintptr_t              FindChildByClass(uintptr_t instance, const std::string& cls) const;
     Vector3                ReadPartPosition(uintptr_t basePart) const;
+    Vector3                ReadPartSize(uintptr_t basePart) const;
     bool                   ReadBallState();
     bool                   ReadGKState();
     bool                   ReadGoalState();

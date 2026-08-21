@@ -91,10 +91,65 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
 }
 
 // --------------------------------------------------------------------------
+// IsBallHittingGK — verifica se a trajetória linear da bola vai interceptar
+// a hitbox AABB do GK (part "Hitbox" do model).
+//
+// Projeta a posição da bola no tempo t = d/v até cada face do AABB.
+// Se o ponto de cruzamento estiver dentro da caixa, a bola vai bater no GK.
+// Retorna true → não precisa de ação (o corpo já vai defender).
+// --------------------------------------------------------------------------
+bool AutoDive::IsBallHittingGK(const BallState& ball, const GKState& gk) const
+{
+    // Sem hitbox lida → não bloqueia
+    if (gk.hitboxSize.x <= 0.f && gk.hitboxSize.y <= 0.f && gk.hitboxSize.z <= 0.f)
+        return false;
+
+    // AABB min/max com margem pequena de 0.3 studs para compensar latência
+    constexpr float margin = 0.3f;
+    Vector3 hmin = {
+        gk.hitboxPos.x - gk.hitboxSize.x * 0.5f - margin,
+        gk.hitboxPos.y - gk.hitboxSize.y * 0.5f - margin,
+        gk.hitboxPos.z - gk.hitboxSize.z * 0.5f - margin
+    };
+    Vector3 hmax = {
+        gk.hitboxPos.x + gk.hitboxSize.x * 0.5f + margin,
+        gk.hitboxPos.y + gk.hitboxSize.y * 0.5f + margin,
+        gk.hitboxPos.z + gk.hitboxSize.z * 0.5f + margin
+    };
+
+    // Ray-AABB intersection (slab method)
+    // Se a bola já está dentro da hitbox, também retorna true
+    Vector3 p = ball.position;
+    Vector3 v = ball.velocity;
+
+    float tmin = 0.f;
+    float tmax = 3.f; // só olha 3 segundos à frente
+
+    auto checkAxis = [&](float pos, float vel, float bmin, float bmax) -> bool {
+        if (std::fabsf(vel) < 0.001f) {
+            // Sem movimento nesse eixo — verifica se já está dentro
+            return pos >= bmin && pos <= bmax;
+        }
+        float t1 = (bmin - pos) / vel;
+        float t2 = (bmax - pos) / vel;
+        if (t1 > t2) { float tmp = t1; t1 = t2; t2 = tmp; }
+        tmin = std::fmaxf(tmin, t1);
+        tmax = std::fminf(tmax, t2);
+        return tmin <= tmax;
+    };
+
+    if (!checkAxis(p.x, v.x, hmin.x, hmax.x)) return false;
+    if (!checkAxis(p.y, v.y, hmin.y, hmax.y)) return false;
+    if (!checkAxis(p.z, v.z, hmin.z, hmax.z)) return false;
+
+    return tmin <= tmax && tmax >= 0.f;
+}
+
+// --------------------------------------------------------------------------
 // Evaluate — lógica de decisão (chamada pelo ScanLoop)
 //
-// 4v4:  Jump → Right (E) → Left (Q) → Front (F)
-// 7v7:  Jump+Dive lateral (Space→Q/E) → Jump puro central → Right (E) → Left (Q) → Front (F)
+// 4v4:  Jump → Right (E) → Left (Q)
+// 7v7:  Jump puro central → Jump+Dive lateral (Space→Q/E) → Right (E) → Left (Q)
 // --------------------------------------------------------------------------
 void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalState& goal)
 {
@@ -131,6 +186,14 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     }
 
     if (!targeting) { debug.blockReason = "not targeting goal"; return; }
+
+    // Se a bola já vai colidir com a hitbox do GK, não faz nada —
+    // o corpo do goleiro já vai defender sem precisar de dive
+    if (IsBallHittingGK(ball, gk))
+    {
+        debug.blockReason = "ball hitting GK hitbox";
+        return;
+    }
 
     Vector3 relPos = PointToObjectSpace(
         gk.position, gk.rightVec, gk.upVec, gk.lookVec, ball.position);
@@ -227,16 +290,6 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             debug.blockReason = "FIRED - Left";
             return;
         }
-    }
-
-    // ── Ambos os modos: Front ─────────────────────────────────────────────
-    float diveX = is7v7 ? cfg.diveXThreshold7v7 : cfg.diveXThreshold;
-    if (std::fabsf(relPos.x) <= diveX && relPos.z < 0.f)
-    {
-        PressKey('F');
-        m_lastKey = "F (Front)"; m_firedThisFrame = true; m_lastDiveTime = now;
-        debug.blockReason = "FIRED - Front";
-        return;
     }
 
     debug.blockReason = "ball not in dive zone";

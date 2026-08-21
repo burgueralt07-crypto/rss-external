@@ -123,6 +123,17 @@ Vector3 RobloxReader::ReadPartPosition(uintptr_t basePart) const
 }
 
 // --------------------------------------------------------------------------
+// ReadPartSize
+// --------------------------------------------------------------------------
+Vector3 RobloxReader::ReadPartSize(uintptr_t basePart) const
+{
+    if (!basePart) return {};
+    uintptr_t primitive = ReadPtr(basePart + Offsets::BasePart::Primitive);
+    if (!primitive) return {};
+    return ReadT<Vector3>(primitive + Offsets::Primitive::Size);
+}
+
+// --------------------------------------------------------------------------
 // Update — cadeia principal
 //
 // Separado em dois estágios:
@@ -338,6 +349,14 @@ GKState RobloxReader::ReadGKDirect()
         gk.lookVec  = rot.Look();
     }
 
+    // Lê hitbox física do GK (part "Hitbox" dentro do model)
+    uintptr_t hitboxPart = FindChild(model, "Hitbox");
+    if (hitboxPart)
+    {
+        gk.hitboxPos  = ReadPartPosition(hitboxPart);
+        gk.hitboxSize = ReadPartSize(hitboxPart);
+    }
+
     return gk;
 }
 
@@ -490,6 +509,14 @@ bool RobloxReader::ReadGKState()
         newGK.rightVec = rot.Right();
         newGK.upVec    = rot.Up();
         newGK.lookVec  = rot.Look();
+    }
+
+    // Lê hitbox física do GK (part "Hitbox" dentro do model)
+    uintptr_t hitboxPart = FindChild(model, "Hitbox");
+    if (hitboxPart)
+    {
+        newGK.hitboxPos  = ReadPartPosition(hitboxPart);
+        newGK.hitboxSize = ReadPartSize(hitboxPart);
     }
 
     if (!foundInBools && m_forceGK)

@@ -10,11 +10,14 @@
 // GKState
 // --------------------------------------------------------------------------
 struct GKState {
-    bool    isGK     = false;
+    bool    isGK      = false;
     Vector3 position;
     Vector3 rightVec  = { 1.f, 0.f,  0.f };
     Vector3 upVec     = { 0.f, 1.f,  0.f };
     Vector3 lookVec   = { 0.f, 0.f, -1.f };
+    // Hitbox física do GK (part "Hitbox" dentro do model)
+    Vector3 hitboxPos;
+    Vector3 hitboxSize; // zero se não encontrada
 };
 
 // --------------------------------------------------------------------------
@@ -162,6 +165,7 @@ private:
                                       const Vector3& worldPos);
 
     bool IsBallTargetingGoal(const BallState& ball, const GoalState& goal) const;
+    bool IsBallHittingGK(const BallState& ball, const GKState& gk) const;
 
     // Loop da thread de scan
     void ScanLoop(RobloxReader* rbx);
