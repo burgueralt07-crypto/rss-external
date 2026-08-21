@@ -89,7 +89,6 @@ bool AutoDive::IsBallTargetingGoal(const BallState& ball, const GoalState& goal)
 
     return std::fabsf(crossX) <= halfW && std::fabsf(crossY) <= halfH;
 }
-}
 
 // --------------------------------------------------------------------------
 // Evaluate — lógica de decisão (chamada pelo ScanLoop)
