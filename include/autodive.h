@@ -33,6 +33,13 @@ struct BallState {
     // angularVelocity.y  → sidespin (curva lateral, tipo banana)
     // angularVelocity.x  → topspin/backspin (afeta queda/subida)
     Vector3 angularVelocity;
+
+    // Aceleração diferencial medida: (velAtual - velAnterior) / dt
+    // Captura a curva REAL que o jogo está aplicando (qualquer mecanismo interno:
+    // Magnus, forças scriptadas, spin forçado, etc.). Usada pelo SimulateBallPath
+    // em vez do Magnus teórico para prever a trajetória com curva.
+    // Calculada no ScanLoop a cada frame em que a bola está em voo livre.
+    Vector3 measuredAccel;
 };
 
 // --------------------------------------------------------------------------
@@ -157,6 +164,11 @@ public:
         float spinY = 0.f;   // angularVelocity.y (sidespin — curva lateral)
         float spinZ = 0.f;   // angularVelocity.z
 
+        // Aceleração diferencial medida (curva real do jogo)
+        float measuredAccelX = 0.f;
+        float measuredAccelY = 0.f;
+        float measuredAccelZ = 0.f;
+
         // Trajetória simulada — ponto previsto no plano do gol
         float predGoalX = 0.f;   // local X no espaço do gol onde a bola deve cruzar
         float predGoalY = 0.f;   // local Y no espaço do gol
@@ -231,6 +243,12 @@ private:
     bool        m_watchActive    = false;  // bola está dentro do watchRange
     bool        m_trajectoryOK   = false;  // simulação confirmou trajetória para o gol
     SimResult   m_lastSim;                 // último resultado de simulação
+
+    // Estado anterior da bola — usado para calcular aceleração diferencial
+    // (velAtual - velAnterior) / dt, que captura a curva real do jogo
+    Vector3     m_prevBallVel;             // velocidade no frame anterior
+    bool        m_prevBallValid = false;   // false no primeiro frame ou após reset
+    std::chrono::steady_clock::time_point m_prevBallTime;
 
     std::thread       m_thread;
     std::atomic<bool> m_running{ false };

@@ -33,6 +33,42 @@ void AutoDive::ScanLoop(RobloxReader* rbx)
             GKState   gk   = rbx->ReadGKDirect();
             BallState ball = rbx->ReadBallDirect();
             GoalState goal = rbx->ReadGoalDirect();
+
+            // ── Aceleração diferencial — captura a curva REAL do jogo ────
+            // Idêntico ao script Lua: aceleracao = (velAtual - velAnterior) / dt
+            // Só calcula se a bola está em voo livre (existe, não está presa e
+            // velocidade acima do mínimo — mesma guarda do Lua: velAtual.Magnitude >= 15).
+            auto now = std::chrono::steady_clock::now();
+            if (ball.exists && !ball.isWelded && ball.velocity.Length() >= cfg.minBallSpeed)
+            {
+                if (m_prevBallValid)
+                {
+                    float dt = std::chrono::duration<float>(now - m_prevBallTime).count();
+                    if (dt > 0.001f && dt < 0.5f)   // ignora deltas inválidos
+                    {
+                        ball.measuredAccel = (ball.velocity - m_prevBallVel) * (1.f / dt);
+                    }
+                    else
+                    {
+                        ball.measuredAccel = {};
+                    }
+                }
+                else
+                {
+                    ball.measuredAccel = {};
+                }
+                m_prevBallVel   = ball.velocity;
+                m_prevBallTime  = now;
+                m_prevBallValid = true;
+            }
+            else
+            {
+                // Bola parada ou presa → reseta histórico para não contaminar
+                // o próximo chute com aceleração do chute anterior
+                m_prevBallValid    = false;
+                ball.measuredAccel = {};
+            }
+
             Evaluate(gk, ball, goal);
         }
 
@@ -55,16 +91,20 @@ Vector3 AutoDive::PointToObjectSpace(const Vector3& origin,
 }
 
 // --------------------------------------------------------------------------
-// SimulateBallPath — integração de Euler com gravidade, drag e Magnus force
+// SimulateBallPath — integração de Euler com gravidade, drag e curva medida
 //
 // Modelo físico:
-//   F_gravity = (0, -g, 0)
-//   F_drag    = -dragCoeff * vel        (resistência do ar, linear)
-//   F_magnus  = magnusCoeff * (omega × vel)   (força de Magnus — spin curva a bola)
+//   F_gravity  = (0, -g, 0)                         sempre aplicada
+//   F_drag     = -dragCoeff * vel                   resistência linear do ar
+//   F_curve    = measuredAccel - (0, -g, 0)         aceleração lateral REAL
+//                                                    (medida da derivada de vel)
 //
-// Cross-product (omega × vel):
-//   omega = angularVelocity da bola (rad/s no Roblox)
-//   Resultado: força perpendicular ao plano spin-velocidade
+// Se measuredAccel estiver disponível (módulo > 0.5), usa ele para capturar
+// qualquer curva real do jogo (Magnus scriptado, forças internas, etc.).
+// Subtrai a componente de gravidade para não duplar o -g.
+//
+// Se measuredAccel não estiver disponível (primeiro frame, bola parada),
+// cai back para Magnus teórico com angularVelocity como anteriormente.
 //
 // Detecção de cruzamento:
 //   O plano frontal do gol fica onde localZ == 0 no espaço local do gol.
@@ -78,14 +118,34 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
     if (!ball.exists || !goal.exists) return res;
 
     // Estado inicial
-    Vector3 pos = ball.position;
-    Vector3 vel = ball.velocity;
-    Vector3 omega = ball.angularVelocity; // spin — constante durante o voo (simplificação)
+    Vector3 pos   = ball.position;
+    Vector3 vel   = ball.velocity;
+    Vector3 omega = ball.angularVelocity;
 
     const float dt   = cfg.simDt;
     const float g    = cfg.gravity;
     const float drag = cfg.dragCoeff;
     const float mag  = cfg.magnusCoeff;
+
+    // ── Aceleração de curva lateral ───────────────────────────────────────
+    // Se temos aceleração medida com magnitude razoável, extraímos a
+    // componente de curva pura removendo a gravidade e o drag aproximado.
+    // Isso é o equivalente C++ do: aceleracao = (velAtual - velAnterior) / dt
+    // do script Lua, propagado como constante durante o voo simulado.
+    Vector3 curveAccel = {};
+    const float measuredMag = ball.measuredAccel.Length();
+    if (measuredMag > 0.5f)
+    {
+        // measuredAccel = gravity + drag_instantaneo + curva
+        // Removemos só a componente Y de gravidade para isolar a curva lateral.
+        // O drag é pequeno (0.006 * vel) e já está implícito na medição —
+        // não somamos drag separado sobre a parte de curva para evitar dupla contagem.
+        curveAccel = {
+            ball.measuredAccel.x,
+            ball.measuredAccel.y + g,   // remove o -g para isolar curva no Y
+            ball.measuredAccel.z
+        };
+    }
 
     // Posição inicial no espaço local do gol
     auto toLocal = [&](const Vector3& wp) -> Vector3 {
@@ -97,24 +157,33 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
 
     for (int i = 0; i < cfg.simSteps; ++i)
     {
-        // ── Magnus force: F_m = magnusCoeff * (omega × vel) ──────────────
-        // omega × vel em coordenadas mundo:
-        //   x = omega.y*vel.z - omega.z*vel.y
-        //   y = omega.z*vel.x - omega.x*vel.z
-        //   z = omega.x*vel.y - omega.y*vel.x
-        Vector3 magnus = {
-            omega.y * vel.z - omega.z * vel.y,
-            omega.z * vel.x - omega.x * vel.z,
-            omega.x * vel.y - omega.y * vel.x
-        };
+        Vector3 acc;
 
-        // ── Aceleração total ──────────────────────────────────────────────
-        // drag remove uma fração constante da velocidade por segundo
-        Vector3 acc = {
-             mag * magnus.x - drag * vel.x,
-            -g   + mag * magnus.y - drag * vel.y,
-             mag * magnus.z - drag * vel.z
-        };
+        if (measuredMag > 0.5f)
+        {
+            // ── Modo curva medida ─────────────────────────────────────────
+            // gravity + drag (linear) + curva lateral medida (constante)
+            acc = {
+                curveAccel.x - drag * vel.x,
+                -g + curveAccel.y - drag * vel.y,
+                curveAccel.z - drag * vel.z
+            };
+        }
+        else
+        {
+            // ── Fallback: Magnus teórico ──────────────────────────────────
+            // Usado apenas quando não há medição (primeiro frame do chute)
+            Vector3 magnus = {
+                omega.y * vel.z - omega.z * vel.y,
+                omega.z * vel.x - omega.x * vel.z,
+                omega.x * vel.y - omega.y * vel.x
+            };
+            acc = {
+                 mag * magnus.x - drag * vel.x,
+                -g   + mag * magnus.y - drag * vel.y,
+                 mag * magnus.z - drag * vel.z
+            };
+        }
 
         // ── Integração de Euler ───────────────────────────────────────────
         vel.x += acc.x * dt;
@@ -130,21 +199,17 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
         Vector3 localPos = toLocal(pos);
         float   localZ   = localPos.z;
 
-        // Mudança de sinal em localZ → cruzou o plano
         if (prevLocalZ * localZ <= 0.f && i > 0)
         {
-            // Interpolação linear para encontrar o ponto exato
             float alpha = (std::fabsf(prevLocalZ) < 0.001f) ? 0.f
                           : prevLocalZ / (prevLocalZ - localZ);
 
-            res.hit       = true;
-            res.crossX    = localPos.x - alpha * (localPos.x);   // interpola
-            // Refaz a interpolação corretamente com passo anterior
-            // pos_prev = pos - vel*dt (aproximado, já que vel mudou, é suficiente para nosso caso)
-            Vector3 prevPos = { pos.x - vel.x * dt, pos.y - vel.y * dt, pos.z - vel.z * dt };
+            Vector3 prevPos   = { pos.x - vel.x * dt, pos.y - vel.y * dt, pos.z - vel.z * dt };
             Vector3 prevLocal = toLocal(prevPos);
-            res.crossX    = prevLocal.x + alpha * (localPos.x - prevLocal.x);
-            res.crossY    = prevLocal.y + alpha * (localPos.y - prevLocal.y);
+
+            res.hit        = true;
+            res.crossX     = prevLocal.x + alpha * (localPos.x - prevLocal.x);
+            res.crossY     = prevLocal.y + alpha * (localPos.y - prevLocal.y);
             res.timeToGoal = timeAcc - dt + alpha * dt;
             res.velAtCross = vel;
             return res;
@@ -153,7 +218,6 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
         prevLocalZ = localZ;
     }
 
-    // Não cruzou o plano dentro da janela de simulação
     return res;
 }
 
@@ -263,6 +327,9 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     debug.spinX = ball.angularVelocity.x;
     debug.spinY = ball.angularVelocity.y;
     debug.spinZ = ball.angularVelocity.z;
+    debug.measuredAccelX = ball.measuredAccel.x;
+    debug.measuredAccelY = ball.measuredAccel.y;
+    debug.measuredAccelZ = ball.measuredAccel.z;
 
     auto  now       = std::chrono::steady_clock::now();
     float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
@@ -322,6 +389,13 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     {
         float absX = std::fabsf(relPos.x);
 
+        // Ponto de cruzamento previsto no espaço do gol — usado como referência
+        // de direção quando a simulação com curva está disponível.
+        // sim.crossX > 0 → bola vai para a direita do gol (do ponto de vista do GK).
+        // Fallback para relPos.x se a simulação não encontrou cruzamento.
+        float decisionX = sim.hit ? sim.crossX : relPos.x;
+        float absDecisionX = std::fabsf(decisionX);
+
         float goalLocalY = 0.f;
         if (goal.exists)
         {
@@ -336,17 +410,18 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         if (ballHigh)
         {
             // ── Metade SUPERIOR do gol → Jump+Dive (Space+Q/E) ───────────
-            if (cfg.highJump && absX <= cfg.jumpPureXMax7v7)
+            // Usa decisionX (crossX com curva) para decidir a direção
+            if (cfg.highJump && absDecisionX <= cfg.jumpPureXMax7v7)
             {
                 PressKey(VK_SPACE);
                 m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Jump 7v7";
                 return;
             }
-            if (absX >= cfg.jumpDiveXMin7v7)
+            if (absDecisionX >= cfg.jumpDiveXMin7v7)
             {
-                WORD        diveKey = (relPos.x > 0.f) ? 'E' : 'Q';
-                const char* keyName = (relPos.x > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
+                WORD        diveKey = (decisionX > 0.f) ? 'E' : 'Q';
+                const char* keyName = (decisionX > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
                 int         delayMs = cfg.jumpDiveDelayMs;
                 PressKey(VK_SPACE);
                 std::thread([diveKey, delayMs]() {
@@ -377,14 +452,15 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         else
         {
             // ── Metade INFERIOR do gol → dive normal (Q/E) ───────────────
-            if (relPos.x > cfg.diveXThreshold7v7)
+            // Usa decisionX (crossX com curva) para saber lado real de chegada
+            if (decisionX > cfg.diveXThreshold7v7)
             {
                 PressKey('E');
                 m_lastKey = "E (Right 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Right 7v7";
                 return;
             }
-            if (relPos.x < -cfg.diveXThreshold7v7)
+            if (decisionX < -cfg.diveXThreshold7v7)
             {
                 PressKey('Q');
                 m_lastKey = "Q (Left 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
