@@ -210,6 +210,7 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_watchRange=%.2f\n",         c.watchRange);
     fprintf(f, "ad_diveFireDistance=%.2f\n",   c.diveFireDistance);
     fprintf(f, "ad_scanRate=%d\n",             c.scanRate);
+    fprintf(f, "ad_keyHoldMs=%d\n",            c.keyHoldMs);
 
     fprintf(f, "\n[Misc]\n");
     fprintf(f, "misc_menuKey=%d\n", g_menuKey);
@@ -274,6 +275,7 @@ static void ReadConfigEntries(FILE* f)
         FLOAT_KEY("ad_watchRange",         c.watchRange)
         FLOAT_KEY("ad_diveFireDistance",   c.diveFireDistance)
         INT_KEY("ad_scanRate",             c.scanRate)
+        INT_KEY("ad_keyHoldMs",            c.keyHoldMs)
         INT_KEY("misc_menuKey",            g_menuKey)
     }
 
@@ -426,6 +428,10 @@ static void DrawMenu(Overlay& overlay)
                     ImGui::SameLine(); ImGui::TextDisabled("(?)");
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Distancia da bola ao GK para disparar o dive.\nMenor = reage mais perto (mais preciso).\nMaior = reage mais longe (mais antecipado).");
+                    ImGui::SliderInt("Hold tecla", &g_dive.cfg.keyHoldMs, 20, 200, "%d ms");
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Quanto tempo a tecla fica pressionada.\n25ms = rapido demais | 80-120ms = humanizado.");
                     if (g_dive.cfg.gameMode == GameMode::Mode4v4)
                     {
                         ImGui::Separator();

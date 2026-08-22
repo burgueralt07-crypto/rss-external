@@ -506,7 +506,7 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             // Usa decisionX (crossX com curva) para decidir a direção
             if (cfg.highJump && absDecisionX <= cfg.jumpPureXMax7v7)
             {
-                PressKey(VK_SPACE);
+                PressKey(VK_SPACE, cfg.keyHoldMs);
                 m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Jump 7v7";
                 return;
@@ -516,15 +516,16 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
                 WORD        diveKey = (decisionX > 0.f) ? 'E' : 'Q';
                 const char* keyName = (decisionX > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
                 int         delayMs = cfg.jumpDiveDelayMs;
-                PressKey(VK_SPACE);
-                std::thread([diveKey, delayMs]() {
+                int         holdMs  = cfg.keyHoldMs;
+                PressKey(VK_SPACE, cfg.keyHoldMs);
+                std::thread([diveKey, delayMs, holdMs]() {
                     std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
                     WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
                     INPUT down = {};
                     down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
                     down.ki.dwFlags = KEYEVENTF_SCANCODE;
                     SendInput(1, &down, sizeof(INPUT));
-                    std::this_thread::sleep_for(std::chrono::milliseconds(25));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(holdMs));
                     INPUT up = down;
                     up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
                     SendInput(1, &up, sizeof(INPUT));
@@ -536,7 +537,7 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             // Zona morta: fallback Jump puro
             if (cfg.highJump)
             {
-                PressKey(VK_SPACE);
+                PressKey(VK_SPACE, cfg.keyHoldMs);
                 m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Jump 7v7 fallback";
                 return;
@@ -548,14 +549,14 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             // Usa decisionX (crossX com curva) para saber lado real de chegada
             if (decisionX > cfg.diveXThreshold7v7)
             {
-                PressKey('E');
+                PressKey('E', cfg.keyHoldMs);
                 m_lastKey = "E (Right 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Right 7v7";
                 return;
             }
             if (decisionX < -cfg.diveXThreshold7v7)
             {
-                PressKey('Q');
+                PressKey('Q', cfg.keyHoldMs);
                 m_lastKey = "Q (Left 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Left 7v7";
                 return;
@@ -568,21 +569,21 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         // ── 4v4 ──────────────────────────────────────────────────────────
         if (cfg.highJump && relPos.y >= cfg.jumpYThreshold && std::fabsf(relPos.x) <= cfg.jumpXMaxForPure)
         {
-            PressKey(VK_SPACE);
+            PressKey(VK_SPACE, cfg.keyHoldMs);
             m_lastKey = "Space (Jump)"; m_firedThisFrame = true; m_lastDiveTime = now;
             debug.blockReason = "FIRED - Jump";
             return;
         }
         if (relPos.x > cfg.diveXThreshold)
         {
-            PressKey('E');
+            PressKey('E', cfg.keyHoldMs);
             m_lastKey = "E (Right)"; m_firedThisFrame = true; m_lastDiveTime = now;
             debug.blockReason = "FIRED - Right";
             return;
         }
         if (relPos.x < -cfg.diveXThreshold)
         {
-            PressKey('Q');
+            PressKey('Q', cfg.keyHoldMs);
             m_lastKey = "Q (Left)"; m_firedThisFrame = true; m_lastDiveTime = now;
             debug.blockReason = "FIRED - Left";
             return;

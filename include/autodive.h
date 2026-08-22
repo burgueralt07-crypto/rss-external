@@ -156,6 +156,9 @@ public:
         float diveFireDistance    = 18.f;    // studs — dispara o dive ao chegar aqui
 
         int   scanRate            = 240;     // scans por segundo
+        // Duração do key-press em ms — quanto tempo a tecla fica pressionada.
+        // 25ms = quase imperceptível; 80-120ms = mais humanizado.
+        int   keyHoldMs           = 80;      // ms
     };
 
     Config cfg;
@@ -206,8 +209,8 @@ public:
 
 private:
     // Dispara a tecla imediatamente por hardware scancode puro (wVk=0).
-    // Solta a tecla 25ms depois em thread assíncrona — não trava o loop de scan.
-    static void PressKey(WORD vk)
+    // Solta a tecla holdMs depois em thread assíncrona — não trava o loop de scan.
+    static void PressKey(WORD vk, int holdMs = 80)
     {
         WORD sc = static_cast<WORD>(MapVirtualKeyW(vk, MAPVK_VK_TO_VSC));
 
@@ -219,9 +222,9 @@ private:
         down.ki.dwFlags = KEYEVENTF_SCANCODE;
         SendInput(1, &down, sizeof(INPUT));
 
-        // Key up — 25ms depois em thread separada para não bloquear o scan
-        std::thread([sc]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        // Key up — holdMs depois em thread separada para não bloquear o scan
+        std::thread([sc, holdMs]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(holdMs));
             INPUT up = {};
             up.type       = INPUT_KEYBOARD;
             up.ki.wVk     = 0;
