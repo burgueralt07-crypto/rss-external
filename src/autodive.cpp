@@ -321,11 +321,14 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         return;
     }
 
-    // ── No modo 7v7, zona alta: antecipação por timeToGoal ───────────────
-    // Se a simulação já confirmou a trajetória E o tempo até o gol é menor
-    // que jumpDiveTimeWindow, disparamos o Jump+Dive agora mesmo, mesmo que
-    // dist > diveFireDistance. Isso cobre chutes em ângulo (travessão/trave)
-    // que chegam rápidos demais para o trigger normal por distância.
+    // ── Antecipação por timeToGoal (7v7) ─────────────────────────────────
+    // Quando sim.timeToGoal <= jumpDiveTimeWindow disparamos imediatamente,
+    // independente de dist. Isso cobre chutes rápidos em ângulo onde a bola
+    // entra no threshold de distância tarde demais (~100ms de atraso).
+    //
+    // Usamos sim.crossX/Y (ponto previsto no plano do gol) para decidir
+    // zona e direção — mais confiável que posição atual quando vem em ângulo.
+    // crossX no espaço do gol: X+ = direita do gol = esquerda do GK → negamos.
     const bool is7v7 = (cfg.gameMode == GameMode::Mode7v7);
 
     if (is7v7 && cfg.jumpDiveTimeWindow > 0.f && sim.hit &&
@@ -336,31 +339,25 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
         if (sinceLast >= cfg.cooldownSec && !IsBallHittingGK(ball, gk))
         {
-            // Usa o crossX previsto pela simulação para decidir direção.
-            // crossX está no espaço local do GOL (X+ = direita do gol).
-            // O GK olha DE FRENTE para o gol, então a perspectiva é espelhada:
-            // X+ do gol = esquerda do GK → invertemos o sinal.
-            float predX = -sim.crossX;   // negado para ficar no espaço do GK
-            float absX  = std::fabsf(predX);
-
-            bool  predHigh  = (sim.crossY > 0.f);
+            float predX    = -sim.crossX;   // negado: espaço do gol → espaço do GK
+            float absX     = std::fabsf(predX);
+            bool  predHigh = (sim.crossY > 0.f);
 
             if (predHigh)
             {
+                // ── Zona alta: Jump puro ou Jump+Dive ─────────────────────
                 if (cfg.highJump && absX <= cfg.jumpPureXMax7v7)
                 {
                     PressKey(VK_SPACE);
                     m_lastKey = "Space (Jump 7v7 timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
-                    debug.blockReason = "FIRED - Jump 7v7 (timeToGoal)";
+                    debug.blockReason = "FIRED - Jump 7v7 (timed)";
                     return;
                 }
-
                 if (absX >= cfg.jumpDiveXMin7v7)
                 {
                     WORD        diveKey = (predX > 0.f) ? 'E' : 'Q';
                     const char* keyName = (predX > 0.f) ? "Space+E timed" : "Space+Q timed";
                     int         delayMs = cfg.jumpDiveDelayMs;
-
                     PressKey(VK_SPACE);
                     std::thread([diveKey, delayMs]() {
                         std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
@@ -374,9 +371,26 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
                         up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
                         SendInput(1, &up, sizeof(INPUT));
                     }).detach();
-
                     m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
-                    debug.blockReason = std::string("FIRED - ") + keyName + " (timeToGoal)";
+                    debug.blockReason = std::string("FIRED - ") + keyName + " (timed)";
+                    return;
+                }
+            }
+            else
+            {
+                // ── Zona baixa: dive lateral antecipado ───────────────────
+                if (predX > cfg.diveXThreshold7v7)
+                {
+                    PressKey('E');
+                    m_lastKey = "E (Right 7v7 timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                    debug.blockReason = "FIRED - Right 7v7 (timed)";
+                    return;
+                }
+                if (predX < -cfg.diveXThreshold7v7)
+                {
+                    PressKey('Q');
+                    m_lastKey = "Q (Left 7v7 timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                    debug.blockReason = "FIRED - Left 7v7 (timed)";
                     return;
                 }
             }

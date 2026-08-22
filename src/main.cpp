@@ -261,7 +261,7 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::SliderFloat("|relX| Jump puro[7v7]",&g_dive.cfg.jumpPureXMax7v7,    0.f,  6.f, "%.1f");
                         ImGui::SliderFloat("|relX| min J+D [7v7]", &g_dive.cfg.jumpDiveXMin7v7,    0.f,  6.f, "%.1f");
                         ImGui::SliderInt("Delay Space->Q/E (ms)",  &g_dive.cfg.jumpDiveDelayMs,     0,  400);
-                        ImGui::SliderFloat("Janela antecip. J+D [7v7]", &g_dive.cfg.jumpDiveTimeWindow, 0.f, 1.5f, "%.2f s");
+                        ImGui::SliderFloat("Janela antecip. dive [7v7]", &g_dive.cfg.jumpDiveTimeWindow, 0.f, 1.5f, "%.2f s");
                     }
 
                     if (g_rbx)
