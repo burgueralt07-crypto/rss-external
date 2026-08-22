@@ -208,6 +208,7 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_emaAlpha=%.4f\n",           c.emaAlpha);
     fprintf(f, "ad_watchRange=%.2f\n",         c.watchRange);
     fprintf(f, "ad_diveFireDistance=%.2f\n",   c.diveFireDistance);
+    fprintf(f, "ad_nearShotRatio=%.2f\n",      c.nearShotRatio);
     fprintf(f, "ad_scanRate=%d\n",             c.scanRate);
 
     fprintf(f, "\n[Misc]\n");
@@ -271,6 +272,7 @@ static void ReadConfigEntries(FILE* f)
         FLOAT_KEY("ad_emaAlpha",           c.emaAlpha)
         FLOAT_KEY("ad_watchRange",         c.watchRange)
         FLOAT_KEY("ad_diveFireDistance",   c.diveFireDistance)
+        FLOAT_KEY("ad_nearShotRatio",      c.nearShotRatio)
         INT_KEY("ad_scanRate",             c.scanRate)
         INT_KEY("misc_menuKey",            g_menuKey)
     }
@@ -421,6 +423,14 @@ static void DrawMenu(Overlay& overlay)
                     ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  50.f, "%.0f studs/s");
                     ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.3f,  3.f, "%.1f s");
                     ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   8.f, "%.0f studs");
+                    ImGui::SliderFloat("Dist disparo",  &g_dive.cfg.diveFireDistance, 3.f, 40.f, "%.0f studs");
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Distancia da bola ao GK para disparar o dive.\nMenor = reage mais perto (mais preciso).\nMaior = reage mais longe (mais antecipado).");
+                    ImGui::SliderFloat("Near shot ratio [7v7]", &g_dive.cfg.nearShotRatio, 0.f, 1.f, "%.2f");
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Chute de perto + bola baixa (zona baixa 7v7):\nse dist <= Dist disparo * ratio, aciona Space+Q/E\nem vez de Q/E puro (GK pula e mergulha juntos).\n0.0 = desativado | 0.6 = 60%% da dist disparo");
 
                     if (g_dive.cfg.gameMode == GameMode::Mode4v4)
                     {

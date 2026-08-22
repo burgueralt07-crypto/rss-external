@@ -139,6 +139,10 @@ public:
         // o dive é disparado assim que dist <= diveFireDistance.
         float watchRange          = 150.f;   // studs — começa a monitorar (hardcoded para testes)
         float diveFireDistance    = 18.f;    // studs — dispara o dive ao chegar aqui
+        // Chutes de perto com bola baixa (zona baixa): se dist <= diveFireDistance * nearShotRatio,
+        // aciona Space+Q/E em vez de Q/E puro (o GK pula e mergulha simultaneamente).
+        // 0.0 = desativa; 0.6 = 60% da diveFireDistance (default).
+        float nearShotRatio       = 0.6f;
 
         int   scanRate            = 240;     // scans por segundo
     };
