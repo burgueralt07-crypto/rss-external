@@ -444,10 +444,10 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::SliderFloat("|relX| min J+D [7v7]", &g_dive.cfg.jumpDiveXMin7v7,    0.f,  6.f, "%.1f");
                         ImGui::SliderInt("Delay Space->Q/E (ms)",  &g_dive.cfg.jumpDiveDelayMs,     0,  400);
                         ImGui::SliderFloat("Janela antecip. dive [7v7]", &g_dive.cfg.jumpDiveTimeWindow, 0.f, 1.5f, "%.2f s");
-                        ImGui::SliderFloat("crossY min p/ alto  [7v7]", &g_dive.cfg.jumpMinCrossY,      -4.f,  8.f, "%.1f");
+                        ImGui::SliderFloat("crossY min p/ alto  [7v7]", &g_dive.cfg.jumpMinCrossY,      -4.f,  8.f, "%.1f  (-4=tudo  0=centro  8=so topo)");
                         ImGui::SameLine(); ImGui::TextDisabled("(?)");
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Altura minima (crossY) que a bola precisa cruzar\nno plano do gol para acionar Jump/Jump+Dive.\nReferencia: Y=0 e o centro geometrico do gol.\n  0   = acima do centro do gol\n  1.5 = 1.5 studs acima do centro\n  -2  = ate 2 studs abaixo do centro (GK baixo)\nVeja 'predGoalY' no debug para calibrar.");
+                            ImGui::SetTooltip("Altura minima (crossY) que a bola precisa cruzar\nno plano do gol para acionar Jump/Jump+Dive.\nReferencia: Y=0 e o centro geometrico do gol.\n  -4  = qualquer chute que entre no gol\n   0  = acima do centro do gol\n  1.5  = 1.5 studs acima do centro\n   8  = so chutes muito altos (quase na trave)\nVeja 'predGoalY' no debug para calibrar.");
                     }
 
                     if (g_rbx)
