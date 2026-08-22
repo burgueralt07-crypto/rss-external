@@ -336,12 +336,13 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
         if (sinceLast >= cfg.cooldownSec && !IsBallHittingGK(ball, gk))
         {
-            // Usa o crossX previsto pela simulação para decidir direção,
-            // mais confiável que relPos.x quando a bola vem em ângulo.
-            float predX = sim.crossX;
+            // Usa o crossX previsto pela simulação para decidir direção.
+            // crossX está no espaço local do GOL (X+ = direita do gol).
+            // O GK olha DE FRENTE para o gol, então a perspectiva é espelhada:
+            // X+ do gol = esquerda do GK → invertemos o sinal.
+            float predX = -sim.crossX;   // negado para ficar no espaço do GK
             float absX  = std::fabsf(predX);
 
-            float goalHalfH = goal.exists ? goal.size.y * 0.5f : 0.f;
             bool  predHigh  = (sim.crossY > 0.f);
 
             if (predHigh)
