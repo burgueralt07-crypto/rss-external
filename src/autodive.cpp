@@ -375,6 +375,15 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
                     debug.blockReason = std::string("FIRED - ") + keyName + " (timed)";
                     return;
                 }
+                // Zona morta entre jumpPureXMax7v7 e jumpDiveXMin7v7:
+                // fallback para Jump puro — melhor do que não fazer nada.
+                if (cfg.highJump)
+                {
+                    PressKey(VK_SPACE);
+                    m_lastKey = "Space (Jump 7v7 fallback timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                    debug.blockReason = "FIRED - Jump 7v7 fallback (timed)";
+                    return;
+                }
             }
             else
             {
@@ -472,6 +481,15 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
                 m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = std::string("FIRED - ") + keyName;
+                return;
+            }
+
+            // Zona morta: fallback para Jump puro
+            if (cfg.highJump)
+            {
+                PressKey(VK_SPACE);
+                m_lastKey = "Space (Jump 7v7 fallback)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                debug.blockReason = "FIRED - Jump 7v7 fallback";
                 return;
             }
         }
