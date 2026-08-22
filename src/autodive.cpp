@@ -206,7 +206,7 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
         return PointToObjectSpace(goal.position, goal.rightVec, goal.upVec, goal.lookVec, wp);
     };
 
-    float timeAcc  = 0.f;
+    float timeAcc    = 0.f;
     float prevLocalZ = toLocal(pos).z;   // Z inicial no espaço do gol (antes do loop)
 
     for (int i = 0; i < cfg.simSteps; ++i)
@@ -463,17 +463,13 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         float absDecisionX = std::fabsf(decisionX);
 
         // Usa sim.crossY (onde a bola VAI cruzar o plano do gol) para decidir
-        // se o chute é alto. Fallback para posição atual se simulação falhou.
+        // se o chute é alto. Quando a simulação não encontra cruzamento (sim.hit=false),
+        // usa 0.f como fallback (centro do gol) para não penalizar chutes rasteiros
+        // cuja trajetória não convergiu nos passos disponíveis.
         float goalLocalY = 0.f;
         if (sim.hit)
         {
             goalLocalY = sim.crossY;
-        }
-        else if (goal.exists)
-        {
-            Vector3 ballInGoal = PointToObjectSpace(
-                goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
-            goalLocalY = ballInGoal.y;
         }
 
         // jumpMinCrossY: altura mínima de cruzamento para considerar "alto"

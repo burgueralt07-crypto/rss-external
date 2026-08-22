@@ -119,7 +119,7 @@ public:
         float jumpMinCrossY       = 1.5f;
 
         // ── Simulação de trajetória (RK4 + EMA + decaimento) ────────────
-        int   simSteps            = 45;      // passos de integração RK4
+        int   simSteps            = 80;      // passos de integração RK4 (~2.8 s de lookahead a dt=0.035)
         float simDt               = 0.035f;  // dt por passo (s) — ~1.575 s de lookahead
         float gravity             = 156.96f; // workspace.Gravity * fator (studs/s²)
         // Coeficiente de Magnus — fallback quando measuredAccel não disponível.
