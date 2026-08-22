@@ -333,6 +333,7 @@ BallState RobloxReader::ReadBallDirect()
     ball.isWelded = (FindChild(m_cachedBall, "playerWeld") != 0);
     ball.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
     ball.velocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyLinearVelocity);
+    ball.angularVelocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyAngularVelocity);
     return ball;
 }
 
@@ -466,6 +467,7 @@ bool RobloxReader::ReadBallState()
     newBall.exists   = true;
     newBall.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
     newBall.velocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyLinearVelocity);
+    newBall.angularVelocity = ReadT<Vector3>(primitive + Offsets::Primitive::AssemblyAngularVelocity);
 
     { std::lock_guard<std::mutex> lk(m_stateMtx); m_ball = newBall; }
     return true;

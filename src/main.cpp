@@ -267,6 +267,7 @@ static void DrawMenu(Overlay& overlay)
                     {
                         const GKState&             gk   = g_rbx->GetGKState();
                         const GoalState&           goal = g_rbx->GetGoal();
+                        const AutoDive::DebugInfo& dbg  = g_dive.debug;
 
                         ImGui::Separator();
 
@@ -281,6 +282,63 @@ static void DrawMenu(Overlay& overlay)
                             ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "Gol: encontrado");
                         else
                             ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "Gol: NAO encontrado");
+
+                        ImGui::Separator();
+
+                        // ── Debug: distância e watchRange ─────────────────
+                        ImGui::Text("Dist bola: %.1f studs", dbg.distToBall);
+
+                        if (dbg.inWatchRange)
+                            ImGui::TextColored(ImVec4(0.2f,0.8f,1.f,1.f),  "Watch: ATIVO");
+                        else
+                            ImGui::TextColored(ImVec4(0.5f,0.5f,0.5f,1.f), "Watch: fora do range");
+
+                        if (dbg.trajectoryOK)
+                            ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f),  "Trajetoria: GOL");
+                        else
+                            ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f),  "Trajetoria: fora/incerta");
+
+                        // ── Debug: simulação (ponto previsto no gol) ──────
+                        ImGui::Separator();
+                        ImGui::TextDisabled("-- Simulacao --");
+                        if (dbg.simValid)
+                        {
+                            ImGui::Text("Pred X: %+.2f  Y: %+.2f", dbg.predGoalX, dbg.predGoalY);
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled("Pred: sem cruzamento");
+                        }
+
+                        // ── Debug: spin (curva) ───────────────────────────
+                        ImGui::Separator();
+                        ImGui::TextDisabled("-- Spin (curva) --");
+                        // spinY = sidespin (curva lateral mais relevante)
+                        // spinX = topspin/backspin
+                        float spinMag = std::sqrtf(dbg.spinX*dbg.spinX + dbg.spinY*dbg.spinY + dbg.spinZ*dbg.spinZ);
+                        ImGui::Text("Spin X: %+5.1f  Y: %+5.1f  Z: %+5.1f", dbg.spinX, dbg.spinY, dbg.spinZ);
+                        ImGui::Text("Spin total: %.1f rad/s", spinMag);
+
+                        if (std::fabsf(dbg.spinY) > 1.f)
+                        {
+                            const char* dir = dbg.spinY > 0.f ? "CURVA DIREITA" : "CURVA ESQUERDA";
+                            ImGui::TextColored(ImVec4(1.f,0.85f,0.f,1.f), "%s", dir);
+                        }
+
+                        // ── Motivo do bloqueio ────────────────────────────
+                        ImGui::Separator();
+                        ImGui::Text("Status: %s", dbg.blockReason.c_str());
+                        ImGui::Text("Ultimo dive: %s", g_dive.LastDiveKey());
+
+                        // ── Sliders de tuning do simulador ────────────────
+                        ImGui::Separator();
+                        ImGui::TextDisabled("-- Tuning simulacao --");
+                        ImGui::SliderFloat("Magnus coeff",  &g_dive.cfg.magnusCoeff,  0.f,  0.5f, "%.3f");
+                        ImGui::SliderFloat("Drag coeff",    &g_dive.cfg.dragCoeff,    0.f,  0.05f, "%.4f");
+                        ImGui::SliderFloat("Watch range",   &g_dive.cfg.watchRange,   20.f, 250.f, "%.0f studs");
+                        ImGui::SliderFloat("Fire distance", &g_dive.cfg.diveFireDistance, 5.f, 40.f, "%.0f studs");
+                        ImGui::SliderInt("Sim steps",   &g_dive.cfg.simSteps, 20, 120);
+                        ImGui::SliderFloat("Sim dt",    &g_dive.cfg.simDt,   0.01f, 0.06f, "%.3f s");
                     }
                     ImGui::Unindent();
                 }

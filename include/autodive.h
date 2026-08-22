@@ -24,10 +24,15 @@ struct GKState {
 // BallState
 // --------------------------------------------------------------------------
 struct BallState {
-    bool    exists   = false;
-    bool    isWelded = false;
+    bool    exists          = false;
+    bool    isWelded        = false;
     Vector3 position;
     Vector3 velocity;
+    // Velocidade angular (spin) lida do Primitive::AssemblyAngularVelocity.
+    // Usada para calcular Magnus force na simulação de trajetória com curva.
+    // angularVelocity.y  → sidespin (curva lateral, tipo banana)
+    // angularVelocity.x  → topspin/backspin (afeta queda/subida)
+    Vector3 angularVelocity;
 };
 
 // --------------------------------------------------------------------------
@@ -77,7 +82,7 @@ public:
         GameMode  gameMode        = GameMode::Mode4v4;
 
         // ── 4v4 ──────────────────────────────────────────────────────────
-        float triggerDistance     = 18.f;
+        float triggerDistance     = 18.f;   // LEGACY — não usado, veja diveFireDistance
         float cooldownSec         = 1.2f;
         float minBallSpeed        = 8.f;
         float goalMargin          = 2.f;
@@ -96,9 +101,23 @@ public:
         // Delay entre Space e Q/E no combo Jump+Dive (ms)
         int   jumpDiveDelayMs     = 180;
 
-        int   simSteps            = 45;
-        float simDt               = 0.035f;
-        float gravity             = 156.96f; // workspace.Gravity * 0.8
+        // ── Simulação de trajetória (spin/curva) ─────────────────────────
+        int   simSteps            = 60;      // passos de integração Euler
+        float simDt               = 0.03f;   // dt por passo (s)
+        float gravity             = 156.96f; // workspace.Gravity * fator (studs/s²)
+        // Coeficiente de Magnus — escala a força lateral por spin.
+        // Roblox usa unidades arbitrárias de angularVelocity; tunar conforme jogo.
+        float magnusCoeff         = 0.12f;
+        // Drag linear — fração da velocidade removida por segundo.
+        float dragCoeff           = 0.006f;
+
+        // ── WatchRange — detecção antecipada ─────────────────────────────
+        // A thread fica "de olho" na bola a partir desta distância.
+        // Quando a trajetória simulada confirma que a bola vai no gol,
+        // o dive é disparado assim que dist <= diveFireDistance.
+        float watchRange          = 150.f;   // studs — começa a monitorar (hardcoded para testes)
+        float diveFireDistance    = 18.f;    // studs — dispara o dive ao chegar aqui
+
         int   scanRate            = 240;     // scans por segundo
     };
 
@@ -120,13 +139,27 @@ public:
         float relPosZ     = 0.f;
         bool  approaching = false;
         bool  isAPG       = false;
-        float ballLocalZ  = 0.f;   // localZ inicial da bola no espaço do gol (debug da previsão)
+        float ballLocalZ  = 0.f;   // localZ inicial da bola no espaço do gol
         std::string blockReason;
 
         float ballPosX  = 0.f, ballPosZ  = 0.f;
         float ballVelX  = 0.f, ballVelZ  = 0.f;
         float goalPosX  = 0.f, goalPosZ  = 0.f;
         float goalSizeX = 0.f, goalSizeZ = 0.f;
+
+        // Spin / curva
+        float spinX = 0.f;   // angularVelocity.x (topspin/backspin)
+        float spinY = 0.f;   // angularVelocity.y (sidespin — curva lateral)
+        float spinZ = 0.f;   // angularVelocity.z
+
+        // Trajetória simulada — ponto previsto no plano do gol
+        float predGoalX = 0.f;   // local X no espaço do gol onde a bola deve cruzar
+        float predGoalY = 0.f;   // local Y no espaço do gol
+        bool  simValid  = false; // true se a simulação encontrou cruzamento com o plano
+
+        // WatchRange
+        bool  inWatchRange  = false;  // bola está no range de monitoramento
+        bool  trajectoryOK  = false;  // simulação diz que vai no gol
     } debug;
 
 private:
@@ -162,7 +195,21 @@ private:
                                       const Vector3& look,
                                       const Vector3& worldPos);
 
-    bool IsBallTargetingGoal(const BallState& ball, const GoalState& goal) const;
+    // Resultado de uma simulação de trajetória.
+    struct SimResult {
+        bool    hit      = false;  // a trajetória cruzou o plano do gol?
+        float   crossX   = 0.f;   // local X no plano do gol no momento do cruzamento
+        float   crossY   = 0.f;   // local Y no plano do gol no momento do cruzamento
+        float   timeToGoal = 0.f; // tempo estimado até cruzar o plano (s)
+        Vector3 velAtCross;        // velocidade da bola no cruzamento (espaço mundo)
+    };
+
+    // Simula a trajetória da bola com gravidade, drag e Magnus force (spin/curva).
+    // Integração de Euler simples com cfg.simSteps * cfg.simDt segundos totais.
+    // Retorna o ponto previsto de cruzamento com o plano frontal do gol.
+    SimResult SimulateBallPath(const BallState& ball, const GoalState& goal) const;
+
+    bool IsBallTargetingGoal(const BallState& ball, const GoalState& goal, SimResult* outSim = nullptr) const;
     bool IsBallHittingGK(const BallState& ball, const GKState& gk) const;
 
     // Loop da thread de scan
@@ -174,6 +221,11 @@ private:
     std::chrono::steady_clock::time_point m_lastDiveTime;
     bool        m_firedThisFrame = false;
     const char* m_lastKey        = "-";
+
+    // WatchRange state — mantidos entre frames do ScanLoop
+    bool        m_watchActive    = false;  // bola está dentro do watchRange
+    bool        m_trajectoryOK   = false;  // simulação confirmou trajetória para o gol
+    SimResult   m_lastSim;                 // último resultado de simulação
 
     std::thread       m_thread;
     std::atomic<bool> m_running{ false };
