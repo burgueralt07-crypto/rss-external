@@ -402,15 +402,23 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         float decisionX = sim.hit ? -sim.crossX : relPos.x;
         float absDecisionX = std::fabsf(decisionX);
 
+        // Usa sim.crossY (onde a bola VAI cruzar o plano do gol) para decidir
+        // se o chute é alto. Fallback para posição atual se simulação falhou.
         float goalLocalY = 0.f;
-        if (goal.exists)
+        if (sim.hit)
+        {
+            goalLocalY = sim.crossY;
+        }
+        else if (goal.exists)
         {
             Vector3 ballInGoal = PointToObjectSpace(
                 goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
             goalLocalY = ballInGoal.y;
         }
 
-        bool ballHigh = (goalLocalY > 0.f);
+        // jumpMinCrossY: altura mínima de cruzamento para considerar "alto"
+        // Evita Jump+Dive em chutes que sobem levemente mas entram embaixo do gol.
+        bool ballHigh = (goalLocalY >= cfg.jumpMinCrossY);
         debug.blockReason = ballHigh ? "[zona alta]" : "[zona baixa]";
 
         if (ballHigh)

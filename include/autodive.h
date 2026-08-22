@@ -112,6 +112,11 @@ public:
         // mesmo que dist > diveFireDistance, desde que a trajetória já
         // esteja confirmada. 0 = desativado (usa só distância).
         float jumpDiveTimeWindow  = 0.55f;
+        // Altura mínima de cruzamento (sim.crossY, espaço local do gol) para
+        // considerar o chute "alto" e acionar Jump/Jump+Dive.
+        // 0 = qualquer coisa acima do centro do gol (comportamento anterior).
+        // Ex: 1.5 = só bolas que vão cruzar 1.5 studs acima do centro do gol.
+        float jumpMinCrossY       = 1.5f;
 
         // ── Simulação de trajetória (spin/curva) ─────────────────────────
         int   simSteps            = 60;      // passos de integração Euler
