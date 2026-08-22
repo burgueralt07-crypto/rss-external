@@ -321,6 +321,67 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         return;
     }
 
+    // ── No modo 7v7, zona alta: antecipação por timeToGoal ───────────────
+    // Se a simulação já confirmou a trajetória E o tempo até o gol é menor
+    // que jumpDiveTimeWindow, disparamos o Jump+Dive agora mesmo, mesmo que
+    // dist > diveFireDistance. Isso cobre chutes em ângulo (travessão/trave)
+    // que chegam rápidos demais para o trigger normal por distância.
+    const bool is7v7 = (cfg.gameMode == GameMode::Mode7v7);
+
+    if (is7v7 && cfg.jumpDiveTimeWindow > 0.f && sim.hit &&
+        sim.timeToGoal <= cfg.jumpDiveTimeWindow)
+    {
+        auto  now       = std::chrono::steady_clock::now();
+        float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
+
+        if (sinceLast >= cfg.cooldownSec && !IsBallHittingGK(ball, gk))
+        {
+            // Usa o crossX previsto pela simulação para decidir direção,
+            // mais confiável que relPos.x quando a bola vem em ângulo.
+            float predX = sim.crossX;
+            float absX  = std::fabsf(predX);
+
+            float goalHalfH = goal.exists ? goal.size.y * 0.5f : 0.f;
+            bool  predHigh  = (sim.crossY > 0.f);
+
+            if (predHigh)
+            {
+                if (cfg.highJump && absX <= cfg.jumpPureXMax7v7)
+                {
+                    PressKey(VK_SPACE);
+                    m_lastKey = "Space (Jump 7v7 timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                    debug.blockReason = "FIRED - Jump 7v7 (timeToGoal)";
+                    return;
+                }
+
+                if (absX >= cfg.jumpDiveXMin7v7)
+                {
+                    WORD        diveKey = (predX > 0.f) ? 'E' : 'Q';
+                    const char* keyName = (predX > 0.f) ? "Space+E timed" : "Space+Q timed";
+                    int         delayMs = cfg.jumpDiveDelayMs;
+
+                    PressKey(VK_SPACE);
+                    std::thread([diveKey, delayMs]() {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+                        WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
+                        INPUT down = {};
+                        down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
+                        down.ki.dwFlags = KEYEVENTF_SCANCODE;
+                        SendInput(1, &down, sizeof(INPUT));
+                        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+                        INPUT up = down;
+                        up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
+                        SendInput(1, &up, sizeof(INPUT));
+                    }).detach();
+
+                    m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
+                    debug.blockReason = std::string("FIRED - ") + keyName + " (timeToGoal)";
+                    return;
+                }
+            }
+        }
+    }
+
     // ── Dentro do watchRange mas ainda longe demais para disparar ─────────
     if (dist > cfg.diveFireDistance)
     {
@@ -346,8 +407,6 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     debug.relPosX = relPos.x;
     debug.relPosY = relPos.y;
     debug.relPosZ = relPos.z;
-
-    const bool is7v7 = (cfg.gameMode == GameMode::Mode7v7);
 
     if (is7v7)
     {

@@ -100,6 +100,11 @@ public:
         float jumpPureXMax7v7     = 2.f;   // |relX| máximo para Jump puro (sem dive lateral)
         // Delay entre Space e Q/E no combo Jump+Dive (ms)
         int   jumpDiveDelayMs     = 180;
+        // Janela de tempo para disparar Jump+Dive antecipado (s).
+        // Quando sim.timeToGoal <= jumpDiveTimeWindow o Space é enviado
+        // mesmo que dist > diveFireDistance, desde que a trajetória já
+        // esteja confirmada. 0 = desativado (usa só distância).
+        float jumpDiveTimeWindow  = 0.55f;
 
         // ── Simulação de trajetória (spin/curva) ─────────────────────────
         int   simSteps            = 60;      // passos de integração Euler
