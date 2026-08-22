@@ -119,7 +119,7 @@ public:
         float jumpMinCrossY       = 1.5f;
 
         // ── Simulação de trajetória (spin/curva) ─────────────────────────
-        int   simSteps            = 60;      // passos de integração Euler
+        int   simSteps            = 100;     // passos de integração Euler
         float simDt               = 0.03f;   // dt por passo (s)
         float gravity             = 156.96f; // workspace.Gravity * fator (studs/s²)
         // Coeficiente de Magnus — escala a força lateral por spin.
