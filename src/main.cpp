@@ -9,6 +9,7 @@
 #include <Windows.h>
 #include <string>
 #include <cstdio>
+#include <cstring>
 
 static constexpr wchar_t TARGET_WINDOW[]  = L"Roblox";
 static constexpr wchar_t TARGET_PROCESS[] = L"RobloxPlayerBeta.exe";
@@ -168,6 +169,126 @@ static void DrawESP(ImDrawList* dl,
             dl->AddText(ImVec2(screenCenter.x - sz.x*0.5f, y2+2.f), IM_COL32(180,180,180,220), buf);
         }
     }
+}
+
+// --------------------------------------------------------------------------
+// Caminho do arquivo de config — mesmo diretório do executável
+static std::string GetConfigPath()
+{
+    char buf[MAX_PATH] = {};
+    GetModuleFileNameA(nullptr, buf, MAX_PATH);
+    char* last = strrchr(buf, '\\');
+    if (last) *(last + 1) = '\0';
+    return std::string(buf) + "rss_config.ini";
+}
+
+static void SaveConfig()
+{
+    FILE* f = fopen(GetConfigPath().c_str(), "w");
+    if (!f) return;
+
+    const AutoDive::Config& c = g_dive.cfg;
+
+    fprintf(f, "[ESP]\n");
+    fprintf(f, "esp_enabled=%d\n",      g_cfg.enabled     ? 1 : 0);
+    fprintf(f, "esp_showBox=%d\n",      g_cfg.showBox      ? 1 : 0);
+    fprintf(f, "esp_showHealth=%d\n",   g_cfg.showHealth   ? 1 : 0);
+    fprintf(f, "esp_showName=%d\n",     g_cfg.showName     ? 1 : 0);
+    fprintf(f, "esp_showDistance=%d\n", g_cfg.showDistance ? 1 : 0);
+    fprintf(f, "esp_maxDistance=%.1f\n", g_cfg.maxDistance);
+
+    fprintf(f, "\n[AutoDive]\n");
+    fprintf(f, "ad_enabled=%d\n",              c.enabled       ? 1 : 0);
+    fprintf(f, "ad_forceGK=%d\n",              c.forceGK       ? 1 : 0);
+    fprintf(f, "ad_onlyInGoal=%d\n",           c.onlyInGoal    ? 1 : 0);
+    fprintf(f, "ad_highJump=%d\n",             c.highJump      ? 1 : 0);
+    fprintf(f, "ad_gameMode=%d\n",             static_cast<int>(c.gameMode));
+    fprintf(f, "ad_triggerDistance=%.2f\n",    c.triggerDistance);
+    fprintf(f, "ad_cooldownSec=%.2f\n",        c.cooldownSec);
+    fprintf(f, "ad_minBallSpeed=%.2f\n",       c.minBallSpeed);
+    fprintf(f, "ad_goalMargin=%.2f\n",         c.goalMargin);
+    fprintf(f, "ad_diveXThreshold=%.2f\n",     c.diveXThreshold);
+    fprintf(f, "ad_jumpYThreshold=%.2f\n",     c.jumpYThreshold);
+    fprintf(f, "ad_jumpXMaxForPure=%.2f\n",    c.jumpXMaxForPure);
+    fprintf(f, "ad_diveXThreshold7v7=%.2f\n",  c.diveXThreshold7v7);
+    fprintf(f, "ad_jumpDiveXMin7v7=%.2f\n",    c.jumpDiveXMin7v7);
+    fprintf(f, "ad_jumpPureXMax7v7=%.2f\n",    c.jumpPureXMax7v7);
+    fprintf(f, "ad_jumpDiveDelayMs=%d\n",      c.jumpDiveDelayMs);
+    fprintf(f, "ad_jumpDiveTimeWindow=%.2f\n", c.jumpDiveTimeWindow);
+    fprintf(f, "ad_simSteps=%d\n",             c.simSteps);
+    fprintf(f, "ad_simDt=%.4f\n",              c.simDt);
+    fprintf(f, "ad_gravity=%.4f\n",            c.gravity);
+    fprintf(f, "ad_magnusCoeff=%.4f\n",        c.magnusCoeff);
+    fprintf(f, "ad_dragCoeff=%.4f\n",          c.dragCoeff);
+    fprintf(f, "ad_watchRange=%.2f\n",         c.watchRange);
+    fprintf(f, "ad_diveFireDistance=%.2f\n",   c.diveFireDistance);
+    fprintf(f, "ad_scanRate=%d\n",             c.scanRate);
+
+    fprintf(f, "\n[Misc]\n");
+    fprintf(f, "misc_menuKey=%d\n", g_menuKey);
+
+    fclose(f);
+}
+
+static void LoadConfig()
+{
+    FILE* f = fopen(GetConfigPath().c_str(), "r");
+    if (!f) return;
+
+    AutoDive::Config& c = g_dive.cfg;
+    char key[64];
+    char val[64];
+
+#define BOOL_KEY(k, field)  if (!strcmp(key, k)) { field = (val[0] == '1'); continue; }
+#define FLOAT_KEY(k, field) if (!strcmp(key, k)) { field = (float)atof(val); continue; }
+#define INT_KEY(k, field)   if (!strcmp(key, k)) { field = atoi(val); continue; }
+
+    while (fscanf(f, " %63[^=\n]=%63[^\n]", key, val) == 2)
+    {
+        // ESP
+        BOOL_KEY("esp_enabled",      g_cfg.enabled)
+        BOOL_KEY("esp_showBox",      g_cfg.showBox)
+        BOOL_KEY("esp_showHealth",   g_cfg.showHealth)
+        BOOL_KEY("esp_showName",     g_cfg.showName)
+        BOOL_KEY("esp_showDistance", g_cfg.showDistance)
+        FLOAT_KEY("esp_maxDistance", g_cfg.maxDistance)
+
+        // AutoDive
+        BOOL_KEY("ad_enabled",    c.enabled)
+        BOOL_KEY("ad_forceGK",    c.forceGK)
+        BOOL_KEY("ad_onlyInGoal", c.onlyInGoal)
+        BOOL_KEY("ad_highJump",   c.highJump)
+        if (!strcmp(key, "ad_gameMode")) { c.gameMode = static_cast<GameMode>(atoi(val)); continue; }
+        FLOAT_KEY("ad_triggerDistance",    c.triggerDistance)
+        FLOAT_KEY("ad_cooldownSec",        c.cooldownSec)
+        FLOAT_KEY("ad_minBallSpeed",       c.minBallSpeed)
+        FLOAT_KEY("ad_goalMargin",         c.goalMargin)
+        FLOAT_KEY("ad_diveXThreshold",     c.diveXThreshold)
+        FLOAT_KEY("ad_jumpYThreshold",     c.jumpYThreshold)
+        FLOAT_KEY("ad_jumpXMaxForPure",    c.jumpXMaxForPure)
+        FLOAT_KEY("ad_diveXThreshold7v7",  c.diveXThreshold7v7)
+        FLOAT_KEY("ad_jumpDiveXMin7v7",    c.jumpDiveXMin7v7)
+        FLOAT_KEY("ad_jumpPureXMax7v7",    c.jumpPureXMax7v7)
+        INT_KEY("ad_jumpDiveDelayMs",      c.jumpDiveDelayMs)
+        FLOAT_KEY("ad_jumpDiveTimeWindow", c.jumpDiveTimeWindow)
+        INT_KEY("ad_simSteps",             c.simSteps)
+        FLOAT_KEY("ad_simDt",              c.simDt)
+        FLOAT_KEY("ad_gravity",            c.gravity)
+        FLOAT_KEY("ad_magnusCoeff",        c.magnusCoeff)
+        FLOAT_KEY("ad_dragCoeff",          c.dragCoeff)
+        FLOAT_KEY("ad_watchRange",         c.watchRange)
+        FLOAT_KEY("ad_diveFireDistance",   c.diveFireDistance)
+        INT_KEY("ad_scanRate",             c.scanRate)
+
+        // Misc
+        INT_KEY("misc_menuKey", g_menuKey)
+    }
+
+#undef BOOL_KEY
+#undef FLOAT_KEY
+#undef INT_KEY
+
+    fclose(f);
 }
 
 // --------------------------------------------------------------------------
@@ -348,6 +469,42 @@ static void DrawMenu(Overlay& overlay)
 
                 ImGui::Separator();
 
+                // ── Config: Salvar / Carregar ─────────────────────────────
+                static char s_configMsg[64] = {};
+                static float s_configMsgTimer = 0.f;
+
+                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.1f, 0.4f, 0.7f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.55f, 0.9f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.65f, 1.0f, 1.f));
+                if (ImGui::Button("Salvar Config", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f - 2.f, 0)))
+                {
+                    SaveConfig();
+                    std::snprintf(s_configMsg, sizeof(s_configMsg), "Salvo!");
+                    s_configMsgTimer = 2.f;
+                }
+                ImGui::PopStyleColor(3);
+
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.1f, 0.5f, 0.2f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.15f, 0.7f, 0.3f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.2f, 0.9f, 0.4f, 1.f));
+                if (ImGui::Button("Carregar Config", ImVec2(-1, 0)))
+                {
+                    LoadConfig();
+                    std::snprintf(s_configMsg, sizeof(s_configMsg), "Carregado!");
+                    s_configMsgTimer = 2.f;
+                }
+                ImGui::PopStyleColor(3);
+
+                if (s_configMsgTimer > 0.f)
+                {
+                    s_configMsgTimer -= ImGui::GetIO().DeltaTime;
+                    ImGui::TextColored(ImVec4(0.4f, 1.f, 0.4f, 1.f), "%s  (rss_config.ini)", s_configMsg);
+                }
+
+                ImGui::Separator();
+
                 ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.6f, 0.1f, 0.1f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(1.0f, 0.3f, 0.3f, 1.f));
@@ -393,6 +550,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     g_rbx = new RobloxReader(g_mem);
     TryAttach();
+
+    // Carrega config salva (se existir) antes de iniciar a thread de scan
+    LoadConfig();
 
     // Se já conectou antes do loop, inicia a thread imediatamente
     bool diveStarted = false;
