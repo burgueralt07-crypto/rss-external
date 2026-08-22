@@ -212,6 +212,12 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
             res.crossY     = prevLocal.y + alpha * (localPos.y - prevLocal.y);
             res.timeToGoal = timeAcc - dt + alpha * dt;
             res.velAtCross = vel;
+            // Ponto de cruzamento no espaço mundo — interpola entre frame anterior e atual
+            res.worldCross = {
+                (pos.x - vel.x * dt) + alpha * vel.x * dt,
+                (pos.y - vel.y * dt) + alpha * vel.y * dt,
+                (pos.z - vel.z * dt) + alpha * vel.z * dt
+            };
             return res;
         }
 
@@ -387,19 +393,27 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
     if (is7v7)
     {
-        float absX = std::fabsf(relPos.x);
-
-        // Ponto de cruzamento previsto no espaço do gol — usado como referência
-        // de direção quando a simulação com curva está disponível.
+        // Ponto de cruzamento previsto no espaço do GK — referência de direção correta
+        // independente do time (Home ou Away).
         //
-        // ATENÇÃO: o rightVec do gol aponta para a direita do gol visto de FORA
-        // (mesma direção que um atacante vê). O GK está dentro olhando para fora,
-        // então seu rightVec é oposto. crossX > 0 = bola vai para a direita do
-        // atacante = esquerda do GK → deve dar Q.
-        // Invertemos o sinal para alinhar com o espaço do GK.
+        // Antes usávamos -sim.crossX (espaço do gol), que exigia saber se o rightVec
+        // do gol estava alinhado ou oposto ao rightVec do GK. Isso causava inversão
+        // de lado ao jogar como Away GK, já que a part AntiOwnGoal tem rotação 180°
+        // em relação ao Home.
         //
-        // Fallback para relPos.x (espaço do GK) se simulação não encontrou cruzamento.
-        float decisionX = sim.hit ? -sim.crossX : relPos.x;
+        // Solução: projetar sim.worldCross no espaço local do GK. O eixo direito do GK
+        // (gk.rightVec) aponta para a direita do GK independente do time.
+        // Se worldCrossInGK.x > 0 → bola vai à direita do GK → E.
+        // Se worldCrossInGK.x < 0 → bola vai à esquerda do GK → Q.
+        //
+        // Fallback para relPos.x se simulação não encontrou cruzamento.
+        float decisionX = relPos.x;   // fallback: posição atual no espaço do GK
+        if (sim.hit)
+        {
+            Vector3 worldCrossInGK = PointToObjectSpace(
+                gk.position, gk.rightVec, gk.upVec, gk.lookVec, sim.worldCross);
+            decisionX = worldCrossInGK.x;
+        }
         float absDecisionX = std::fabsf(decisionX);
 
         // Usa sim.crossY (onde a bola VAI cruzar o plano do gol) para decidir

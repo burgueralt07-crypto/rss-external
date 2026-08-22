@@ -219,11 +219,12 @@ private:
 
     // Resultado de uma simulação de trajetória.
     struct SimResult {
-        bool    hit      = false;  // a trajetória cruzou o plano do gol?
-        float   crossX   = 0.f;   // local X no plano do gol no momento do cruzamento
-        float   crossY   = 0.f;   // local Y no plano do gol no momento do cruzamento
-        float   timeToGoal = 0.f; // tempo estimado até cruzar o plano (s)
-        Vector3 velAtCross;        // velocidade da bola no cruzamento (espaço mundo)
+        bool    hit        = false;  // a trajetória cruzou o plano do gol?
+        float   crossX     = 0.f;   // local X no plano do gol no momento do cruzamento
+        float   crossY     = 0.f;   // local Y no plano do gol no momento do cruzamento
+        float   timeToGoal = 0.f;   // tempo estimado até cruzar o plano (s)
+        Vector3 velAtCross;          // velocidade da bola no cruzamento (espaço mundo)
+        Vector3 worldCross;          // posição 3D do cruzamento no espaço mundo
     };
 
     // Simula a trajetória da bola com gravidade, drag e Magnus force (spin/curva).
