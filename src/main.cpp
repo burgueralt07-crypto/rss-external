@@ -204,6 +204,8 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_gravity=%.4f\n",            c.gravity);
     fprintf(f, "ad_magnusCoeff=%.4f\n",        c.magnusCoeff);
     fprintf(f, "ad_dragCoeff=%.4f\n",          c.dragCoeff);
+    fprintf(f, "ad_curveDecayRate=%.4f\n",     c.curveDecayRate);
+    fprintf(f, "ad_emaAlpha=%.4f\n",           c.emaAlpha);
     fprintf(f, "ad_watchRange=%.2f\n",         c.watchRange);
     fprintf(f, "ad_diveFireDistance=%.2f\n",   c.diveFireDistance);
     fprintf(f, "ad_scanRate=%d\n",             c.scanRate);
@@ -265,6 +267,8 @@ static void ReadConfigEntries(FILE* f)
         FLOAT_KEY("ad_gravity",            c.gravity)
         FLOAT_KEY("ad_magnusCoeff",        c.magnusCoeff)
         FLOAT_KEY("ad_dragCoeff",          c.dragCoeff)
+        FLOAT_KEY("ad_curveDecayRate",     c.curveDecayRate)
+        FLOAT_KEY("ad_emaAlpha",           c.emaAlpha)
         FLOAT_KEY("ad_watchRange",         c.watchRange)
         FLOAT_KEY("ad_diveFireDistance",   c.diveFireDistance)
         INT_KEY("ad_scanRate",             c.scanRate)

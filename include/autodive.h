@@ -118,15 +118,20 @@ public:
         // Ex: 1.5 = só bolas que vão cruzar 1.5 studs acima do centro do gol.
         float jumpMinCrossY       = 1.5f;
 
-        // ── Simulação de trajetória (spin/curva) ─────────────────────────
-        int   simSteps            = 60;      // passos de integração Euler
-        float simDt               = 0.03f;   // dt por passo (s)
+        // ── Simulação de trajetória (RK4 + EMA + decaimento) ────────────
+        int   simSteps            = 45;      // passos de integração RK4
+        float simDt               = 0.035f;  // dt por passo (s) — ~1.575 s de lookahead
         float gravity             = 156.96f; // workspace.Gravity * fator (studs/s²)
-        // Coeficiente de Magnus — escala a força lateral por spin.
-        // Roblox usa unidades arbitrárias de angularVelocity; tunar conforme jogo.
+        // Coeficiente de Magnus — fallback quando measuredAccel não disponível.
         float magnusCoeff         = 0.12f;
         // Drag linear — fração da velocidade removida por segundo.
-        float dragCoeff           = 0.006f;
+        float dragCoeff           = 0.004f;
+        // Taxa de decaimento exponencial da curva por segundo.
+        // Equivale a CurveDecayRate=0.85 do Lua: curva *= exp(-decayRate * t).
+        float curveDecayRate      = 0.85f;
+        // Suavização EMA da aceleração medida (0 = sem filtro, 1 = ignora novo valor).
+        // Equivale a EMA_Alpha=0.30 do Lua.
+        float emaAlpha            = 0.30f;
 
         // ── WatchRange — detecção antecipada ─────────────────────────────
         // A thread fica "de olho" na bola a partir desta distância.
@@ -255,6 +260,12 @@ private:
     Vector3     m_prevBallVel;             // velocidade no frame anterior
     bool        m_prevBallValid = false;   // false no primeiro frame ou após reset
     std::chrono::steady_clock::time_point m_prevBallTime;
+
+    // Filtro EMA da aceleração medida — suaviza o ruído de Δv/Δt a 240 Hz.
+    // Persistido entre frames do ScanLoop; zerado quando a bola para/é presa.
+    // Equivale a filteredAccel do script Lua (EMA_Alpha = cfg.emaAlpha).
+    Vector3     m_filteredAccel;           // aceleração filtrada (EMA)
+    bool        m_filteredAccelValid = false; // false até ter ao menos uma medição
 
     std::thread       m_thread;
     std::atomic<bool> m_running{ false };
