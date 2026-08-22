@@ -198,6 +198,7 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_jumpPureXMax7v7=%.2f\n",    c.jumpPureXMax7v7);
     fprintf(f, "ad_jumpDiveDelayMs=%d\n",      c.jumpDiveDelayMs);
     fprintf(f, "ad_jumpDiveTimeWindow=%.2f\n", c.jumpDiveTimeWindow);
+    fprintf(f, "ad_jumpMinCrossY=%.2f\n",     c.jumpMinCrossY);
     fprintf(f, "ad_simSteps=%d\n",             c.simSteps);
     fprintf(f, "ad_simDt=%.4f\n",              c.simDt);
     fprintf(f, "ad_gravity=%.4f\n",            c.gravity);
@@ -258,6 +259,7 @@ static void ReadConfigEntries(FILE* f)
         FLOAT_KEY("ad_jumpPureXMax7v7",    c.jumpPureXMax7v7)
         INT_KEY("ad_jumpDiveDelayMs",      c.jumpDiveDelayMs)
         FLOAT_KEY("ad_jumpDiveTimeWindow", c.jumpDiveTimeWindow)
+        FLOAT_KEY("ad_jumpMinCrossY",      c.jumpMinCrossY)
         INT_KEY("ad_simSteps",             c.simSteps)
         FLOAT_KEY("ad_simDt",              c.simDt)
         FLOAT_KEY("ad_gravity",            c.gravity)
@@ -438,6 +440,10 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::SliderFloat("|relX| min J+D [7v7]", &g_dive.cfg.jumpDiveXMin7v7,    0.f,  6.f, "%.1f");
                         ImGui::SliderInt("Delay Space->Q/E (ms)",  &g_dive.cfg.jumpDiveDelayMs,     0,  400);
                         ImGui::SliderFloat("Janela antecip. dive [7v7]", &g_dive.cfg.jumpDiveTimeWindow, 0.f, 1.5f, "%.2f s");
+                        ImGui::SliderFloat("crossY min p/ alto  [7v7]", &g_dive.cfg.jumpMinCrossY,       0.f,  8.f, "%.1f");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Altura minima (crossY) que a bola precisa cruzar\nno plano do gol para acionar Jump/Jump+Dive.\n0 = qualquer coisa acima do centro do gol.\nVeja 'predGoalY' no debug para calibrar.");
                     }
 
                     if (g_rbx)
