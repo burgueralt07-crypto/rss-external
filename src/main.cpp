@@ -10,6 +10,8 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
+#include <vector>
+#include <algorithm>
 
 static constexpr wchar_t TARGET_WINDOW[]  = L"Roblox";
 static constexpr wchar_t TARGET_PROCESS[] = L"RobloxPlayerBeta.exe";
@@ -17,7 +19,7 @@ static constexpr wchar_t TARGET_PROCESS[] = L"RobloxPlayerBeta.exe";
 static Memory        g_mem;
 static RobloxReader* g_rbx      = nullptr;
 static bool          g_menuOpen = true;
-static int           g_menuKey  = VK_HOME; // tecla para abrir/fechar o menu
+static int           g_menuKey  = VK_HOME;
 
 struct ESPConfig {
     bool  enabled      = true;
@@ -49,16 +51,8 @@ static void PollHotkeys()
     if (down && !prevDown)
         g_menuOpen = !g_menuOpen;
 
-    // Reseta estado se a tecla configurada mudou
-    if (g_menuKey != prevKey)
-    {
-        prevDown = false;
-        prevKey  = g_menuKey;
-    }
-    else
-    {
-        prevDown = down;
-    }
+    if (g_menuKey != prevKey) { prevDown = false; prevKey = g_menuKey; }
+    else                        prevDown = down;
 }
 
 // --------------------------------------------------------------------------
@@ -80,19 +74,15 @@ static void DrawESP(ImDrawList* dl,
 {
     if (!g_cfg.enabled || players.empty()) return;
 
-    // Offset da janela do Roblox na tela — necessário quando não está em tela cheia
     float winOffsetX = 0.f, winOffsetY = 0.f;
     if (targetHwnd)
     {
-        // ClientToScreen converte o ponto (0,0) da área cliente para coordenadas de tela
-        // Isso é exato independente de bordas, título ou DPI
         POINT pt{ 0, 0 };
         ClientToScreen(targetHwnd, &pt);
         winOffsetX = static_cast<float>(pt.x);
         winOffsetY = static_cast<float>(pt.y);
     }
 
-    // HumanoidRootPart fica na cintura do personagem Roblox
     constexpr float OFFSET_TOP    =  2.8f;
     constexpr float OFFSET_BOTTOM = -2.5f;
 
@@ -106,7 +96,6 @@ static void DrawESP(ImDrawList* dl,
         if (!WorldToScreen(viewMatrix, posTop,      viewport, screenTop))    continue;
         if (!WorldToScreen(viewMatrix, posBottom,   viewport, screenBottom)) continue;
 
-        // Aplica offset da posição da janela no monitor
         screenCenter.x += winOffsetX; screenCenter.y += winOffsetY;
         screenTop.x    += winOffsetX; screenTop.y    += winOffsetY;
         screenBottom.x += winOffsetX; screenBottom.y += winOffsetY;
@@ -124,14 +113,11 @@ static void DrawESP(ImDrawList* dl,
             ? HealthColor(p.health, p.maxHealth)
             : IM_COL32(255, 255, 255, 220);
 
-        // Corner box
         if (g_cfg.showBox)
         {
             float cw = boxW * 0.25f;
             float ch = boxH * 0.20f;
-
             dl->AddRect(ImVec2(x1-1,y1-1), ImVec2(x2+1,y2+1), IM_COL32(0,0,0,180), 0.f, 0, 3.f);
-
             dl->AddLine(ImVec2(x1,    y1),    ImVec2(x1+cw, y1),    boxColor, 2.f);
             dl->AddLine(ImVec2(x1,    y1),    ImVec2(x1,    y1+ch), boxColor, 2.f);
             dl->AddLine(ImVec2(x2-cw, y1),    ImVec2(x2,    y1),    boxColor, 2.f);
@@ -142,7 +128,6 @@ static void DrawESP(ImDrawList* dl,
             dl->AddLine(ImVec2(x2-cw, y2),    ImVec2(x2,    y2),    boxColor, 2.f);
         }
 
-        // Barra de vida
         if (g_cfg.showHealth && p.maxHealth > 0.f)
         {
             float barX    = x1 - 5.f;
@@ -151,7 +136,6 @@ static void DrawESP(ImDrawList* dl,
             dl->AddRectFilled(ImVec2(barX, barFill), ImVec2(barX+2, y2),   HealthColor(p.health, p.maxHealth));
         }
 
-        // Nome
         if (g_cfg.showName && !p.name.empty())
         {
             ImVec2 sz = ImGui::CalcTextSize(p.name.c_str());
@@ -159,7 +143,6 @@ static void DrawESP(ImDrawList* dl,
             dl->AddText(ImVec2(screenCenter.x - sz.x*0.5f,   y1-sz.y-3.f),   IM_COL32(255,255,255,255), p.name.c_str());
         }
 
-        // Distância
         if (g_cfg.showDistance)
         {
             char buf[32];
@@ -171,22 +154,22 @@ static void DrawESP(ImDrawList* dl,
     }
 }
 
-// --------------------------------------------------------------------------
-// Caminho do arquivo de config — mesmo diretório do executável
-static std::string GetConfigPath()
+// ==========================================================================
+// Config — leitura/escrita em .ini com slots nomeados
+// ==========================================================================
+
+static std::string GetConfigDir()
 {
     char buf[MAX_PATH] = {};
     GetModuleFileNameA(nullptr, buf, MAX_PATH);
     char* last = strrchr(buf, '\\');
     if (last) *(last + 1) = '\0';
-    return std::string(buf) + "rss_config.ini";
+    return std::string(buf);
 }
 
-static void SaveConfig()
+// Escreve todas as entradas de config num FILE já aberto
+static void WriteConfigEntries(FILE* f)
 {
-    FILE* f = fopen(GetConfigPath().c_str(), "w");
-    if (!f) return;
-
     const AutoDive::Config& c = g_dive.cfg;
 
     fprintf(f, "[ESP]\n");
@@ -226,26 +209,31 @@ static void SaveConfig()
 
     fprintf(f, "\n[Misc]\n");
     fprintf(f, "misc_menuKey=%d\n", g_menuKey);
-
-    fclose(f);
 }
 
-static void LoadConfig()
+// Lê as entradas de um FILE já aberto e aplica nas structs globais
+static void ReadConfigEntries(FILE* f)
 {
-    FILE* f = fopen(GetConfigPath().c_str(), "r");
-    if (!f) return;
-
     AutoDive::Config& c = g_dive.cfg;
-    char key[64];
-    char val[64];
+    char line[256];
 
-#define BOOL_KEY(k, field)  if (!strcmp(key, k)) { field = (val[0] == '1'); continue; }
-#define FLOAT_KEY(k, field) if (!strcmp(key, k)) { field = (float)atof(val); continue; }
-#define INT_KEY(k, field)   if (!strcmp(key, k)) { field = atoi(val); continue; }
+#define BOOL_KEY(k, field)  if (!strcmp(key, k)) { field = (val[0] == '1'); }
+#define FLOAT_KEY(k, field) if (!strcmp(key, k)) { field = (float)atof(val); }
+#define INT_KEY(k, field)   if (!strcmp(key, k)) { field = atoi(val); }
 
-    while (fscanf(f, " %63[^=\n]=%63[^\n]", key, val) == 2)
+    while (fgets(line, sizeof(line), f))
     {
-        // ESP
+        // Pula linhas de seção ([ESP], [AutoDive], etc.) e linhas em branco
+        if (line[0] == '[' || line[0] == '\n' || line[0] == '\r' || line[0] == '#')
+            continue;
+
+        char key[64] = {}, val[64] = {};
+        if (sscanf(line, " %63[^=]=%63[^\r\n]", key, val) != 2) continue;
+
+        // Remove espaços no fim da chave
+        int klen = (int)strlen(key);
+        while (klen > 0 && key[klen-1] == ' ') key[--klen] = '\0';
+
         BOOL_KEY("esp_enabled",      g_cfg.enabled)
         BOOL_KEY("esp_showBox",      g_cfg.showBox)
         BOOL_KEY("esp_showHealth",   g_cfg.showHealth)
@@ -253,12 +241,11 @@ static void LoadConfig()
         BOOL_KEY("esp_showDistance", g_cfg.showDistance)
         FLOAT_KEY("esp_maxDistance", g_cfg.maxDistance)
 
-        // AutoDive
         BOOL_KEY("ad_enabled",    c.enabled)
         BOOL_KEY("ad_forceGK",    c.forceGK)
         BOOL_KEY("ad_onlyInGoal", c.onlyInGoal)
         BOOL_KEY("ad_highJump",   c.highJump)
-        if (!strcmp(key, "ad_gameMode")) { c.gameMode = static_cast<GameMode>(atoi(val)); continue; }
+        if (!strcmp(key, "ad_gameMode")) c.gameMode = static_cast<GameMode>(atoi(val));
         FLOAT_KEY("ad_triggerDistance",    c.triggerDistance)
         FLOAT_KEY("ad_cooldownSec",        c.cooldownSec)
         FLOAT_KEY("ad_minBallSpeed",       c.minBallSpeed)
@@ -279,19 +266,96 @@ static void LoadConfig()
         FLOAT_KEY("ad_watchRange",         c.watchRange)
         FLOAT_KEY("ad_diveFireDistance",   c.diveFireDistance)
         INT_KEY("ad_scanRate",             c.scanRate)
-
-        // Misc
-        INT_KEY("misc_menuKey", g_menuKey)
+        INT_KEY("misc_menuKey",            g_menuKey)
     }
 
 #undef BOOL_KEY
 #undef FLOAT_KEY
 #undef INT_KEY
+}
 
+// Salva no slot com nome dado (cria "configs/<nome>.ini")
+static void SaveConfigSlot(const char* name)
+{
+    std::string dir = GetConfigDir() + "configs\\";
+    CreateDirectoryA(dir.c_str(), nullptr);
+    std::string path = dir + name + std::string(".ini");
+    FILE* f = fopen(path.c_str(), "w");
+    if (!f) return;
+    WriteConfigEntries(f);
     fclose(f);
 }
 
-// --------------------------------------------------------------------------
+// Carrega do slot com nome dado
+static bool LoadConfigSlot(const char* name)
+{
+    std::string path = GetConfigDir() + "configs\\" + name + std::string(".ini");
+    FILE* f = fopen(path.c_str(), "r");
+    if (!f) return false;
+    ReadConfigEntries(f);
+    fclose(f);
+    return true;
+}
+
+// Lista todos os .ini em configs/
+static std::vector<std::string> ListConfigSlots()
+{
+    std::vector<std::string> slots;
+    std::string pattern = GetConfigDir() + "configs\\*.ini";
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pattern.c_str(), &fd);
+    if (h == INVALID_HANDLE_VALUE) return slots;
+    do {
+        std::string name = fd.cFileName;
+        // Remove extensão .ini
+        if (name.size() > 4) name = name.substr(0, name.size() - 4);
+        slots.push_back(name);
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+    std::sort(slots.begin(), slots.end());
+    return slots;
+}
+
+// Arquivo de meta-config (qual slot auto-carregar)
+static std::string GetMetaPath() { return GetConfigDir() + "rss_meta.ini"; }
+
+static void SaveMeta(const char* autoSlot, bool autoLoad)
+{
+    FILE* f = fopen(GetMetaPath().c_str(), "w");
+    if (!f) return;
+    fprintf(f, "autoLoad=%d\n", autoLoad ? 1 : 0);
+    fprintf(f, "autoSlot=%s\n", autoSlot);
+    fclose(f);
+}
+
+static void LoadMeta(char* outSlot, int slotBuf, bool& outAutoLoad)
+{
+    outSlot[0]  = '\0';
+    outAutoLoad = false;
+    FILE* f = fopen(GetMetaPath().c_str(), "r");
+    if (!f) return;
+    char line[256];
+    while (fgets(line, sizeof(line), f))
+    {
+        char key[64]={}, val[64]={};
+        if (sscanf(line, " %63[^=]=%63[^\r\n]", key, val) != 2) continue;
+        if (!strcmp(key, "autoLoad")) outAutoLoad = (val[0] == '1');
+        if (!strcmp(key, "autoSlot")) { strncpy(outSlot, val, slotBuf-1); outSlot[slotBuf-1]='\0'; }
+    }
+    fclose(f);
+}
+
+// ==========================================================================
+// UI — nome da tecla para exibição
+static const char* VKToName(int vk)
+{
+    UINT sc = MapVirtualKeyW(static_cast<UINT>(vk), MAPVK_VK_TO_VSC);
+    static char buf[32];
+    if (GetKeyNameTextA(static_cast<LONG>(sc << 16), buf, sizeof(buf)) > 0) return buf;
+    return "?";
+}
+
+// ==========================================================================
 static void DrawMenu(Overlay& overlay)
 {
     if (!g_menuOpen) return;
@@ -299,17 +363,11 @@ static void DrawMenu(Overlay& overlay)
     ImGui::SetNextWindowBgAlpha(0.85f);
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
 
-    // Monta título com a tecla atual
     char menuTitle[64];
-    // GetKeyNameText precisa do scancode no formato LPARAM de WM_KEYDOWN
-    UINT sc = MapVirtualKeyW(static_cast<UINT>(g_menuKey), MAPVK_VK_TO_VSC);
-    char keyName[32] = "?";
-    GetKeyNameTextA(static_cast<LONG>(sc << 16), keyName, sizeof(keyName));
-    std::snprintf(menuTitle, sizeof(menuTitle), "RSS External  [%s]", keyName);
+    std::snprintf(menuTitle, sizeof(menuTitle), "RSS External  [%s]", VKToName(g_menuKey));
 
     if (ImGui::Begin(menuTitle, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        // Status de conexão e FPS
         if (g_mem.IsValid())
             ImGui::TextColored(ImVec4(0,1,0,1), "Conectado  PID: %lu", g_mem.GetPID());
         else
@@ -347,15 +405,12 @@ static void DrawMenu(Overlay& overlay)
                     ImGui::Checkbox("Forcar GK (Ignorar pasta Bools)", &g_dive.cfg.forceGK);
                     ImGui::Checkbox("Apenas No Alvo (Gol)",            &g_dive.cfg.onlyInGoal);
 
-                    // Seletor de modo
                     static const char* kModeNames[] = { "4v4  (gol pequeno)", "7v7  (gol grande)" };
                     int modeIdx = static_cast<int>(g_dive.cfg.gameMode);
                     if (ImGui::Combo("Modo", &modeIdx, kModeNames, 2))
                         g_dive.cfg.gameMode = static_cast<GameMode>(modeIdx);
 
                     ImGui::Separator();
-
-                    // Sliders comuns
                     ImGui::SliderFloat("Dist reacao",   &g_dive.cfg.triggerDistance, 5.f,  40.f, "%.0f studs");
                     ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  50.f, "%.0f studs/s");
                     ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.3f,  3.f, "%.1f s");
@@ -387,18 +442,13 @@ static void DrawMenu(Overlay& overlay)
 
                     if (g_rbx)
                     {
-                        const GKState&             gk   = g_rbx->GetGKState();
-                        const GoalState&           goal = g_rbx->GetGoal();
-
+                        const GKState&   gk   = g_rbx->GetGKState();
+                        const GoalState& goal = g_rbx->GetGoal();
                         ImGui::Separator();
-
-                        // GK status
                         if (gk.isGK)
                             ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "GK: ATIVO");
                         else
                             ImGui::TextColored(ImVec4(1.f,0.4f,0.4f,1.f), "GK: nao detectado");
-
-                        // Gol
                         if (goal.exists)
                             ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "Gol: encontrado");
                         else
@@ -412,10 +462,10 @@ static void DrawMenu(Overlay& overlay)
             // ── Aba: Misc ─────────────────────────────────────────────────
             if (ImGui::BeginTabItem("Misc"))
             {
+                // ── Streamproof ───────────────────────────────────────────
                 static bool s_streamproof = false;
                 if (ImGui::Checkbox("Streamproof", &s_streamproof))
                     overlay.SetStreamproof(s_streamproof);
-
                 ImGui::SameLine();
                 ImGui::TextDisabled("(?)");
                 if (ImGui::IsItemHovered())
@@ -423,63 +473,112 @@ static void DrawMenu(Overlay& overlay)
 
                 ImGui::Separator();
 
-                // ── Seletor de tecla do menu ──────────────────────────────
-                // Lista de teclas disponíveis: VK e nome para exibição
-                static const struct { int vk; const char* name; } kKeys[] = {
-                    { VK_HOME,   "Home"   },
-                    { VK_INSERT, "Insert" },
-                    { VK_DELETE, "Delete" },
-                    { VK_END,    "End"    },
-                    { VK_PRIOR,  "PgUp"   },
-                    { VK_NEXT,   "PgDn"   },
-                    { VK_F1,     "F1"     },
-                    { VK_F2,     "F2"     },
-                    { VK_F3,     "F3"     },
-                    { VK_F4,     "F4"     },
-                    { VK_F5,     "F5"     },
-                    { VK_F6,     "F6"     },
-                    { VK_F7,     "F7"     },
-                    { VK_F8,     "F8"     },
-                    { VK_F9,     "F9"     },
-                    { VK_F10,    "F10"    },
-                    { VK_F11,    "F11"    },
-                    { VK_F12,    "F12"    },
-                };
-                static constexpr int kKeyCount = static_cast<int>(sizeof(kKeys) / sizeof(kKeys[0]));
-
-                // Encontra o índice atual
-                int curIdx = 0;
-                for (int i = 0; i < kKeyCount; ++i)
-                    if (kKeys[i].vk == g_menuKey) { curIdx = i; break; }
+                // ── Hotkey binding ────────────────────────────────────────
+                // Clica no botão → fica aguardando a próxima tecla
+                static bool s_waitingKey = false;
 
                 ImGui::Text("Tecla do menu:");
                 ImGui::SameLine();
-                ImGui::SetNextItemWidth(90.f);
-                if (ImGui::BeginCombo("##menukey", kKeys[curIdx].name))
+
+                if (s_waitingKey)
                 {
-                    for (int i = 0; i < kKeyCount; ++i)
+                    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.7f, 0.5f, 0.0f, 1.f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.6f, 0.0f, 1.f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.7f, 0.0f, 1.f));
+                    ImGui::Button("[ Pressione uma tecla... ]", ImVec2(200.f, 0));
+                    ImGui::PopStyleColor(3);
+
+                    // Varre VKs para capturar a primeira tecla pressionada
+                    // Ignora modificadores sozinhos e Escape cancela
+                    for (int vk = 1; vk < 256; ++vk)
                     {
-                        bool selected = (kKeys[i].vk == g_menuKey);
-                        if (ImGui::Selectable(kKeys[i].name, selected))
-                            g_menuKey = kKeys[i].vk;
-                        if (selected) ImGui::SetItemDefaultFocus();
+                        if (vk == VK_LBUTTON || vk == VK_RBUTTON || vk == VK_MBUTTON) continue;
+                        if (vk == VK_SHIFT || vk == VK_CONTROL || vk == VK_MENU)      continue;
+                        if (vk == VK_LSHIFT || vk == VK_RSHIFT)                       continue;
+                        if (vk == VK_LCONTROL || vk == VK_RCONTROL)                   continue;
+                        if (vk == VK_LMENU || vk == VK_RMENU)                         continue;
+
+                        if (GetAsyncKeyState(vk) & 0x8000)
+                        {
+                            if (vk == VK_ESCAPE)
+                                s_waitingKey = false;
+                            else {
+                                g_menuKey    = vk;
+                                s_waitingKey = false;
+                            }
+                            break;
+                        }
                     }
-                    ImGui::EndCombo();
+                }
+                else
+                {
+                    char btnLabel[64];
+                    std::snprintf(btnLabel, sizeof(btnLabel), "[ %s ]  (clique para mudar)", VKToName(g_menuKey));
+                    if (ImGui::Button(btnLabel))
+                        s_waitingKey = true;
                 }
 
                 ImGui::Separator();
 
-                // ── Config: Salvar / Carregar ─────────────────────────────
-                static char s_configMsg[64] = {};
-                static float s_configMsgTimer = 0.f;
+                // ── Config slots ──────────────────────────────────────────
+                static char  s_newSlotName[64]  = "default";
+                static int   s_selectedSlot     = -1;
+                static bool  s_autoLoad         = false;
+                static char  s_autoSlot[64]     = {};
+                static bool  s_metaLoaded       = false;
+                static char  s_configMsg[128]   = {};
+                static float s_configMsgTimer   = 0.f;
+
+                // Carrega meta uma vez
+                if (!s_metaLoaded)
+                {
+                    LoadMeta(s_autoSlot, sizeof(s_autoSlot), s_autoLoad);
+                    s_metaLoaded = true;
+                }
+
+                // Lista slots disponíveis (re-varre a cada frame apenas se expanded)
+                static std::vector<std::string> s_slots;
+                static bool s_slotsStale = true;
+                if (s_slotsStale) { s_slots = ListConfigSlots(); s_slotsStale = false; }
+
+                ImGui::TextDisabled("Configs salvas:");
+
+                // Listbox com os slots existentes
+                {
+                    float listH = ImGui::GetTextLineHeightWithSpacing() * 4.5f;
+                    if (ImGui::BeginListBox("##slots", ImVec2(-1, listH)))
+                    {
+                        if (s_slots.empty())
+                            ImGui::TextDisabled("  (nenhuma config salva)");
+                        for (int i = 0; i < (int)s_slots.size(); ++i)
+                        {
+                            bool sel = (s_selectedSlot == i);
+                            if (ImGui::Selectable(s_slots[i].c_str(), sel))
+                            {
+                                s_selectedSlot = i;
+                                // Preenche o campo de nome com o slot selecionado
+                                strncpy(s_newSlotName, s_slots[i].c_str(), sizeof(s_newSlotName)-1);
+                            }
+                        }
+                        ImGui::EndListBox();
+                    }
+                }
+
+                // Campo de nome para salvar/criar
+                ImGui::SetNextItemWidth(-1);
+                ImGui::InputText("##slotname", s_newSlotName, sizeof(s_newSlotName));
+
+                // Botões Salvar / Carregar / Deletar
+                float bw = (ImGui::GetContentRegionAvail().x - 8.f) / 3.f;
 
                 ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.1f, 0.4f, 0.7f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.55f, 0.9f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.65f, 1.0f, 1.f));
-                if (ImGui::Button("Salvar Config", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f - 2.f, 0)))
+                if (ImGui::Button("Salvar##cfg", ImVec2(bw, 0)) && s_newSlotName[0])
                 {
-                    SaveConfig();
-                    std::snprintf(s_configMsg, sizeof(s_configMsg), "Salvo!");
+                    SaveConfigSlot(s_newSlotName);
+                    s_slotsStale = true;
+                    std::snprintf(s_configMsg, sizeof(s_configMsg), "Salvo: %s", s_newSlotName);
                     s_configMsgTimer = 2.f;
                 }
                 ImGui::PopStyleColor(3);
@@ -489,18 +588,62 @@ static void DrawMenu(Overlay& overlay)
                 ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.1f, 0.5f, 0.2f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.15f, 0.7f, 0.3f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.2f, 0.9f, 0.4f, 1.f));
-                if (ImGui::Button("Carregar Config", ImVec2(-1, 0)))
+                if (ImGui::Button("Carregar##cfg", ImVec2(bw, 0)) && s_newSlotName[0])
                 {
-                    LoadConfig();
-                    std::snprintf(s_configMsg, sizeof(s_configMsg), "Carregado!");
+                    if (LoadConfigSlot(s_newSlotName))
+                    {
+                        std::snprintf(s_configMsg, sizeof(s_configMsg), "Carregado: %s", s_newSlotName);
+                        s_configMsgTimer = 2.f;
+                    }
+                    else
+                    {
+                        std::snprintf(s_configMsg, sizeof(s_configMsg), "Nao encontrado: %s", s_newSlotName);
+                        s_configMsgTimer = 2.f;
+                    }
+                }
+                ImGui::PopStyleColor(3);
+
+                ImGui::SameLine();
+
+                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.5f, 0.1f, 0.1f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.15f, 0.15f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.2f, 0.2f, 1.f));
+                if (ImGui::Button("Deletar##cfg", ImVec2(-1, 0)) && s_selectedSlot >= 0 && s_selectedSlot < (int)s_slots.size())
+                {
+                    std::string path = GetConfigDir() + "configs\\" + s_slots[s_selectedSlot] + ".ini";
+                    DeleteFileA(path.c_str());
+                    std::snprintf(s_configMsg, sizeof(s_configMsg), "Deletado: %s", s_slots[s_selectedSlot].c_str());
                     s_configMsgTimer = 2.f;
+                    s_selectedSlot = -1;
+                    s_slotsStale   = true;
                 }
                 ImGui::PopStyleColor(3);
 
                 if (s_configMsgTimer > 0.f)
                 {
                     s_configMsgTimer -= ImGui::GetIO().DeltaTime;
-                    ImGui::TextColored(ImVec4(0.4f, 1.f, 0.4f, 1.f), "%s  (rss_config.ini)", s_configMsg);
+                    ImGui::TextColored(ImVec4(0.4f, 1.f, 0.4f, 1.f), "%s", s_configMsg);
+                }
+
+                ImGui::Separator();
+
+                // ── Auto-load ─────────────────────────────────────────────
+                if (ImGui::Checkbox("Auto-carregar config ao iniciar", &s_autoLoad))
+                    SaveMeta(s_autoSlot, s_autoLoad);
+
+                if (s_autoLoad)
+                {
+                    ImGui::TextDisabled("Slot:");
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth(120.f);
+                    if (ImGui::InputText("##autoSlot", s_autoSlot, sizeof(s_autoSlot)))
+                        SaveMeta(s_autoSlot, s_autoLoad);
+                    ImGui::SameLine();
+                    if (ImGui::SmallButton("Usar selecionado") && s_selectedSlot >= 0 && s_selectedSlot < (int)s_slots.size())
+                    {
+                        strncpy(s_autoSlot, s_slots[s_selectedSlot].c_str(), sizeof(s_autoSlot)-1);
+                        SaveMeta(s_autoSlot, s_autoLoad);
+                    }
                 }
 
                 ImGui::Separator();
@@ -551,10 +694,15 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     g_rbx = new RobloxReader(g_mem);
     TryAttach();
 
-    // Carrega config salva (se existir) antes de iniciar a thread de scan
-    LoadConfig();
+    // Auto-load: lê meta e carrega o slot configurado se autoLoad=1
+    {
+        char  autoSlot[64] = {};
+        bool  autoLoad     = false;
+        LoadMeta(autoSlot, sizeof(autoSlot), autoLoad);
+        if (autoLoad && autoSlot[0])
+            LoadConfigSlot(autoSlot);
+    }
 
-    // Se já conectou antes do loop, inicia a thread imediatamente
     bool diveStarted = false;
     if (g_mem.IsValid())
     {
@@ -573,14 +721,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         TryAttach();
         bool isValid  = g_mem.IsValid();
 
-        // Attach recém-obtido → inicia thread de scan
         if (!wasValid && isValid)
         {
             g_dive.Stop();
             g_dive.Start(g_rbx);
             diveStarted = true;
         }
-        // Conexão perdida → para thread de scan
         else if (wasValid && !isValid)
         {
             g_dive.Stop();
