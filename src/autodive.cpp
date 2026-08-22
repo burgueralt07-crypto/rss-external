@@ -260,46 +260,30 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     if (!ball.exists)  { debug.blockReason = "no ball";     return; }
     if (ball.isWelded) { debug.blockReason = "ball welded"; return; }
 
-    // Spin para debug
     debug.spinX = ball.angularVelocity.x;
     debug.spinY = ball.angularVelocity.y;
     debug.spinZ = ball.angularVelocity.z;
 
+    auto  now       = std::chrono::steady_clock::now();
+    float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
+    if (sinceLast < cfg.cooldownSec) { debug.blockReason = "cooldown"; return; }
+
     float dist = (ball.position - gk.position).Length();
     debug.distToBall = dist;
+    debug.inWatchRange = (dist <= cfg.watchRange);
 
-    // ── Fora do watchRange: não faz nada ─────────────────────────────────
-    if (dist > cfg.watchRange)
-    {
-        m_watchActive  = false;
-        m_trajectoryOK = false;
-        debug.blockReason  = "out of watch range";
-        debug.inWatchRange = false;
-        return;
-    }
-
-    debug.inWatchRange = true;
-    m_watchActive = true;
-
-    // ── Filtros básicos ───────────────────────────────────────────────────
     float ballSpeed = ball.velocity.Length();
-    if (ballSpeed < cfg.minBallSpeed)
-    {
-        m_trajectoryOK = false;
-        debug.blockReason = "ball too slow";
-        return;
-    }
+    if (ballSpeed < cfg.minBallSpeed) { debug.blockReason = "ball too slow"; return; }
 
-    // ── Simulação de trajetória (roda toda iteração dentro do watchRange) ─
+    // Simulação — usada tanto para verificar trajetória quanto para timeToGoal
     SimResult sim;
     bool targeting = IsBallTargetingGoal(ball, goal, &sim);
 
-    // Atualiza campos de debug da simulação
-    debug.simValid   = sim.hit;
-    debug.predGoalX  = sim.crossX;
-    debug.predGoalY  = sim.crossY;
+    debug.simValid    = sim.hit;
+    debug.predGoalX   = sim.crossX;
+    debug.predGoalY   = sim.crossY;
     debug.approaching = targeting;
-
+    debug.trajectoryOK = targeting;
     debug.ballPosX  = ball.position.x; debug.ballPosZ  = ball.position.z;
     debug.ballVelX  = ball.velocity.x; debug.ballVelZ  = ball.velocity.z;
     debug.goalPosX  = goal.position.x; debug.goalPosZ  = goal.position.z;
@@ -311,130 +295,22 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         debug.ballLocalZ = lp.z;
     }
 
-    // Atualiza o estado de trajetória confirmada
-    m_trajectoryOK   = targeting;
-    debug.trajectoryOK = m_trajectoryOK;
+    if (!targeting) { debug.blockReason = "not targeting goal"; return; }
 
-    if (!targeting)
+    // Trigger: dist <= diveFireDistance  OU  sim.timeToGoal <= jumpDiveTimeWindow
+    // O segundo permite disparar antecipado em chutes rápidos em ângulo.
+    const bool is7v7      = (cfg.gameMode == GameMode::Mode7v7);
+    const bool timedTrigger = is7v7 && cfg.jumpDiveTimeWindow > 0.f &&
+                              sim.hit && sim.timeToGoal <= cfg.jumpDiveTimeWindow;
+    const bool distTrigger  = (dist <= cfg.diveFireDistance);
+
+    if (!timedTrigger && !distTrigger)
     {
-        debug.blockReason = "trajectory not targeting goal";
+        debug.blockReason = "too far (dist=" + std::to_string((int)dist) + ")";
         return;
     }
 
-    // ── Antecipação por timeToGoal (7v7) ─────────────────────────────────
-    // Quando sim.timeToGoal <= jumpDiveTimeWindow disparamos imediatamente,
-    // independente de dist. Isso cobre chutes rápidos em ângulo onde a bola
-    // entra no threshold de distância tarde demais (~100ms de atraso).
-    //
-    // Usamos sim.crossX/Y (ponto previsto no plano do gol) para decidir
-    // zona e direção — mais confiável que posição atual quando vem em ângulo.
-    // crossX no espaço do gol: X+ = direita do gol = esquerda do GK → negamos.
-    const bool is7v7 = (cfg.gameMode == GameMode::Mode7v7);
-
-    if (is7v7 && cfg.jumpDiveTimeWindow > 0.f && sim.hit &&
-        sim.timeToGoal <= cfg.jumpDiveTimeWindow)
-    {
-        auto  now       = std::chrono::steady_clock::now();
-        float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
-
-        if (sinceLast >= cfg.cooldownSec && !IsBallHittingGK(ball, gk))
-        {
-            float predX    = -sim.crossX;   // negado: espaço do gol → espaço do GK
-            float absX     = std::fabsf(predX);
-
-            // Usa goalLocalY da posição ATUAL da bola (mesmo critério do caminho normal),
-            // evita depender de sim.crossY cujo sinal pode variar com a orientação do gol.
-            float goalLocalY = 0.f;
-            if (goal.exists)
-            {
-                Vector3 ballInGoal = PointToObjectSpace(
-                    goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
-                goalLocalY = ballInGoal.y;
-            }
-            bool  predHigh = (goalLocalY > 0.f);
-
-            if (predHigh)
-            {
-                // ── Zona alta: Jump puro ou Jump+Dive ─────────────────────
-                if (cfg.highJump && absX <= cfg.jumpPureXMax7v7)
-                {
-                    PressKey(VK_SPACE);
-                    m_lastKey = "Space (Jump 7v7 timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
-                    debug.blockReason = "FIRED - Jump 7v7 (timed)";
-                    return;
-                }
-                if (absX >= cfg.jumpDiveXMin7v7)
-                {
-                    WORD        diveKey = (predX > 0.f) ? 'E' : 'Q';
-                    const char* keyName = (predX > 0.f) ? "Space+E timed" : "Space+Q timed";
-                    int         delayMs = cfg.jumpDiveDelayMs;
-                    PressKey(VK_SPACE);
-                    std::thread([diveKey, delayMs]() {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
-                        WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
-                        INPUT down = {};
-                        down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
-                        down.ki.dwFlags = KEYEVENTF_SCANCODE;
-                        SendInput(1, &down, sizeof(INPUT));
-                        std::this_thread::sleep_for(std::chrono::milliseconds(25));
-                        INPUT up = down;
-                        up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-                        SendInput(1, &up, sizeof(INPUT));
-                    }).detach();
-                    m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
-                    debug.blockReason = std::string("FIRED - ") + keyName + " (timed)";
-                    return;
-                }
-                // Zona morta entre jumpPureXMax7v7 e jumpDiveXMin7v7:
-                // fallback para Jump puro — melhor do que não fazer nada.
-                if (cfg.highJump)
-                {
-                    PressKey(VK_SPACE);
-                    m_lastKey = "Space (Jump 7v7 fallback timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
-                    debug.blockReason = "FIRED - Jump 7v7 fallback (timed)";
-                    return;
-                }
-            }
-            else
-            {
-                // ── Zona baixa: dive lateral antecipado ───────────────────
-                if (predX > cfg.diveXThreshold7v7)
-                {
-                    PressKey('E');
-                    m_lastKey = "E (Right 7v7 timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
-                    debug.blockReason = "FIRED - Right 7v7 (timed)";
-                    return;
-                }
-                if (predX < -cfg.diveXThreshold7v7)
-                {
-                    PressKey('Q');
-                    m_lastKey = "Q (Left 7v7 timed)"; m_firedThisFrame = true; m_lastDiveTime = now;
-                    debug.blockReason = "FIRED - Left 7v7 (timed)";
-                    return;
-                }
-            }
-        }
-    }
-
-    // ── Dentro do watchRange mas ainda longe demais para disparar ─────────
-    if (dist > cfg.diveFireDistance)
-    {
-        debug.blockReason = "watching... waiting for fire distance";
-        return;
-    }
-
-    // ── A partir daqui: dist <= diveFireDistance E trajetória confirmada ──
-
-    auto  now       = std::chrono::steady_clock::now();
-    float sinceLast = std::chrono::duration<float>(now - m_lastDiveTime).count();
-    if (sinceLast < cfg.cooldownSec) { debug.blockReason = "cooldown"; return; }
-
-    // Se a bola já vai colidir com a hitbox do GK, não faz nada
-    if (IsBallHittingGK(ball, gk))
-    {
-        debug.blockReason = "ball hitting GK hitbox";
-        return;
-    }
+    if (IsBallHittingGK(ball, gk)) { debug.blockReason = "ball hitting GK hitbox"; return; }
 
     Vector3 relPos = PointToObjectSpace(
         gk.position, gk.rightVec, gk.upVec, gk.lookVec, ball.position);
@@ -459,7 +335,7 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
         if (ballHigh)
         {
-            // ── Metade SUPERIOR → Jump+Dive ───────────────────────────────
+            // ── Metade SUPERIOR do gol → Jump+Dive (Space+Q/E) ───────────
             if (cfg.highJump && absX <= cfg.jumpPureXMax7v7)
             {
                 PressKey(VK_SPACE);
@@ -467,15 +343,12 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
                 debug.blockReason = "FIRED - Jump 7v7";
                 return;
             }
-
             if (absX >= cfg.jumpDiveXMin7v7)
             {
                 WORD        diveKey = (relPos.x > 0.f) ? 'E' : 'Q';
                 const char* keyName = (relPos.x > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
                 int         delayMs = cfg.jumpDiveDelayMs;
-
                 PressKey(VK_SPACE);
-
                 std::thread([diveKey, delayMs]() {
                     std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
                     WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
@@ -488,24 +361,22 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
                     up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
                     SendInput(1, &up, sizeof(INPUT));
                 }).detach();
-
                 m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = std::string("FIRED - ") + keyName;
                 return;
             }
-
-            // Zona morta: fallback para Jump puro
+            // Zona morta: fallback Jump puro
             if (cfg.highJump)
             {
                 PressKey(VK_SPACE);
-                m_lastKey = "Space (Jump 7v7 fallback)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Jump 7v7 fallback";
                 return;
             }
         }
         else
         {
-            // ── Metade INFERIOR → dive normal ────────────────────────────
+            // ── Metade INFERIOR do gol → dive normal (Q/E) ───────────────
             if (relPos.x > cfg.diveXThreshold7v7)
             {
                 PressKey('E');
@@ -520,13 +391,12 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
                 debug.blockReason = "FIRED - Left 7v7";
                 return;
             }
-
             debug.blockReason = "ball not in dive zone (baixo)";
         }
     }
     else
     {
-        // ── 4v4: High Jump ────────────────────────────────────────────────
+        // ── 4v4 ──────────────────────────────────────────────────────────
         if (cfg.highJump && relPos.y >= cfg.jumpYThreshold && std::fabsf(relPos.x) <= cfg.jumpXMaxForPure)
         {
             PressKey(VK_SPACE);
@@ -534,8 +404,6 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             debug.blockReason = "FIRED - Jump";
             return;
         }
-
-        // ── 4v4: Dives laterais ───────────────────────────────────────────
         if (relPos.x > cfg.diveXThreshold)
         {
             PressKey('E');
