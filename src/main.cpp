@@ -477,15 +477,16 @@ static void DrawMenu(Overlay& overlay)
                 // Clica no botão → fica aguardando a próxima tecla
                 static bool s_waitingKey = false;
 
-                ImGui::Text("Tecla do menu:");
+                ImGui::AlignTextToFramePadding();
+                ImGui::Text("Abrir/fechar menu:");
                 ImGui::SameLine();
 
                 if (s_waitingKey)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.7f, 0.5f, 0.0f, 1.f));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.6f, 0.0f, 1.f));
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.9f, 0.7f, 0.0f, 1.f));
-                    ImGui::Button("[ Pressione uma tecla... ]", ImVec2(200.f, 0));
+                    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.6f, 0.4f, 0.0f, 1.f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.5f, 0.0f, 1.f));
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.6f, 0.0f, 1.f));
+                    ImGui::Button("Aguardando tecla... (Esc cancela)", ImVec2(-1, 0));
                     ImGui::PopStyleColor(3);
 
                     // Varre VKs para capturar a primeira tecla pressionada
@@ -513,9 +514,11 @@ static void DrawMenu(Overlay& overlay)
                 else
                 {
                     char btnLabel[64];
-                    std::snprintf(btnLabel, sizeof(btnLabel), "[ %s ]  (clique para mudar)", VKToName(g_menuKey));
-                    if (ImGui::Button(btnLabel))
+                    std::snprintf(btnLabel, sizeof(btnLabel), "[ %s ]", VKToName(g_menuKey));
+                    if (ImGui::Button(btnLabel, ImVec2(-1, 0)))
                         s_waitingKey = true;
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Clique para alterar a tecla");
                 }
 
                 ImGui::Separator();
@@ -592,6 +595,13 @@ static void DrawMenu(Overlay& overlay)
                 {
                     if (LoadConfigSlot(s_newSlotName))
                     {
+                        // Reinicia o AutoDive para que gameMode, enabled e demais
+                        // campos do cfg entrem em vigor imediatamente na thread de scan.
+                        if (g_mem.IsValid() && g_rbx)
+                        {
+                            g_dive.Stop();
+                            g_dive.Start(g_rbx);
+                        }
                         std::snprintf(s_configMsg, sizeof(s_configMsg), "Carregado: %s", s_newSlotName);
                         s_configMsgTimer = 2.f;
                     }
@@ -633,16 +643,27 @@ static void DrawMenu(Overlay& overlay)
 
                 if (s_autoLoad)
                 {
-                    ImGui::TextDisabled("Slot:");
-                    ImGui::SameLine();
-                    ImGui::SetNextItemWidth(120.f);
-                    if (ImGui::InputText("##autoSlot", s_autoSlot, sizeof(s_autoSlot)))
-                        SaveMeta(s_autoSlot, s_autoLoad);
-                    ImGui::SameLine();
-                    if (ImGui::SmallButton("Usar selecionado") && s_selectedSlot >= 0 && s_selectedSlot < (int)s_slots.size())
+                    // Combo que lista todas as configs salvas para escolher qual
+                    // será carregada automaticamente ao abrir o programa.
+                    ImGui::TextDisabled("Config para auto-load:");
+                    const char* comboPreview = (s_autoSlot[0]) ? s_autoSlot : "-- selecione --";
+                    ImGui::SetNextItemWidth(-1);
+                    if (ImGui::BeginCombo("##autoSlotCombo", comboPreview))
                     {
-                        strncpy(s_autoSlot, s_slots[s_selectedSlot].c_str(), sizeof(s_autoSlot)-1);
-                        SaveMeta(s_autoSlot, s_autoLoad);
+                        for (const auto& slot : s_slots)
+                        {
+                            bool isSel = (strcmp(s_autoSlot, slot.c_str()) == 0);
+                            if (ImGui::Selectable(slot.c_str(), isSel))
+                            {
+                                strncpy(s_autoSlot, slot.c_str(), sizeof(s_autoSlot) - 1);
+                                s_autoSlot[sizeof(s_autoSlot) - 1] = '\0';
+                                SaveMeta(s_autoSlot, s_autoLoad);
+                            }
+                            if (isSel) ImGui::SetItemDefaultFocus();
+                        }
+                        if (s_slots.empty())
+                            ImGui::TextDisabled("  (nenhuma config salva)");
+                        ImGui::EndCombo();
                     }
                 }
 
