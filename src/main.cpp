@@ -199,6 +199,8 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_jumpDiveDelayMs=%d\n",      c.jumpDiveDelayMs);
     fprintf(f, "ad_jumpDiveTimeWindow=%.2f\n", c.jumpDiveTimeWindow);
     fprintf(f, "ad_jumpMinCrossY=%.2f\n",     c.jumpMinCrossY);
+    fprintf(f, "ad_velAtCrossYMin=%.2f\n",   c.velAtCrossYMin);
+    fprintf(f, "ad_measuredAccelYMin=%.2f\n",c.measuredAccelYMin);
     fprintf(f, "ad_simSteps=%d\n",             c.simSteps);
     fprintf(f, "ad_simDt=%.4f\n",              c.simDt);
     fprintf(f, "ad_gravity=%.4f\n",            c.gravity);
@@ -263,6 +265,8 @@ static void ReadConfigEntries(FILE* f)
         INT_KEY("ad_jumpDiveDelayMs",      c.jumpDiveDelayMs)
         FLOAT_KEY("ad_jumpDiveTimeWindow", c.jumpDiveTimeWindow)
         FLOAT_KEY("ad_jumpMinCrossY",      c.jumpMinCrossY)
+        FLOAT_KEY("ad_velAtCrossYMin",     c.velAtCrossYMin)
+        FLOAT_KEY("ad_measuredAccelYMin",  c.measuredAccelYMin)
         INT_KEY("ad_simSteps",             c.simSteps)
         FLOAT_KEY("ad_simDt",              c.simDt)
         FLOAT_KEY("ad_gravity",            c.gravity)
@@ -458,6 +462,14 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::SameLine(); ImGui::TextDisabled("(?)");
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Altura minima (crossY) que a bola precisa cruzar\nno plano do gol para acionar Jump/Jump+Dive.\nReferencia: Y=0 e o centro geometrico do gol.\n  -4  = qualquer chute que entre no gol\n   0  = acima do centro do gol\n  1.5  = 1.5 studs acima do centro\n   8  = so chutes muito altos (quase na trave)\nVeja 'predGoalY' no debug para calibrar.");
+                        ImGui::SliderFloat("velY cruzamento [curva sobe]", &g_dive.cfg.velAtCrossYMin,   0.f, 30.f, "%.1f  (0=off)");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Se a bola ainda estiver subindo ao cruzar o plano do gol\n(velAtCross.y >= este valor), forca ballHigh=true.\nUso: captura chutes com curva que sobem mas crossY ficou baixo.\n0 = desativado. Sugerido: 5.0");
+                        ImGui::SliderFloat("accelY medida  [curva sobe]", &g_dive.cfg.measuredAccelYMin, 0.f, 40.f, "%.1f  (0=off)");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Se a aceleracao vertical medida no instante do disparo\n(measuredAccel.y >= este valor), forca ballHigh=true.\nUso: curva empurrando a bola para cima logo apos o chute.\n0 = desativado. Sugerido: 8.0");
                     }
 
                     if (g_rbx)

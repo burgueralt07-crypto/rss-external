@@ -479,6 +479,25 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         // jumpMinCrossY: altura mínima de cruzamento para considerar "alto"
         // Evita Jump+Dive em chutes que sobem levemente mas entram embaixo do gol.
         bool ballHigh = (goalLocalY >= cfg.jumpMinCrossY);
+
+        // ── Detecção de curva que sobe (override de ballHigh) ────────────
+        // Caso 1: bola ainda subindo ao cruzar o plano do gol.
+        //   A simulação subestima crossY quando a curva vertical aparece tarde
+        //   no EMA. Se velAtCross.y é positivo e alto, a bola vai chegar alta
+        //   mesmo que crossY previsto seja baixo.
+        if (!ballHigh && cfg.velAtCrossYMin > 0.f &&
+            sim.hit && sim.velAtCross.y >= cfg.velAtCrossYMin)
+        {
+            ballHigh = true;
+        }
+        // Caso 2: aceleração vertical medida positiva no instante do disparo.
+        //   Indica que a curva está ativamente empurrando a bola para cima agora.
+        if (!ballHigh && cfg.measuredAccelYMin > 0.f &&
+            ball.measuredAccel.y >= cfg.measuredAccelYMin)
+        {
+            ballHigh = true;
+        }
+
         debug.blockReason = ballHigh ? "[zona alta]" : "[zona baixa]";
 
         if (ballHigh)

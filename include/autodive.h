@@ -118,6 +118,22 @@ public:
         // Ex: 1.5 = só bolas que vão cruzar 1.5 studs acima do centro do gol.
         float jumpMinCrossY       = 1.5f;
 
+        // ── Detecção de chute com curva que sobe ─────────────────────────
+        // Complementa jumpMinCrossY para o caso em que a simulação subestima
+        // a subida porque a curva ainda está sendo capturada pelo EMA.
+        //
+        // velAtCrossYMin: se sim.velAtCross.y >= este valor (bola ainda
+        // subindo ao cruzar o plano do gol), força ballHigh=true mesmo que
+        // crossY < jumpMinCrossY.
+        // 0 = desativado. Valor sugerido: 5.0 (studs/s).
+        float velAtCrossYMin      = 5.f;
+        //
+        // measuredAccelYMin: se ball.measuredAccel.y >= este valor (aceleração
+        // vertical positiva medida no instante do disparo), força ballHigh=true.
+        // Captura curvas que empurram a bola para cima logo após o chute.
+        // 0 = desativado. Valor sugerido: 8.0 (studs/s²).
+        float measuredAccelYMin   = 8.f;
+
         // ── Simulação de trajetória (RK4 + EMA + decaimento) ────────────
         int   simSteps            = 80;      // passos de integração RK4 (~2.8 s de lookahead a dt=0.035)
         float simDt               = 0.035f;  // dt por passo (s) — ~1.575 s de lookahead
