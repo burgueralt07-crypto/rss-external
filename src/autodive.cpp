@@ -391,9 +391,15 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
         // Ponto de cruzamento previsto no espaço do gol — usado como referência
         // de direção quando a simulação com curva está disponível.
-        // sim.crossX > 0 → bola vai para a direita do gol (do ponto de vista do GK).
-        // Fallback para relPos.x se a simulação não encontrou cruzamento.
-        float decisionX = sim.hit ? sim.crossX : relPos.x;
+        //
+        // ATENÇÃO: o rightVec do gol aponta para a direita do gol visto de FORA
+        // (mesma direção que um atacante vê). O GK está dentro olhando para fora,
+        // então seu rightVec é oposto. crossX > 0 = bola vai para a direita do
+        // atacante = esquerda do GK → deve dar Q.
+        // Invertemos o sinal para alinhar com o espaço do GK.
+        //
+        // Fallback para relPos.x (espaço do GK) se simulação não encontrou cruzamento.
+        float decisionX = sim.hit ? -sim.crossX : relPos.x;
         float absDecisionX = std::fabsf(decisionX);
 
         float goalLocalY = 0.f;
