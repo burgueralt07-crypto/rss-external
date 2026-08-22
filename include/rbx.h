@@ -20,7 +20,7 @@ public:
     explicit RobloxReader(Memory& mem) : m_mem(mem) {}
 
     bool Update();
-    void InvalidateStructure() { m_structureValid = false; m_cachedBall = 0; }
+    void InvalidateStructure() { m_structureValid = false; m_cachedBall = 0; m_cachedHRP = 0; m_cachedHitbox = 0; m_cachedGoalPart = 0; }
 
     const std::vector<PlayerData>& GetPlayers()    const { return m_players; }
     const Matrix4x4&               GetViewMatrix() const { return m_viewMatrix; }
@@ -92,6 +92,15 @@ private:
     bool                     m_forceGK        = false;
     bool                     m_structureValid = false;  // true após UpdateStructure() bem-sucedido
     uintptr_t                m_cachedBall     = 0;      // cache da instância Ball no Workspace
+
+    // Cache de ponteiros estáticos usados pelas funções Direct a 240 Hz.
+    // Evita FindChild (varre todos os filhos via RPM) a cada iteração.
+    // Invalidados quando o DataModel muda (InvalidateStructure).
+    uintptr_t                m_cachedHRP      = 0;      // LocalPlayer model → HumanoidRootPart
+    uintptr_t                m_cachedHitbox   = 0;      // LocalPlayer model → Hitbox
+    uintptr_t                m_cachedGoalPart = 0;      // AntiOwnGoal part (Home ou Away)
+    bool                     m_cachedGoalIsAPG = false; // qual gol está cacheado
+
     BallState                m_ball;
     GKState                  m_gkState;
     GoalState                m_goalState;
