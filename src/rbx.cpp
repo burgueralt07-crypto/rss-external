@@ -354,22 +354,12 @@ GKState RobloxReader::ReadGKDirect()
     uintptr_t model = ReadPtr(m_localPlayer + Offsets::Player::ModelInstance);
     if (!model) return gk;
 
-    // ── Cache de HumanoidRootPart ────────────────────────────────────────
-    // FindChild varre todos os filhos do model via RPM — caro a 240 Hz.
-    // Cacheia o ponteiro e só refaz o scan se o cache invalidar.
-    if (m_cachedHRP)
-    {
-        // Valida o cache: lê o primitive (leitura simples de 8 bytes)
-        uintptr_t prim = ReadPtr(m_cachedHRP + Offsets::BasePart::Primitive);
-        if (!prim) m_cachedHRP = 0;
-    }
-    if (!m_cachedHRP)
-        m_cachedHRP = FindChild(model, "HumanoidRootPart");
-    if (!m_cachedHRP) return gk;
+    uintptr_t hrp = FindChild(model, "HumanoidRootPart");
+    if (!hrp) return gk;
 
-    gk.position = ReadPartPosition(m_cachedHRP);
+    gk.position = ReadPartPosition(hrp);
 
-    uintptr_t hrpPrim = ReadPtr(m_cachedHRP + Offsets::BasePart::Primitive);
+    uintptr_t hrpPrim = ReadPtr(hrp + Offsets::BasePart::Primitive);
     if (hrpPrim)
     {
         Matrix3x3 rot = ReadT<Matrix3x3>(hrpPrim + Offsets::Primitive::Rotation);
@@ -378,18 +368,12 @@ GKState RobloxReader::ReadGKDirect()
         gk.lookVec  = rot.Look();
     }
 
-    // ── Cache de Hitbox ───────────────────────────────────────────────────
-    if (m_cachedHitbox)
+    // Lê hitbox física do GK (part "Hitbox" dentro do model)
+    uintptr_t hitboxPart = FindChild(model, "Hitbox");
+    if (hitboxPart)
     {
-        uintptr_t prim = ReadPtr(m_cachedHitbox + Offsets::BasePart::Primitive);
-        if (!prim) m_cachedHitbox = 0;
-    }
-    if (!m_cachedHitbox)
-        m_cachedHitbox = FindChild(model, "Hitbox");
-    if (m_cachedHitbox)
-    {
-        gk.hitboxPos  = ReadPartPosition(m_cachedHitbox);
-        gk.hitboxSize = ReadPartSize(m_cachedHitbox);
+        gk.hitboxPos  = ReadPartPosition(hitboxPart);
+        gk.hitboxSize = ReadPartSize(hitboxPart);
     }
 
     return gk;
@@ -407,40 +391,23 @@ GoalState RobloxReader::ReadGoalDirect()
         isAPG = m_isAPG;
     }
 
-    // ── Cache da part AntiOwnGoal ─────────────────────────────────────────
-    // FindChild(workspace, "HomePosition") + FindChild(homePosition, "HomeAntiOwnGoal")
-    // varre filhos do Workspace (pode ter centenas) a 240 Hz — muito caro.
-    // Cacheia o ponteiro da part e só refaz o scan quando: o cache invalida
-    // ou o time mudou (APG ↔ HPG).
-    if (m_cachedGoalPart && m_cachedGoalIsAPG != isAPG)
-        m_cachedGoalPart = 0;   // time mudou, refaz
-
-    if (m_cachedGoalPart)
+    // Away: Workspace.AwayAntiOwnGoal (direto no workspace)
+    // Home: Workspace.HomePosition.HomeAntiOwnGoal
+    uintptr_t part = 0;
+    if (isAPG)
     {
-        // Valida: lê primitive (8 bytes)
-        uintptr_t prim = ReadPtr(m_cachedGoalPart + Offsets::BasePart::Primitive);
-        if (!prim) m_cachedGoalPart = 0;
+        part = FindChild(m_workspace, "AwayAntiOwnGoal");
     }
-
-    if (!m_cachedGoalPart)
+    else
     {
-        if (isAPG)
-        {
-            m_cachedGoalPart = FindChild(m_workspace, "AwayAntiOwnGoal");
-        }
-        else
-        {
-            uintptr_t homePosition = FindChild(m_workspace, "HomePosition");
-            if (homePosition)
-                m_cachedGoalPart = FindChild(homePosition, "HomeAntiOwnGoal");
-        }
-        m_cachedGoalIsAPG = isAPG;
+        uintptr_t homePosition = FindChild(m_workspace, "HomePosition");
+        if (homePosition)
+            part = FindChild(homePosition, "HomeAntiOwnGoal");
     }
+    if (!part) return goal;
 
-    if (!m_cachedGoalPart) return goal;
-
-    uintptr_t primitive = ReadPtr(m_cachedGoalPart + Offsets::BasePart::Primitive);
-    if (!primitive) { m_cachedGoalPart = 0; return goal; }
+    uintptr_t primitive = ReadPtr(part + Offsets::BasePart::Primitive);
+    if (!primitive) return goal;
 
     goal.exists   = true;
     goal.position = ReadT<Vector3>(primitive + Offsets::Primitive::Position);
