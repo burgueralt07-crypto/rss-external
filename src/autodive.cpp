@@ -341,7 +341,17 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         {
             float predX    = -sim.crossX;   // negado: espaço do gol → espaço do GK
             float absX     = std::fabsf(predX);
-            bool  predHigh = (sim.crossY > 0.f);
+
+            // Usa goalLocalY da posição ATUAL da bola (mesmo critério do caminho normal),
+            // evita depender de sim.crossY cujo sinal pode variar com a orientação do gol.
+            float goalLocalY = 0.f;
+            if (goal.exists)
+            {
+                Vector3 ballInGoal = PointToObjectSpace(
+                    goal.position, goal.rightVec, goal.upVec, goal.lookVec, ball.position);
+                goalLocalY = ballInGoal.y;
+            }
+            bool  predHigh = (goalLocalY > 0.f);
 
             if (predHigh)
             {
