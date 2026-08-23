@@ -422,8 +422,17 @@ static void DrawMenu(Overlay& overlay)
 
                     ImGui::Separator();
                     ImGui::SliderFloat("Vel minima",    &g_dive.cfg.minBallSpeed,    0.f,  50.f, "%.0f studs/s");
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Velocidade minima da bola para o AutoDive agir.\nAbaixo desse valor o dive e bloqueado (bola parada/rolando).\nAumente se estiver dando dive em passes lentos.");
                     ImGui::SliderFloat("Cooldown",      &g_dive.cfg.cooldownSec,     0.3f,  3.f, "%.1f s");
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Tempo minimo entre dois dives consecutivos.\nEvita que o GK fique spammando apos um disparo.\nAumente se o GK diver duas vezes seguidas no mesmo chute.");
                     ImGui::SliderFloat("Margem gol",    &g_dive.cfg.goalMargin,      0.f,   8.f, "%.0f studs");
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Expande o tamanho virtual do gol para decidir se a bola\nvai entrar. Util para cobrir chutes proximos ao poste.\n0 = tamanho real do gol.\n4 = dive em bolas que passariam 4 studs fora do poste.");
                     ImGui::SliderFloat("Dist disparo",  &g_dive.cfg.diveFireDistance, 3.f, 40.f, "%.0f studs");
                     ImGui::SameLine(); ImGui::TextDisabled("(?)");
                     if (ImGui::IsItemHovered())
@@ -438,10 +447,19 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::TextDisabled("-- 4v4 --");
                         ImGui::Checkbox("Pular em Bola Alta (Space)", &g_dive.cfg.highJump);
                         ImGui::SliderFloat("relX dive   [4v4]", &g_dive.cfg.diveXThreshold,  0.5f, 8.f,  "%.1f");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Distancia lateral (eixo X local do GK) que a bola\nprecisa estar para acionar o dive Q/E no modo 4v4.\nMenor = dive em bolas mais centrais (mais agressivo).\nMaior = so dive em bolas muito na lateral.");
                         if (g_dive.cfg.highJump)
                         {
                             ImGui::SliderFloat("relY jump   [4v4]", &g_dive.cfg.jumpYThreshold,  2.f, 12.f, "%.1f");
+                            ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("Altura minima da bola (eixo Y local do GK) para\nacionar o salto com Space no modo 4v4.\nAumente se o GK pular em bolas baixas.\nDiminua se nao estiver pulando em bolas altas.");
                             ImGui::SliderFloat("|relX| max jump [4v4]", &g_dive.cfg.jumpXMaxForPure, 1.f, 10.f, "%.1f");
+                            ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                            if (ImGui::IsItemHovered())
+                                ImGui::SetTooltip("Distancia lateral maxima (|relX|) para que o Jump\npuro (Space) seja acionado no modo 4v4.\nSe a bola estiver mais longe que isso lateralmente,\no Space nao e pressionado mesmo com bola alta.\nAumente para cobrir mais angulo com o pulo.");
                         }
                     }
                     else
@@ -450,10 +468,25 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::TextDisabled("-- 7v7 --");
                         ImGui::Checkbox("Pular em Bola Alta (Space) [7v7]", &g_dive.cfg.highJump);
                         ImGui::SliderFloat("relX dive      [7v7]", &g_dive.cfg.diveXThreshold7v7,  1.f, 12.f, "%.1f");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Distancia lateral (crossX previsto) que a bola precisa\nter para acionar dive Q/E na zona baixa do gol (7v7).\nMenor = dive em bolas mais centrais.\nMaior = so dive em bolas muito na lateral.");
                         ImGui::SliderFloat("|relX| Jump puro[7v7]",&g_dive.cfg.jumpPureXMax7v7,    0.f,  6.f, "%.1f");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Se a bola esta alta E |crossX| <= este valor,\npressiona Space (Jump puro) sem dive lateral.\nZero desativa o Jump puro (todo chute alto vira Jump+Dive).\nAumente para cobrir chutes altos centrais com so o pulo.");
                         ImGui::SliderFloat("|relX| min J+D [7v7]", &g_dive.cfg.jumpDiveXMin7v7,    0.f,  6.f, "%.1f");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("|crossX| minimo para acionar Jump+Dive (Space+Q/E)\nna zona alta do gol em 7v7.\nAbaixo desse valor e acima de jumpPureXMax → zona morta\n(Jump puro como fallback).\nDiminua para cobrir mais angulo com Jump+Dive.");
                         ImGui::SliderInt("Delay Space->Q/E (ms)",  &g_dive.cfg.jumpDiveDelayMs,     0,  400);
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Tempo entre pressionar Space e pressionar Q ou E\nno combo Jump+Dive (7v7).\n0ms = simultaneo. 150-200ms = mais natural/humano.\nAjuste se o GK nao esta divando apos o pulo.");
                         ImGui::SliderFloat("Janela antecip. dive [7v7]", &g_dive.cfg.jumpDiveTimeWindow, 0.f, 1.5f, "%.2f s");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Janela de tempo para disparar Jump+Dive antecipado.\nSe sim.timeToGoal <= este valor, o Space e enviado mesmo\nque a bola ainda esteja longe (dist > Dist disparo).\n0 = desativado (usa so distancia).\nAumente para antecipar mais em chutes rapidos.");
                         ImGui::SliderFloat("crossY min p/ alto  [7v7]", &g_dive.cfg.jumpMinCrossY,      -4.f,  8.f, "%.1f  (-4=tudo  0=centro  8=so topo)");
                         ImGui::SameLine(); ImGui::TextDisabled("(?)");
                         if (ImGui::IsItemHovered())
