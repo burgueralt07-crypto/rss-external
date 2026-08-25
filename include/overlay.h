@@ -40,6 +40,8 @@ private:
     HINSTANCE    m_hInstance   = nullptr;
     int          m_width       = 0;
     int          m_height      = 0;
+    int          m_x           = 0;   // última posição conhecida (evita SetWindowPos desnecessário)
+    int          m_y           = 0;
     bool         m_running     = false;
     bool         m_visible     = true;
     bool         m_clickThrough = true;

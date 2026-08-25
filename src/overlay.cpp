@@ -145,15 +145,25 @@ void Overlay::SyncWithTarget()
     RECT rect{};
     GetWindowRect(m_targetHwnd, &rect);
 
+    int x = rect.left;
+    int y = rect.top;
     int w = rect.right  - rect.left;
     int h = rect.bottom - rect.top;
 
-    SetWindowPos(m_hwnd, HWND_TOPMOST,
-                 rect.left, rect.top, w, h,
-                 SWP_NOACTIVATE);
-
-    m_width  = w;
-    m_height = h;
+    // Só chama SetWindowPos se posição ou tamanho realmente mudaram.
+    // Chamar toda iteração do render loop manda mensagens WM_SIZE /
+    // WM_WINDOWPOSCHANGED contínuas para o DWM, o que ao longo do tempo
+    // causa engasgos: resolução resetando, tela preta, apps travando.
+    if (x != m_x || y != m_y || w != m_width || h != m_height)
+    {
+        SetWindowPos(m_hwnd, HWND_TOPMOST,
+                     x, y, w, h,
+                     SWP_NOACTIVATE);
+        m_x      = x;
+        m_y      = y;
+        m_width  = w;
+        m_height = h;
+    }
 }
 
 // --------------------------------------------------------------------------
