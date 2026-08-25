@@ -132,6 +132,11 @@ void Renderer::Resize(int width, int height)
 {
     if (width == 0 || height == 0) return;
 
+    // Só recria o swap chain se o tamanho realmente mudou.
+    // ResizeBuffers toda iteração é pesado para o driver DX11 e
+    // contribui para os engasgos do DWM junto com o SetWindowPos contínuo.
+    if (width == m_width && height == m_height) return;
+
     m_width  = width;
     m_height = height;
 
