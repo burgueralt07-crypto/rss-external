@@ -198,6 +198,38 @@ void Overlay::SetClickThrough(bool clickThrough)
 }
 
 // --------------------------------------------------------------------------
+// SetFocused — captura ou libera o foco do teclado para o overlay
+//
+// true  → remove WS_EX_NOACTIVATE e chama SetForegroundWindow no overlay,
+//         para que o teclado seja direcionado ao overlay (e ao ImGui).
+// false → restaura WS_EX_NOACTIVATE e devolve o foco para a janela alvo.
+// --------------------------------------------------------------------------
+void Overlay::SetFocused(bool focused)
+{
+    if (m_focused == focused) return;
+    m_focused = focused;
+
+    LONG_PTR exStyle = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
+
+    if (focused)
+    {
+        // Remove NOACTIVATE para que a janela possa receber foco
+        exStyle &= ~WS_EX_NOACTIVATE;
+        SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, exStyle);
+        SetForegroundWindow(m_hwnd);
+        SetFocus(m_hwnd);
+    }
+    else
+    {
+        // Restaura NOACTIVATE e devolve o foco para o jogo
+        exStyle |= WS_EX_NOACTIVATE;
+        SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, exStyle);
+        if (m_targetHwnd && IsWindow(m_targetHwnd))
+            SetForegroundWindow(m_targetHwnd);
+    }
+}
+
+// --------------------------------------------------------------------------
 // SetStreamproof — usa SetWindowDisplayAffinity para ocultar a janela de
 // software de captura (OBS, Discord, gravações de tela, etc.)
 //

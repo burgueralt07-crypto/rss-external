@@ -19,6 +19,11 @@ public:
     // false = overlay recebe input (menu arrastável)
     void SetClickThrough(bool clickThrough);
 
+    // Captura ou libera o foco do teclado para o overlay.
+    // true  = overlay vira foreground e recebe input de teclado
+    // false = devolve foco para a janela alvo (jogo)
+    void SetFocused(bool focused);
+
     // Streamproof: oculta a janela de capturas de tela, OBS, Discord, etc.
     // true  = janela invisível para software de captura
     // false = comportamento normal (visível para capturas)
@@ -45,6 +50,7 @@ private:
     bool         m_running     = false;
     bool         m_visible     = true;
     bool         m_clickThrough = true;
+    bool         m_focused      = false;
     bool         m_streamproof  = false;
 
     std::wstring m_className  = L"OverlayClass";

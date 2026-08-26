@@ -57,10 +57,14 @@ static void PollHotkeys()
 }
 
 // --------------------------------------------------------------------------
-static bool IsRobloxForeground(HWND targetHwnd)
+static bool IsRobloxForeground(HWND targetHwnd, HWND overlayHwnd)
 {
     if (!targetHwnd || !IsWindow(targetHwnd)) return false;
-    if (GetForegroundWindow() != targetHwnd)  return false;
+
+    HWND fg = GetForegroundWindow();
+    // Aceita também o próprio overlay em foreground (menu aberto com foco)
+    if (fg != targetHwnd && fg != overlayHwnd) return false;
+
     WINDOWPLACEMENT wp{}; wp.length = sizeof(wp);
     GetWindowPlacement(targetHwnd, &wp);
     return wp.showCmd == SW_SHOWMAXIMIZED || wp.showCmd == SW_SHOWNORMAL;
@@ -820,13 +824,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
             diveStarted = false;
         }
 
-        bool robloxActive = IsRobloxForeground(overlay.GetTargetHWND());
+        bool robloxActive = IsRobloxForeground(overlay.GetTargetHWND(), overlay.GetHWND());
         overlay.SetVisible(robloxActive);
 
         if (!robloxActive) { Sleep(50); continue; }
 
         PollHotkeys();
         overlay.SetClickThrough(!g_menuOpen);
+        overlay.SetFocused(g_menuOpen);
 
         if (g_mem.IsValid())
         {
