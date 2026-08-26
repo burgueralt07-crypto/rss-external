@@ -31,6 +31,7 @@ struct ESPConfig {
 };
 static ESPConfig g_cfg;
 static AutoDive  g_dive;
+static bool      g_streamproof = false;
 
 // --------------------------------------------------------------------------
 static ImU32 HealthColor(float hp, float maxHp)
@@ -213,7 +214,8 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_keyHoldMs=%d\n",            c.keyHoldMs);
 
     fprintf(f, "\n[Misc]\n");
-    fprintf(f, "misc_menuKey=%d\n", g_menuKey);
+    fprintf(f, "misc_menuKey=%d\n",     g_menuKey);
+    fprintf(f, "misc_streamproof=%d\n", g_streamproof ? 1 : 0);
 }
 
 // Lê as entradas de um FILE já aberto e aplica nas structs globais
@@ -277,6 +279,7 @@ static void ReadConfigEntries(FILE* f)
         INT_KEY("ad_scanRate",             c.scanRate)
         INT_KEY("ad_keyHoldMs",            c.keyHoldMs)
         INT_KEY("misc_menuKey",            g_menuKey)
+        BOOL_KEY("misc_streamproof",       g_streamproof)
     }
 
 #undef BOOL_KEY
@@ -297,13 +300,16 @@ static void SaveConfigSlot(const char* name)
 }
 
 // Carrega do slot com nome dado
-static bool LoadConfigSlot(const char* name)
+static bool LoadConfigSlot(const char* name, Overlay* overlay = nullptr)
 {
     std::string path = GetConfigDir() + "configs\\" + name + std::string(".ini");
     FILE* f = fopen(path.c_str(), "r");
     if (!f) return false;
     ReadConfigEntries(f);
     fclose(f);
+    // Aplica streamproof imediatamente se a overlay foi passada
+    if (overlay)
+        overlay->SetStreamproof(g_streamproof);
     return true;
 }
 
@@ -524,9 +530,8 @@ static void DrawMenu(Overlay& overlay)
             if (ImGui::BeginTabItem("Misc"))
             {
                 // ── Streamproof ───────────────────────────────────────────
-                static bool s_streamproof = false;
-                if (ImGui::Checkbox("Streamproof", &s_streamproof))
-                    overlay.SetStreamproof(s_streamproof);
+                if (ImGui::Checkbox("Streamproof", &g_streamproof))
+                    overlay.SetStreamproof(g_streamproof);
                 ImGui::SameLine();
                 ImGui::TextDisabled("(?)");
                 if (ImGui::IsItemHovered())
@@ -585,7 +590,7 @@ static void DrawMenu(Overlay& overlay)
                 ImGui::Separator();
 
                 // ── Config slots ──────────────────────────────────────────
-                static char  s_newSlotName[64]  = "default";
+                static char  s_newSlotName[64]  = "";
                 static int   s_selectedSlot     = -1;
                 static bool  s_autoLoad         = false;
                 static char  s_autoSlot[64]     = {};
@@ -630,7 +635,7 @@ static void DrawMenu(Overlay& overlay)
 
                 // Campo de nome para salvar/criar
                 ImGui::SetNextItemWidth(-1);
-                ImGui::InputText("##slotname", s_newSlotName, sizeof(s_newSlotName));
+                ImGui::InputTextWithHint("##slotname", "nome da config...", s_newSlotName, sizeof(s_newSlotName));
 
                 // Botões Salvar / Carregar / Deletar
                 float bw = (ImGui::GetContentRegionAvail().x - 8.f) / 3.f;
@@ -654,7 +659,7 @@ static void DrawMenu(Overlay& overlay)
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.2f, 0.9f, 0.4f, 1.f));
                 if (ImGui::Button("Carregar##cfg", ImVec2(bw, 0)) && s_newSlotName[0])
                 {
-                    if (LoadConfigSlot(s_newSlotName))
+                    if (LoadConfigSlot(s_newSlotName, &overlay))
                     {
                         // Reinicia o AutoDive para que gameMode, enabled e demais
                         // campos do cfg entrem em vigor imediatamente na thread de scan.
@@ -782,7 +787,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         bool  autoLoad     = false;
         LoadMeta(autoSlot, sizeof(autoSlot), autoLoad);
         if (autoLoad && autoSlot[0])
-            LoadConfigSlot(autoSlot);
+            LoadConfigSlot(autoSlot, &overlay);
     }
 
     bool diveStarted = false;
