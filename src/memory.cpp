@@ -60,6 +60,8 @@ bool Memory::Attach(const std::wstring& processName)
         return false;
     }
 
+    m_invalid   = false;
+    m_lastCheck = std::chrono::steady_clock::now();
     return true;
 }
 
@@ -73,23 +75,42 @@ void Memory::Detach()
         CloseHandle(m_handle);
         m_handle = INVALID_HANDLE_VALUE;
     }
-    m_pid = 0;
+    m_pid     = 0;
+    m_invalid = false;
 }
 
 // --------------------------------------------------------------------------
 // IsValid — verifica se o processo ainda está rodando
+//
+// Evita syscall GetExitCodeProcess em todo frame:
+//   • m_invalid é setado imediatamente por qualquer ReadRaw que falhe —
+//     assim a detecção é instantânea quando o processo fecha durante leitura.
+//   • A checagem periódica (a cada 500 ms) captura o caso em que o processo
+//     termina sem que haja leituras ativas (ex: overlay oculto).
 // --------------------------------------------------------------------------
 bool Memory::IsValid() const
 {
     if (m_handle == INVALID_HANDLE_VALUE || m_handle == nullptr)
         return false;
 
-    DWORD exitCode = 0;
-    if (!GetExitCodeProcess(m_handle, &exitCode))
+    // Falha imediata sinalizada por ReadRaw
+    if (m_invalid)
         return false;
 
-    // STILL_ACTIVE (259) → processo ainda em execução
-    return exitCode == STILL_ACTIVE;
+    // Checagem periódica — evita syscall a cada frame
+    auto now = std::chrono::steady_clock::now();
+    if (now - m_lastCheck >= kCheckInterval)
+    {
+        m_lastCheck = now;
+        DWORD exitCode = 0;
+        if (!GetExitCodeProcess(m_handle, &exitCode) || exitCode != STILL_ACTIVE)
+        {
+            m_invalid = true;
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // --------------------------------------------------------------------------
@@ -146,7 +167,17 @@ bool Memory::ReadRaw(uintptr_t address, void* buffer, SIZE_T size) const
         &bytesRead
     );
 
-    return ok && bytesRead == size;
+    if (!ok || bytesRead != size)
+    {
+        // Falha de acesso → processo provavelmente terminou ou foi protegido.
+        // Sinaliza invalidação imediata para que IsValid() retorne false no
+        // próximo frame sem precisar de nova syscall GetExitCodeProcess.
+        if (!ok)
+            m_invalid = true;
+        return false;
+    }
+
+    return true;
 }
 
 // --------------------------------------------------------------------------

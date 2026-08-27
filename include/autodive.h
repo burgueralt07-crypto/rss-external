@@ -3,6 +3,9 @@
 #include <Windows.h>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
+#include <mutex>
+#include <queue>
 #include <string>
 #include <thread>
 
@@ -208,13 +211,14 @@ public:
     } debug;
 
 private:
-    // Dispara a tecla imediatamente por hardware scancode puro (wVk=0).
-    // Solta a tecla holdMs depois em thread assíncrona — não trava o loop de scan.
-    static void PressKey(WORD vk, int holdMs = 80)
+    // Dispara key-down imediatamente via hardware scancode.
+    // Enfileira o key-up para a thread dedicada (KeyUpLoop) soltar holdMs depois.
+    // Não cria threads avulsas — uma única thread de key-up drena a fila.
+    void PressKey(WORD vk, int holdMs = 80)
     {
         WORD sc = static_cast<WORD>(MapVirtualKeyW(vk, MAPVK_VK_TO_VSC));
 
-        // Key down — imediato, sem passar pelo virtual-key path
+        // Key-down imediato
         INPUT down = {};
         down.type       = INPUT_KEYBOARD;
         down.ki.wVk     = 0;
@@ -222,16 +226,14 @@ private:
         down.ki.dwFlags = KEYEVENTF_SCANCODE;
         SendInput(1, &down, sizeof(INPUT));
 
-        // Key up — holdMs depois em thread separada para não bloquear o scan
-        std::thread([sc, holdMs]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(holdMs));
-            INPUT up = {};
-            up.type       = INPUT_KEYBOARD;
-            up.ki.wVk     = 0;
-            up.ki.wScan   = sc;
-            up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-            SendInput(1, &up, sizeof(INPUT));
-        }).detach();
+        // Enfileira key-up
+        auto releaseAt = std::chrono::steady_clock::now() +
+                         std::chrono::milliseconds(holdMs);
+        {
+            std::lock_guard<std::mutex> lk(m_keyUpMtx);
+            m_keyUpQueue.push({ sc, releaseAt });
+        }
+        m_keyUpCv.notify_one();
     }
 
     static Vector3 PointToObjectSpace(const Vector3& origin,
@@ -287,4 +289,16 @@ private:
 
     std::thread       m_thread;
     std::atomic<bool> m_running{ false };
+
+    // Thread dedicada ao key-up — drena m_keyUpQueue sem criar threads avulsas
+    struct KeyUpEntry {
+        WORD                                     scancode;
+        std::chrono::steady_clock::time_point    releaseAt;
+    };
+    std::thread                m_keyUpThread;
+    std::mutex                 m_keyUpMtx;
+    std::condition_variable    m_keyUpCv;
+    std::queue<KeyUpEntry>     m_keyUpQueue;
+
+    void KeyUpLoop();
 };

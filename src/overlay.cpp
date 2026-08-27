@@ -93,7 +93,8 @@ bool Overlay::CreateOverlayWindow()
     }
 
     // Começa com WS_EX_TRANSPARENT (click-through)
-    DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_NOACTIVATE;
+    // WS_EX_TOOLWINDOW: impede que o shell crie um botão na barra de tarefas
+    DWORD exStyle = WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
     DWORD style   = WS_POPUP;
 
     m_hwnd = CreateWindowExW(exStyle, m_className.c_str(), L"Overlay", style,

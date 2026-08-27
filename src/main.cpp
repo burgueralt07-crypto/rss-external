@@ -33,6 +33,9 @@ static ESPConfig g_cfg;
 static AutoDive  g_dive;
 static bool      g_streamproof = false;
 
+// Sinaliza re-scan da lista de configs ao reabrir o menu
+static bool s_menuSlotsStale = true;
+
 // --------------------------------------------------------------------------
 static ImU32 HealthColor(float hp, float maxHp)
 {
@@ -79,14 +82,39 @@ static void DrawESP(ImDrawList* dl,
 {
     if (!g_cfg.enabled || players.empty()) return;
 
-    float winOffsetX = 0.f, winOffsetY = 0.f;
+    // Cache do offset client→screen — recalcula só quando o HWND muda ou
+    // quando SyncWithTarget detectou movimento (posição da janela alvo mudou).
+    // ClientToScreen é uma syscall Win32; evitar a cada frame reduz overhead.
+    static HWND  s_cachedHwnd  = nullptr;
+    static float s_offsetX     = 0.f;
+    static float s_offsetY     = 0.f;
+    static int   s_lastX       = INT_MIN;
+    static int   s_lastY       = INT_MIN;
+
     if (targetHwnd)
     {
-        POINT pt{ 0, 0 };
-        ClientToScreen(targetHwnd, &pt);
-        winOffsetX = static_cast<float>(pt.x);
-        winOffsetY = static_cast<float>(pt.y);
+        RECT wr{};
+        GetWindowRect(targetHwnd, &wr);
+        if (targetHwnd != s_cachedHwnd || wr.left != s_lastX || wr.top != s_lastY)
+        {
+            POINT pt{ 0, 0 };
+            ClientToScreen(targetHwnd, &pt);
+            s_offsetX     = static_cast<float>(pt.x);
+            s_offsetY     = static_cast<float>(pt.y);
+            s_cachedHwnd  = targetHwnd;
+            s_lastX       = wr.left;
+            s_lastY       = wr.top;
+        }
     }
+    else
+    {
+        s_cachedHwnd = nullptr;
+        s_offsetX    = 0.f;
+        s_offsetY    = 0.f;
+    }
+
+    const float winOffsetX = s_offsetX;
+    const float winOffsetY = s_offsetY;
 
     constexpr float OFFSET_TOP    =  2.8f;
     constexpr float OFFSET_BOTTOM = -2.5f;
@@ -165,11 +193,16 @@ static void DrawESP(ImDrawList* dl,
 
 static std::string GetConfigDir()
 {
+    // Cacheia o resultado — GetModuleFileNameA só precisa ser chamado uma vez.
+    static std::string s_dir;
+    if (!s_dir.empty()) return s_dir;
+
     char buf[MAX_PATH] = {};
     GetModuleFileNameA(nullptr, buf, MAX_PATH);
     char* last = strrchr(buf, '\\');
     if (last) *(last + 1) = '\0';
-    return std::string(buf);
+    s_dir = buf;
+    return s_dir;
 }
 
 // Escreve todas as entradas de config num FILE já aberto
@@ -378,6 +411,12 @@ static const char* VKToName(int vk)
 // ==========================================================================
 static void DrawMenu(Overlay& overlay)
 {
+    // Detecta borda de abertura do menu → força re-scan de configs
+    static bool s_wasMenuOpen = false;
+    if (g_menuOpen && !s_wasMenuOpen)
+        s_menuSlotsStale = true;
+    s_wasMenuOpen = g_menuOpen;
+
     if (!g_menuOpen) return;
 
     ImGui::SetNextWindowBgAlpha(0.85f);
@@ -609,10 +648,10 @@ static void DrawMenu(Overlay& overlay)
                     s_metaLoaded = true;
                 }
 
-                // Lista slots disponíveis (re-varre a cada frame apenas se expanded)
+                // Lista slots disponíveis — re-varre quando s_menuSlotsStale=true
+                // (ao abrir o menu, salvar, deletar ou reiniciar)
                 static std::vector<std::string> s_slots;
-                static bool s_slotsStale = true;
-                if (s_slotsStale) { s_slots = ListConfigSlots(); s_slotsStale = false; }
+                if (s_menuSlotsStale) { s_slots = ListConfigSlots(); s_menuSlotsStale = false; }
 
                 ImGui::TextDisabled("Configs salvas:");
 
@@ -650,7 +689,7 @@ static void DrawMenu(Overlay& overlay)
                 if (ImGui::Button("Salvar##cfg", ImVec2(bw, 0)) && s_newSlotName[0])
                 {
                     SaveConfigSlot(s_newSlotName);
-                    s_slotsStale = true;
+                    s_menuSlotsStale = true;
                     std::snprintf(s_configMsg, sizeof(s_configMsg), "Salvo: %s", s_newSlotName);
                     s_configMsgTimer = 2.f;
                 }
@@ -695,7 +734,7 @@ static void DrawMenu(Overlay& overlay)
                     std::snprintf(s_configMsg, sizeof(s_configMsg), "Deletado: %s", s_slots[s_selectedSlot].c_str());
                     s_configMsgTimer = 2.f;
                     s_selectedSlot = -1;
-                    s_slotsStale   = true;
+                    s_menuSlotsStale   = true;
                 }
                 ImGui::PopStyleColor(3);
 

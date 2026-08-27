@@ -3,6 +3,7 @@
 #include <TlHelp32.h>
 #include <string>
 #include <optional>
+#include <chrono>
 
 // --------------------------------------------------------------------------
 // Memory — leitura externa de processo (ReadProcessMemory)
@@ -73,4 +74,12 @@ private:
 
     HANDLE m_handle = INVALID_HANDLE_VALUE;
     DWORD  m_pid    = 0;
+
+    // Cache de invalidação — evita syscall GetExitCodeProcess em todo frame.
+    // m_invalid é setado imediatamente pelo primeiro ReadRaw que falhar.
+    // A verificação periódica (a cada 500 ms) detecta o processo terminado
+    // mesmo quando não há leituras (ex: overlay oculto).
+    mutable bool     m_invalid         = false;
+    mutable std::chrono::steady_clock::time_point m_lastCheck{};
+    static constexpr std::chrono::milliseconds kCheckInterval{ 500 };
 };

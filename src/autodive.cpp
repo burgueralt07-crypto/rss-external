@@ -6,15 +6,54 @@
 void AutoDive::Start(RobloxReader* rbx)
 {
     Stop();
-    m_running = true;
-    m_thread  = std::thread(&AutoDive::ScanLoop, this, rbx);
+    m_running     = true;
+    m_thread      = std::thread(&AutoDive::ScanLoop,  this, rbx);
+    m_keyUpThread = std::thread(&AutoDive::KeyUpLoop, this);
 }
 
 void AutoDive::Stop()
 {
     m_running = false;
+    m_keyUpCv.notify_all();   // acorda KeyUpLoop para sair
     if (m_thread.joinable())
         m_thread.join();
+    if (m_keyUpThread.joinable())
+        m_keyUpThread.join();
+}
+
+// --------------------------------------------------------------------------
+// KeyUpLoop — thread dedicada ao key-up
+//
+// Dorme até o próximo key-up agendado e envia SendInput quando chegar a hora.
+// Substitui as std::thread::detach() anteriores — sem proliferação de threads.
+// --------------------------------------------------------------------------
+void AutoDive::KeyUpLoop()
+{
+    while (m_running)
+    {
+        KeyUpEntry entry{};
+        {
+            std::unique_lock<std::mutex> lk(m_keyUpMtx);
+            // Espera até ter algo na fila ou ser acordada para sair
+            m_keyUpCv.wait(lk, [this] {
+                return !m_keyUpQueue.empty() || !m_running;
+            });
+            if (!m_running && m_keyUpQueue.empty()) break;
+
+            entry = m_keyUpQueue.front();
+            m_keyUpQueue.pop();
+        }
+
+        // Dorme até o momento de soltar a tecla
+        std::this_thread::sleep_until(entry.releaseAt);
+
+        INPUT up = {};
+        up.type       = INPUT_KEYBOARD;
+        up.ki.wVk     = 0;
+        up.ki.wScan   = entry.scancode;
+        up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
+        SendInput(1, &up, sizeof(INPUT));
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -515,21 +554,33 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             {
                 WORD        diveKey = (decisionX > 0.f) ? 'E' : 'Q';
                 const char* keyName = (decisionX > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
-                int         delayMs = cfg.jumpDiveDelayMs;
-                int         holdMs  = cfg.keyHoldMs;
+                // Space imediato; Q/E enfileirado após jumpDiveDelayMs via KeyUpLoop
                 PressKey(VK_SPACE, cfg.keyHoldMs);
-                std::thread([diveKey, delayMs, holdMs]() {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
-                    WORD sc = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
-                    INPUT down = {};
-                    down.type = INPUT_KEYBOARD; down.ki.wScan = sc;
-                    down.ki.dwFlags = KEYEVENTF_SCANCODE;
-                    SendInput(1, &down, sizeof(INPUT));
-                    std::this_thread::sleep_for(std::chrono::milliseconds(holdMs));
-                    INPUT up = down;
-                    up.ki.dwFlags = KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP;
-                    SendInput(1, &up, sizeof(INPUT));
-                }).detach();
+                {
+                    // Agenda key-down do Q/E após o delay usando a fila de key-up:
+                    // enfileiramos uma entrada falsa com releaseAt = agora + delay,
+                    // mas precisamos do key-down também. Usamos uma thread mínima só
+                    // para o key-down do Q/E (única situação que ainda exige isso).
+                    WORD sc      = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
+                    int  holdMs  = cfg.keyHoldMs;
+                    int  delayMs = cfg.jumpDiveDelayMs;
+                    std::thread([this, sc, delayMs, holdMs]() {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
+                        INPUT down = {};
+                        down.type       = INPUT_KEYBOARD;
+                        down.ki.wScan   = sc;
+                        down.ki.dwFlags = KEYEVENTF_SCANCODE;
+                        SendInput(1, &down, sizeof(INPUT));
+                        // Enfileira o key-up via fila dedicada
+                        auto releaseAt = std::chrono::steady_clock::now() +
+                                         std::chrono::milliseconds(holdMs);
+                        {
+                            std::lock_guard<std::mutex> lk(m_keyUpMtx);
+                            m_keyUpQueue.push({ sc, releaseAt });
+                        }
+                        m_keyUpCv.notify_one();
+                    }).detach();
+                }
                 m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = std::string("FIRED - ") + keyName;
                 return;
