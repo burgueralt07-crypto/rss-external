@@ -45,10 +45,12 @@ bool Memory::Attach(const std::wstring& processName)
     if (m_pid == 0)
         return false; // processo não encontrado
 
-    // PROCESS_VM_READ         → permite ReadProcessMemory
+    // PROCESS_VM_READ           → permite ReadProcessMemory
+    // PROCESS_VM_WRITE          → permite WriteProcessMemory
+    // PROCESS_VM_OPERATION      → necessário para WriteProcessMemory
     // PROCESS_QUERY_INFORMATION → permite consultar informações do processo
     m_handle = OpenProcess(
-        PROCESS_VM_READ | PROCESS_QUERY_INFORMATION,
+        PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION | PROCESS_QUERY_INFORMATION,
         FALSE,
         m_pid
     );

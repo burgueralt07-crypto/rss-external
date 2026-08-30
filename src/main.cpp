@@ -4,6 +4,7 @@
 #include "rbx.h"
 #include "rmath.h"
 #include "autodive.h"
+#include "nodebounce.h"
 
 #include <imgui.h>
 #include <Windows.h>
@@ -29,9 +30,10 @@ struct ESPConfig {
     bool  showDistance = true;
     float maxDistance  = 500.f;
 };
-static ESPConfig g_cfg;
-static AutoDive  g_dive;
-static bool      g_streamproof = false;
+static ESPConfig  g_cfg;
+static AutoDive   g_dive;
+static NoDebounce* g_nodebounce = nullptr;
+static bool       g_streamproof = false;
 
 // Sinaliza re-scan da lista de configs ao reabrir o menu
 static bool s_menuSlotsStale = true;
@@ -566,6 +568,46 @@ static void DrawMenu(Overlay& overlay)
                     }
                     ImGui::Unindent();
                 }
+
+                // ── No Debounce ───────────────────────────────────────────
+                ImGui::Separator();
+                if (g_nodebounce)
+                {
+                    ImGui::Checkbox("No Debounce", &g_nodebounce->cfg.enabled);
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip(
+                            "Trava os seguintes BoolValues em false via WriteProcessMemory:\n"
+                            "  Debounce, TackleDebounce, dribbleDebounce, dribbleDelay\n"
+                            "  Tackled, PowerShootDebounce, Offsides\n\n"
+                            "Efeito: sem cooldown de chute/drible/tackle,\n"
+                            "sem cair ao tomar falta, sem restricao de impedimento."
+                        );
+
+                    if (g_nodebounce->cfg.enabled)
+                    {
+                        ImGui::Indent();
+
+                        ImGui::SliderInt("Scan Rate##nd", &g_nodebounce->cfg.scanRateHz, 10, 240, "%d Hz");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Frequencia do loop de travamento.\n60 Hz e suficiente para neutralizar qualquer debounce do jogo.");
+
+                        auto stats = g_nodebounce->GetStats();
+                        if (stats.running)
+                        {
+                            ImGui::TextColored(ImVec4(0.2f,1.f,0.2f,1.f), "Status: ATIVO");
+                            ImGui::Text("Travamentos / scan: %d", stats.locksThisFrame);
+                            ImGui::Text("Total acumulado:    %d", stats.totalLocks);
+                        }
+                        else
+                        {
+                            ImGui::TextColored(ImVec4(1.f,0.8f,0.2f,1.f), "Status: aguardando attach...");
+                        }
+
+                        ImGui::Unindent();
+                    }
+                }
                 ImGui::EndTabItem();
             }
 
@@ -821,7 +863,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    g_rbx = new RobloxReader(g_mem);
+    g_rbx        = new RobloxReader(g_mem);
+    g_nodebounce = new NoDebounce(g_mem);
     TryAttach();
 
     // Auto-load: lê meta e carrega o slot configurado se autoLoad=1
@@ -837,6 +880,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     if (g_mem.IsValid())
     {
         g_dive.Start(g_rbx);
+        g_nodebounce->Start(g_rbx->GetWorkspace(), g_rbx->GetLocalPlayer());
         diveStarted = true;
     }
 
@@ -855,11 +899,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         {
             g_dive.Stop();
             g_dive.Start(g_rbx);
+            g_nodebounce->Stop();
+            g_nodebounce->Start(g_rbx->GetWorkspace(), g_rbx->GetLocalPlayer());
             diveStarted = true;
         }
         else if (wasValid && !isValid)
         {
             g_dive.Stop();
+            g_nodebounce->Stop();
             diveStarted = false;
         }
 
@@ -876,6 +923,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         {
             g_rbx->SetForceGK(g_dive.cfg.forceGK);
             g_rbx->Update();
+
+            // Atualiza ponteiros do NoDebounce a cada frame (custo ~zero).
+            // Garante que respawns ou reconexões não deixam ponteiros velhos.
+            g_nodebounce->UpdatePointers(g_rbx->GetWorkspace(), g_rbx->GetLocalPlayer());
         }
 
         renderer.BeginFrame();
@@ -892,6 +943,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     }
 
     g_dive.Stop();
+    g_nodebounce->Stop();
+    delete g_nodebounce;
     delete g_rbx;
     renderer.Shutdown();
     g_mem.Detach();

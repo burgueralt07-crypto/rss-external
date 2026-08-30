@@ -30,6 +30,11 @@ public:
     const GoalState&               GetGoal()       const { return m_goalState; }
     void                           SetForceGK(bool force) { m_forceGK = force; }
 
+    // Ponteiros estáveis — usados pelo NoDebounce para localizar as instâncias alvo.
+    // Retornam 0 se UpdateStructure() ainda não foi bem-sucedido.
+    uintptr_t GetWorkspace()   const { return m_workspace;   }
+    uintptr_t GetLocalPlayer() const { return m_localPlayer; }
+
     // Thread-safe copies — usadas pelo ScanLoop do AutoDive (lê cópia gerada pelo render loop)
     BallState  GetBallCopy()  const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_ball;     }
     GKState    GetGKCopy()    const { std::lock_guard<std::mutex> lk(m_stateMtx); return m_gkState;  }
