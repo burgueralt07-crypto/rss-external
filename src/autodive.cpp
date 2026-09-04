@@ -22,51 +22,82 @@ void AutoDive::Stop()
 }
 
 // --------------------------------------------------------------------------
-// RotateCamera — move o mouse relativamente para rotacionar a câmera/corpo
-// do GK na direção do chute ANTES do key-down do dive.
+// RotateCamera — move o mouse com curva ease-out para simular uma virada
+// humana urgente antes do key-down do dive.
 //
 // direction > 0 → direita (E), < 0 → esquerda (Q).
 //
 // Conversão ângulo → counts:
-//   Sensibilidade default do Roblox ≈ 0.35  →  1° ≈ 8 counts (empírico).
-//   Para sens personalizada o usuário ajusta camRotAngle até o resultado
-//   visual desejado — não há como ler a sens do jogo externamente.
+//   1° ≈ 8 mouse counts (empírico, sens padrão Roblox).
+//   Ajuste camRotAngle até o GK girar o ângulo desejado visualmente.
 //
-// O movimento é enviado em dois micro-passos (½ + ½) para parecer mais
-// natural e evitar clipping do engine de câmera em um único delta grande.
-// Depois bloqueia camRotDelayMs ms para o engine processar o novo ângulo
-// antes do key-down do dive.
+// Suavização ease-out:
+//   Divide o total em N steps com peso decrescente (gerado por uma curva
+//   exp(-k*t) normalizada). Os primeiros steps são mais largos (movimento
+//   rápido), os últimos são pequenos (desacelera). O resultado parece uma
+//   virada humana urgente: rápida no início, suaviza no final.
+//
+//   N steps = camRotSteps (8–16 é suficiente).
+//   Intervalo entre steps = totalDuration / N  (ex: 60 ms / 12 = 5 ms cada).
+//   totalDuration = camRotDelayMs (o delay já existente agora é o tempo total
+//   da animação; ao terminar o último step a câmera está no ângulo final e
+//   o key-down do dive é disparado imediatamente).
 // --------------------------------------------------------------------------
 void AutoDive::RotateCamera(float direction)
 {
     if (!cfg.camPreRotate || cfg.camRotAngle <= 0.f) return;
 
-    // 1° ≈ 8 mouse counts (empírico, sens padrão Roblox)
     constexpr float COUNTS_PER_DEGREE = 8.f;
-
     int totalCounts = static_cast<int>(cfg.camRotAngle * COUNTS_PER_DEGREE);
     if (totalCounts <= 0) return;
 
-    // Sinal: direita = +dx, esquerda = -dx
-    int dx = (direction >= 0.f) ? totalCounts : -totalCounts;
+    const int sign = (direction >= 0.f) ? 1 : -1;
 
-    // Envia em dois meios-passos para parecer mais suave
-    int half = dx / 2;
-    int rem  = dx - half;
+    // Número de steps — fixo em 12: granular o suficiente sem overhead
+    constexpr int N = 12;
+
+    // Gera pesos ease-out com decaimento exponencial: w[i] = exp(-k * i/N)
+    // k = 2.5 → o último step tem ~12% do peso do primeiro (suave mas não
+    // imperceptível). Normaliza para que a soma total = totalCounts.
+    constexpr float k = 2.5f;
+    float weights[N];
+    float weightSum = 0.f;
+    for (int i = 0; i < N; ++i) {
+        weights[i] = std::expf(-k * static_cast<float>(i) / static_cast<float>(N));
+        weightSum += weights[i];
+    }
+
+    // Converte pesos em counts inteiros; acumula o erro de arredondamento
+    // para garantir que a soma final = totalCounts exatos.
+    int steps[N];
+    int sent = 0;
+    for (int i = 0; i < N - 1; ++i) {
+        steps[i] = static_cast<int>(std::roundf(weights[i] / weightSum * static_cast<float>(totalCounts)));
+        sent += steps[i];
+    }
+    steps[N - 1] = totalCounts - sent;  // último step absorve o arredondamento
+
+    // Intervalo entre steps: distribui o tempo total (camRotDelayMs) por N passos.
+    // Mínimo de 1 ms para não sobrecarregar o scheduler.
+    int stepIntervalMs = (cfg.camRotDelayMs > 0)
+                         ? std::max(1, cfg.camRotDelayMs / N)
+                         : 0;
 
     INPUT mi = {};
-    mi.type         = INPUT_MOUSE;
-    mi.mi.dwFlags   = MOUSEEVENTF_MOVE;
+    mi.type       = INPUT_MOUSE;
+    mi.mi.dwFlags = MOUSEEVENTF_MOVE;
+    mi.mi.dy      = 0;
 
-    mi.mi.dx = half;
-    SendInput(1, &mi, sizeof(INPUT));
+    for (int i = 0; i < N; ++i)
+    {
+        mi.mi.dx = sign * steps[i];
+        if (mi.mi.dx != 0)
+            SendInput(1, &mi, sizeof(INPUT));
 
-    mi.mi.dx = rem;
-    SendInput(1, &mi, sizeof(INPUT));
-
-    // Aguarda o engine registrar a nova direção antes do key-down
-    if (cfg.camRotDelayMs > 0)
-        std::this_thread::sleep_for(std::chrono::milliseconds(cfg.camRotDelayMs));
+        if (stepIntervalMs > 0)
+            std::this_thread::sleep_for(std::chrono::milliseconds(stepIntervalMs));
+    }
+    // Sem delay adicional — o tempo total já foi distribuído entre os steps.
 }
 
 // --------------------------------------------------------------------------

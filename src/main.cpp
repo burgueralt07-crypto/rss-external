@@ -512,7 +512,7 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::SliderInt("Delay apos rotacao", &g_dive.cfg.camRotDelayMs, 0, 150, "%d ms");
                         ImGui::SameLine(); ImGui::TextDisabled("(?)");
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Espera entre o movimento de mouse e o key-down do dive.\nDa tempo ao engine de registrar a nova direcao.\nSugerido: 20-60 ms. 0 = sem espera (pode ser rapido demais).");
+                            ImGui::SetTooltip("Duracao total da animacao de rotacao (ms).\nO movimento e distribuido em 12 steps com ease-out\n(rapido no inicio, suaviza no final).\nSugerido: 40-80 ms. 0 = sem animacao (instantaneo).");
                         ImGui::Unindent();
                     }
 
