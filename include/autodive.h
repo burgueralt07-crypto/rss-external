@@ -162,6 +162,21 @@ public:
         // Duração do key-press em ms — quanto tempo a tecla fica pressionada.
         // 25ms = quase imperceptível; 80-120ms = mais humanizado.
         int   keyHoldMs           = 80;      // ms
+
+        // ── Camera pre-rotation ───────────────────────────────────────────
+        // Antes de pressionar Q/E, move o mouse lateralmente para rotacionar
+        // a câmera/corpo do GK na direção do chute. Isso expande o alcance
+        // do dive, pois o personagem já começa com parte da rotação feita.
+        //
+        // camPreRotate   : ativa/desativa a pré-rotação.
+        // camRotAngle    : ângulo de rotação em graus (0–90). Valores típicos:
+        //                  10–30° já fazem diferença perceptível.
+        // camRotDelayMs  : delay (ms) entre o movimento de mouse e o key-down
+        //                  do dive. Dá tempo do engine registrar a nova direção
+        //                  antes do input da tecla. Sugerido: 20–60 ms.
+        bool  camPreRotate        = false;
+        float camRotAngle         = 20.f;    // graus
+        int   camRotDelayMs       = 30;      // ms
     };
 
     Config cfg;
@@ -211,6 +226,14 @@ public:
     } debug;
 
 private:
+    // Rotaciona a câmera via mouse relativo (MOUSEEVENTF_MOVE).
+    // direction > 0 → direita, < 0 → esquerda.
+    // Converte cfg.camRotAngle em pixels com base numa sensibilidade base de
+    // 1 grau ≈ 8 counts (ajuste empírico para sens padrão do Roblox).
+    // O retorno é síncrono: bloqueia cfg.camRotDelayMs ms antes de voltar
+    // para que o engine registre a nova direção antes do key-down do dive.
+    void RotateCamera(float direction);
+
     // Dispara key-down imediatamente via hardware scancode.
     // Enfileira o key-up para a thread dedicada (KeyUpLoop) soltar holdMs depois.
     // Não cria threads avulsas — uma única thread de key-up drena a fila.

@@ -22,6 +22,54 @@ void AutoDive::Stop()
 }
 
 // --------------------------------------------------------------------------
+// RotateCamera — move o mouse relativamente para rotacionar a câmera/corpo
+// do GK na direção do chute ANTES do key-down do dive.
+//
+// direction > 0 → direita (E), < 0 → esquerda (Q).
+//
+// Conversão ângulo → counts:
+//   Sensibilidade default do Roblox ≈ 0.35  →  1° ≈ 8 counts (empírico).
+//   Para sens personalizada o usuário ajusta camRotAngle até o resultado
+//   visual desejado — não há como ler a sens do jogo externamente.
+//
+// O movimento é enviado em dois micro-passos (½ + ½) para parecer mais
+// natural e evitar clipping do engine de câmera em um único delta grande.
+// Depois bloqueia camRotDelayMs ms para o engine processar o novo ângulo
+// antes do key-down do dive.
+// --------------------------------------------------------------------------
+void AutoDive::RotateCamera(float direction)
+{
+    if (!cfg.camPreRotate || cfg.camRotAngle <= 0.f) return;
+
+    // 1° ≈ 8 mouse counts (empírico, sens padrão Roblox)
+    constexpr float COUNTS_PER_DEGREE = 8.f;
+
+    int totalCounts = static_cast<int>(cfg.camRotAngle * COUNTS_PER_DEGREE);
+    if (totalCounts <= 0) return;
+
+    // Sinal: direita = +dx, esquerda = -dx
+    int dx = (direction >= 0.f) ? totalCounts : -totalCounts;
+
+    // Envia em dois meios-passos para parecer mais suave
+    int half = dx / 2;
+    int rem  = dx - half;
+
+    INPUT mi = {};
+    mi.type         = INPUT_MOUSE;
+    mi.mi.dwFlags   = MOUSEEVENTF_MOVE;
+
+    mi.mi.dx = half;
+    SendInput(1, &mi, sizeof(INPUT));
+
+    mi.mi.dx = rem;
+    SendInput(1, &mi, sizeof(INPUT));
+
+    // Aguarda o engine registrar a nova direção antes do key-down
+    if (cfg.camRotDelayMs > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(cfg.camRotDelayMs));
+}
+
+// --------------------------------------------------------------------------
 // KeyUpLoop — thread dedicada ao key-up
 //
 // Dorme até o próximo key-up agendado e envia SendInput quando chegar a hora.
@@ -554,6 +602,8 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             {
                 WORD        diveKey = (decisionX > 0.f) ? 'E' : 'Q';
                 const char* keyName = (decisionX > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
+                // Pré-rotação de câmera para a direção do dive
+                RotateCamera(decisionX);
                 // Space imediato; Q/E enfileirado após jumpDiveDelayMs via KeyUpLoop
                 PressKey(VK_SPACE, cfg.keyHoldMs);
                 {
@@ -600,6 +650,7 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             // Usa decisionX (crossX com curva) para saber lado real de chegada
             if (decisionX > cfg.diveXThreshold7v7)
             {
+                RotateCamera(+1.f);
                 PressKey('E', cfg.keyHoldMs);
                 m_lastKey = "E (Right 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Right 7v7";
@@ -607,6 +658,7 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             }
             if (decisionX < -cfg.diveXThreshold7v7)
             {
+                RotateCamera(-1.f);
                 PressKey('Q', cfg.keyHoldMs);
                 m_lastKey = "Q (Left 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Left 7v7";
@@ -627,6 +679,7 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         }
         if (relPos.x > cfg.diveXThreshold)
         {
+            RotateCamera(+1.f);
             PressKey('E', cfg.keyHoldMs);
             m_lastKey = "E (Right)"; m_firedThisFrame = true; m_lastDiveTime = now;
             debug.blockReason = "FIRED - Right";
@@ -634,6 +687,7 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         }
         if (relPos.x < -cfg.diveXThreshold)
         {
+            RotateCamera(-1.f);
             PressKey('Q', cfg.keyHoldMs);
             m_lastKey = "Q (Left)"; m_firedThisFrame = true; m_lastDiveTime = now;
             debug.blockReason = "FIRED - Left";

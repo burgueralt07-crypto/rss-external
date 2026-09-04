@@ -249,6 +249,9 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_diveFireDistance=%.2f\n",   c.diveFireDistance);
     fprintf(f, "ad_scanRate=%d\n",             c.scanRate);
     fprintf(f, "ad_keyHoldMs=%d\n",            c.keyHoldMs);
+    fprintf(f, "ad_camPreRotate=%d\n",         c.camPreRotate  ? 1 : 0);
+    fprintf(f, "ad_camRotAngle=%.1f\n",        c.camRotAngle);
+    fprintf(f, "ad_camRotDelayMs=%d\n",        c.camRotDelayMs);
 
     fprintf(f, "\n[Misc]\n");
     fprintf(f, "misc_menuKey=%d\n",     g_menuKey);
@@ -315,6 +318,9 @@ static void ReadConfigEntries(FILE* f)
         FLOAT_KEY("ad_diveFireDistance",   c.diveFireDistance)
         INT_KEY("ad_scanRate",             c.scanRate)
         INT_KEY("ad_keyHoldMs",            c.keyHoldMs)
+        BOOL_KEY("ad_camPreRotate",        c.camPreRotate)
+        FLOAT_KEY("ad_camRotAngle",        c.camRotAngle)
+        INT_KEY("ad_camRotDelayMs",        c.camRotDelayMs)
         INT_KEY("misc_menuKey",            g_menuKey)
         BOOL_KEY("misc_streamproof",       g_streamproof)
     }
@@ -490,6 +496,26 @@ static void DrawMenu(Overlay& overlay)
                     ImGui::SameLine(); ImGui::TextDisabled("(?)");
                     if (ImGui::IsItemHovered())
                         ImGui::SetTooltip("Quanto tempo a tecla fica pressionada.\n25ms = rapido demais | 80-120ms = humanizado.");
+
+                    ImGui::Separator();
+                    ImGui::Checkbox("Pre-rotacao de camera", &g_dive.cfg.camPreRotate);
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Move o mouse para o lado do chute antes de pressionar Q/E.\nRotaciona a camera/corpo do GK previamente, expandindo\no alcance do dive. Ajuste o angulo conforme sua sensibilidade.");
+                    if (g_dive.cfg.camPreRotate)
+                    {
+                        ImGui::Indent();
+                        ImGui::SliderFloat("Angulo rotacao", &g_dive.cfg.camRotAngle, 1.f, 90.f, "%.0f graus");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Quantos graus a camera gira antes do dive.\n1 grau ~ 8 counts de mouse (sens padrao Roblox).\nValores tipicos: 10-30. Aumente se quiser mais alcance.\nCalibre ate o GK girar visivelmente na direcao certa.");
+                        ImGui::SliderInt("Delay apos rotacao", &g_dive.cfg.camRotDelayMs, 0, 150, "%d ms");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Espera entre o movimento de mouse e o key-down do dive.\nDa tempo ao engine de registrar a nova direcao.\nSugerido: 20-60 ms. 0 = sem espera (pode ser rapido demais).");
+                        ImGui::Unindent();
+                    }
+
                     if (g_dive.cfg.gameMode == GameMode::Mode4v4)
                     {
                         ImGui::Separator();
