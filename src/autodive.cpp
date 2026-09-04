@@ -507,9 +507,13 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         float delta = targetAngle - m_camTrackAccum;
 
         // Fração por frame: proporcional à proximidade da bola.
-        // Clampado entre 5% e 40% do delta por frame para parecer orgânico.
+        // Se já está dentro do range de dive (chute veio de perto), manda tudo
+        // de uma vez (fraction=1.0) — só há um frame antes do dive disparar.
+        // Clampado entre 5% e 40% do delta fora do range para parecer orgânico.
         float fraction = 0.f;
-        if (sim.timeToGoal > 0.01f)
+        if (dist <= cfg.diveFireDistance)
+            fraction = 1.0f;
+        else if (sim.timeToGoal > 0.01f)
             fraction = std::min(0.40f, std::max(0.05f, 0.15f / sim.timeToGoal));
         else
             fraction = 0.40f;
