@@ -480,29 +480,13 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
     if (!targeting) { debug.blockReason = "not targeting goal"; return; }
 
-    // Trigger: dist <= diveFireDistance  OU  sim.timeToGoal <= jumpDiveTimeWindow
-    // O segundo permite disparar antecipado em chutes rápidos em ângulo.
-    const bool is7v7      = (cfg.gameMode == GameMode::Mode7v7);
-    const bool timedTrigger = is7v7 && cfg.jumpDiveTimeWindow > 0.f &&
-                              sim.hit && sim.timeToGoal <= cfg.jumpDiveTimeWindow;
-    const bool distTrigger  = (dist <= cfg.diveFireDistance);
-
-    if (!timedTrigger && !distTrigger)
-    {
-        debug.blockReason = "too far (dist=" + std::to_string((int)dist) + ")";
-        return;
-    }
-
-    if (IsBallHittingGK(ball, gk)) { debug.blockReason = "ball hitting GK hitbox"; return; }
-
     // ── Camera tracking contínuo ─────────────────────────────────────────
-    // Só executa quando a bola já está dentro do range de dive (dist <= diveFireDistance
-    // ou timedTrigger). Move o mouse na direção do crossX no espaço do GK — mesmo
-    // eixo que o dive usa para decidir Q/E, garantindo que a câmera vai para o mesmo
-    // lado do chute independente do time (Home/Away).
+    // Começa assim que a trajetória é confirmada (targeting=true), independente
+    // da distância. Gira o corpo do GK gradualmente na direção do chute para
+    // fechar o ângulo antes do dive — o personagem já parte rotacionado.
     //
-    // Usa worldCrossInGK.x em vez de sim.crossX (espaço do gol) para evitar inversão
-    // de lado quando o GK está no time Away (gol com rotação 180°).
+    // Usa worldCrossInGK.x (espaço local do GK) em vez de sim.crossX (espaço
+    // do gol) para evitar inversão de lado no time Away (gol com rotação 180°).
     if (cfg.camTrackEnabled && sim.hit)
     {
         constexpr float COUNTS_PER_DEGREE = 8.f;
@@ -550,6 +534,21 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
         m_camTrackAccum  = 0.f;
         m_camTrackActive = false;
     }
+
+    // Trigger: dist <= diveFireDistance  OU  sim.timeToGoal <= jumpDiveTimeWindow
+    // O segundo permite disparar antecipado em chutes rápidos em ângulo.
+    const bool is7v7      = (cfg.gameMode == GameMode::Mode7v7);
+    const bool timedTrigger = is7v7 && cfg.jumpDiveTimeWindow > 0.f &&
+                              sim.hit && sim.timeToGoal <= cfg.jumpDiveTimeWindow;
+    const bool distTrigger  = (dist <= cfg.diveFireDistance);
+
+    if (!timedTrigger && !distTrigger)
+    {
+        debug.blockReason = "too far (dist=" + std::to_string((int)dist) + ")";
+        return;
+    }
+
+    if (IsBallHittingGK(ball, gk)) { debug.blockReason = "ball hitting GK hitbox"; return; }
 
     // Dive vai disparar — reseta tracking para o próximo chute
     m_camTrackAccum  = 0.f;
