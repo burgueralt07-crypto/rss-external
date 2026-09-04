@@ -252,6 +252,7 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_camPreRotate=%d\n",         c.camPreRotate  ? 1 : 0);
     fprintf(f, "ad_camRotAngle=%.1f\n",        c.camRotAngle);
     fprintf(f, "ad_camRotDelayMs=%d\n",        c.camRotDelayMs);
+    fprintf(f, "ad_camRotCurve=%.2f\n",        c.camRotCurve);
 
     fprintf(f, "\n[Misc]\n");
     fprintf(f, "misc_menuKey=%d\n",     g_menuKey);
@@ -321,6 +322,7 @@ static void ReadConfigEntries(FILE* f)
         BOOL_KEY("ad_camPreRotate",        c.camPreRotate)
         FLOAT_KEY("ad_camRotAngle",        c.camRotAngle)
         INT_KEY("ad_camRotDelayMs",        c.camRotDelayMs)
+        FLOAT_KEY("ad_camRotCurve",        c.camRotCurve)
         INT_KEY("misc_menuKey",            g_menuKey)
         BOOL_KEY("misc_streamproof",       g_streamproof)
     }
@@ -513,6 +515,10 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::SameLine(); ImGui::TextDisabled("(?)");
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Duracao total da animacao de rotacao (ms).\nO movimento e distribuido em 12 steps com ease-out\n(rapido no inicio, suaviza no final).\nSugerido: 40-80 ms. 0 = sem animacao (instantaneo).");
+                        ImGui::SliderFloat("Suavidade", &g_dive.cfg.camRotCurve, 0.5f, 6.f, "%.1f");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Fator de curva da animacao (ease-out).\n1.0 = quase linear (uniforme)\n2.5 = padrao (natural)\n5.0 = muito rapido no inicio, termina devagar\nAumente para parecer mais 'reativo', diminua para mais 'humano'.");
                         ImGui::Unindent();
                     }
 

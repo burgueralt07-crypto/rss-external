@@ -57,9 +57,9 @@ void AutoDive::RotateCamera(float direction)
     constexpr int N = 12;
 
     // Gera pesos ease-out com decaimento exponencial: w[i] = exp(-k * i/N)
-    // k = 2.5 → o último step tem ~12% do peso do primeiro (suave mas não
-    // imperceptível). Normaliza para que a soma total = totalCounts.
-    constexpr float k = 2.5f;
+    // k = camRotCurve → configurável pelo usuário.
+    // Normaliza para que a soma total = totalCounts.
+    const float k = cfg.camRotCurve;
     float weights[N];
     float weightSum = 0.f;
     for (int i = 0; i < N; ++i) {

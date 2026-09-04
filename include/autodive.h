@@ -177,6 +177,9 @@ public:
         bool  camPreRotate        = false;
         float camRotAngle         = 20.f;    // graus
         int   camRotDelayMs       = 30;      // ms
+        // Fator de curva ease-out (k na exp(-k * i/N)).
+        // 1.0 = quase linear | 2.5 = padrão | 5.0 = muito agressivo no início
+        float camRotCurve         = 2.5f;
     };
 
     Config cfg;
