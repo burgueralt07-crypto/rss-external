@@ -22,82 +22,26 @@ void AutoDive::Stop()
 }
 
 // --------------------------------------------------------------------------
-// RotateCamera — move o mouse com curva ease-out para simular uma virada
-// humana urgente antes do key-down do dive.
+// RotateCamera — envia um único movimento de mouse relativo para pré-rotacionar
+// a câmera/corpo do GK na direção do chute antes do key-down do dive.
 //
 // direction > 0 → direita (E), < 0 → esquerda (Q).
-//
-// Conversão ângulo → counts:
-//   1° ≈ 8 mouse counts (empírico, sens padrão Roblox).
-//   Ajuste camRotAngle até o GK girar o ângulo desejado visualmente.
-//
-// Suavização ease-out:
-//   Divide o total em N steps com peso decrescente (gerado por uma curva
-//   exp(-k*t) normalizada). Os primeiros steps são mais largos (movimento
-//   rápido), os últimos são pequenos (desacelera). O resultado parece uma
-//   virada humana urgente: rápida no início, suaviza no final.
-//
-//   N steps = camRotSteps (8–16 é suficiente).
-//   Intervalo entre steps = totalDuration / N  (ex: 60 ms / 12 = 5 ms cada).
-//   totalDuration = camRotDelayMs (o delay já existente agora é o tempo total
-//   da animação; ao terminar o último step a câmera está no ângulo final e
-//   o key-down do dive é disparado imediatamente).
+// 1° ≈ 8 mouse counts (empírico, sens padrão Roblox).
 // --------------------------------------------------------------------------
 void AutoDive::RotateCamera(float direction)
 {
     if (!cfg.camPreRotate || cfg.camRotAngle <= 0.f) return;
 
     constexpr float COUNTS_PER_DEGREE = 8.f;
-    int totalCounts = static_cast<int>(cfg.camRotAngle * COUNTS_PER_DEGREE);
-    if (totalCounts <= 0) return;
-
-    const int sign = (direction >= 0.f) ? 1 : -1;
-
-    // Número de steps — fixo em 12: granular o suficiente sem overhead
-    constexpr int N = 12;
-
-    // Gera pesos ease-out com decaimento exponencial: w[i] = exp(-k * i/N)
-    // k = camRotCurve → configurável pelo usuário.
-    // Normaliza para que a soma total = totalCounts.
-    const float k = cfg.camRotCurve;
-    float weights[N];
-    float weightSum = 0.f;
-    for (int i = 0; i < N; ++i) {
-        weights[i] = std::expf(-k * static_cast<float>(i) / static_cast<float>(N));
-        weightSum += weights[i];
-    }
-
-    // Converte pesos em counts inteiros; acumula o erro de arredondamento
-    // para garantir que a soma final = totalCounts exatos.
-    int steps[N];
-    int sent = 0;
-    for (int i = 0; i < N - 1; ++i) {
-        steps[i] = static_cast<int>(std::roundf(weights[i] / weightSum * static_cast<float>(totalCounts)));
-        sent += steps[i];
-    }
-    steps[N - 1] = totalCounts - sent;  // último step absorve o arredondamento
-
-    // Intervalo entre steps: distribui o tempo total (camRotDelayMs) por N passos.
-    // Mínimo de 1 ms para não sobrecarregar o scheduler.
-    int stepIntervalMs = (cfg.camRotDelayMs > 0)
-                         ? std::max(1, cfg.camRotDelayMs / N)
-                         : 0;
+    int counts = static_cast<int>(cfg.camRotAngle * COUNTS_PER_DEGREE);
+    if (counts <= 0) return;
 
     INPUT mi = {};
     mi.type       = INPUT_MOUSE;
     mi.mi.dwFlags = MOUSEEVENTF_MOVE;
+    mi.mi.dx      = (direction >= 0.f) ? counts : -counts;
     mi.mi.dy      = 0;
-
-    for (int i = 0; i < N; ++i)
-    {
-        mi.mi.dx = sign * steps[i];
-        if (mi.mi.dx != 0)
-            SendInput(1, &mi, sizeof(INPUT));
-
-        if (stepIntervalMs > 0)
-            std::this_thread::sleep_for(std::chrono::milliseconds(stepIntervalMs));
-    }
-    // Sem delay adicional — o tempo total já foi distribuído entre os steps.
+    SendInput(1, &mi, sizeof(INPUT));
 }
 
 // --------------------------------------------------------------------------

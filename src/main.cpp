@@ -251,8 +251,6 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_keyHoldMs=%d\n",            c.keyHoldMs);
     fprintf(f, "ad_camPreRotate=%d\n",         c.camPreRotate  ? 1 : 0);
     fprintf(f, "ad_camRotAngle=%.1f\n",        c.camRotAngle);
-    fprintf(f, "ad_camRotDelayMs=%d\n",        c.camRotDelayMs);
-    fprintf(f, "ad_camRotCurve=%.2f\n",        c.camRotCurve);
 
     fprintf(f, "\n[Misc]\n");
     fprintf(f, "misc_menuKey=%d\n",     g_menuKey);
@@ -321,8 +319,6 @@ static void ReadConfigEntries(FILE* f)
         INT_KEY("ad_keyHoldMs",            c.keyHoldMs)
         BOOL_KEY("ad_camPreRotate",        c.camPreRotate)
         FLOAT_KEY("ad_camRotAngle",        c.camRotAngle)
-        INT_KEY("ad_camRotDelayMs",        c.camRotDelayMs)
-        FLOAT_KEY("ad_camRotCurve",        c.camRotCurve)
         INT_KEY("misc_menuKey",            g_menuKey)
         BOOL_KEY("misc_streamproof",       g_streamproof)
     }
@@ -507,18 +503,10 @@ static void DrawMenu(Overlay& overlay)
                     if (g_dive.cfg.camPreRotate)
                     {
                         ImGui::Indent();
-                        ImGui::SliderFloat("Angulo rotacao", &g_dive.cfg.camRotAngle, 1.f, 90.f, "%.0f graus");
+                        ImGui::SliderFloat("Angulo rotacao", &g_dive.cfg.camRotAngle, 1.f, 45.f, "%.0f graus");
                         ImGui::SameLine(); ImGui::TextDisabled("(?)");
                         if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Quantos graus a camera gira antes do dive.\n1 grau ~ 8 counts de mouse (sens padrao Roblox).\nValores tipicos: 10-30. Aumente se quiser mais alcance.\nCalibre ate o GK girar visivelmente na direcao certa.");
-                        ImGui::SliderInt("Delay apos rotacao", &g_dive.cfg.camRotDelayMs, 0, 150, "%d ms");
-                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Duracao total da animacao de rotacao (ms).\nO movimento e distribuido em 12 steps com ease-out\n(rapido no inicio, suaviza no final).\nSugerido: 40-80 ms. 0 = sem animacao (instantaneo).");
-                        ImGui::SliderFloat("Suavidade", &g_dive.cfg.camRotCurve, 0.5f, 6.f, "%.1f");
-                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
-                        if (ImGui::IsItemHovered())
-                            ImGui::SetTooltip("Fator de curva da animacao (ease-out).\n1.0 = quase linear (uniforme)\n2.5 = padrao (natural)\n5.0 = muito rapido no inicio, termina devagar\nAumente para parecer mais 'reativo', diminua para mais 'humano'.");
+                            ImGui::SetTooltip("Quantos graus a camera gira antes do dive.\n1 grau ~ 8 counts de mouse (sens padrao Roblox).\nPonto doce: 8-12 graus.\nAjuste ate o GK girar visivelmente na direcao certa.");
                         ImGui::Unindent();
                     }
 

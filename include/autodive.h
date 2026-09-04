@@ -175,11 +175,7 @@ public:
         //                  do dive. Dá tempo do engine registrar a nova direção
         //                  antes do input da tecla. Sugerido: 20–60 ms.
         bool  camPreRotate        = false;
-        float camRotAngle         = 20.f;    // graus
-        int   camRotDelayMs       = 30;      // ms
-        // Fator de curva ease-out (k na exp(-k * i/N)).
-        // 1.0 = quase linear | 2.5 = padrão | 5.0 = muito agressivo no início
-        float camRotCurve         = 2.5f;
+        float camRotAngle         = 10.f;    // graus (8-12° é o ponto doce)
     };
 
     Config cfg;
@@ -231,10 +227,7 @@ public:
 private:
     // Rotaciona a câmera via mouse relativo (MOUSEEVENTF_MOVE).
     // direction > 0 → direita, < 0 → esquerda.
-    // Converte cfg.camRotAngle em pixels com base numa sensibilidade base de
-    // 1 grau ≈ 8 counts (ajuste empírico para sens padrão do Roblox).
-    // O retorno é síncrono: bloqueia cfg.camRotDelayMs ms antes de voltar
-    // para que o engine registre a nova direção antes do key-down do dive.
+    // 1° ≈ 8 counts (sens padrão Roblox). Ajuste camRotAngle no menu.
     void RotateCamera(float direction);
 
     // Dispara key-down imediatamente via hardware scancode.
