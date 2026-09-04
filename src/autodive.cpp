@@ -150,6 +150,8 @@ void AutoDive::ScanLoop(RobloxReader* rbx)
                 m_filteredAccelValid = false;
                 m_filteredAccel      = {};
                 ball.measuredAccel   = {};
+                m_camTrackAccum      = 0.f;
+                m_camTrackActive     = false;
             }
 
             Evaluate(gk, ball, goal);
@@ -478,6 +480,69 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
     if (!targeting) { debug.blockReason = "not targeting goal"; return; }
 
+    // ── Camera tracking contínuo ─────────────────────────────────────────
+    // Enquanto a bola está confirmada como indo no gol mas ainda não chegou
+    // no diveFireDistance, move o mouse organicamente na direção de crossX.
+    //
+    // Lógica por frame:
+    //   targetAngle = clamp(crossX * escala, -camTrackMaxAngle, +camTrackMaxAngle)
+    //   delta       = targetAngle - m_camTrackAccum   (quanto ainda falta girar)
+    //   sendCounts  = delta * COUNTS_PER_DEGREE * fração_por_frame
+    //
+    // A "fração por frame" é proporcional a 1/timeToGoal: quanto menos tempo
+    // sobra, mais rápido o mouse se move para chegar no ângulo certo a tempo.
+    // Isso replica o comportamento humano natural — o GK acelera o olhar
+    // conforme a bola se aproxima.
+    //
+    // Ao disparar o dive, m_camTrackAccum é zerado e o tracking para.
+    // Se a bola sair do gol ou parar, também reseta.
+    if (cfg.camTrackEnabled && sim.hit)
+    {
+        constexpr float COUNTS_PER_DEGREE = 8.f;
+        const float maxAngle = cfg.camTrackMaxAngle;
+
+        // Escala crossX (studs) → ângulo desejado.
+        // crossX ≈ halfGoalWidth quando a bola vai no canto → mapeia para maxAngle.
+        float halfGoal = goal.exists ? (goal.size.x * 0.5f + cfg.goalMargin) : 8.f;
+        if (halfGoal < 0.5f) halfGoal = 0.5f;
+        float targetAngle = (sim.crossX / halfGoal) * maxAngle;
+        // Clamp para não ultrapassar o máximo configurado
+        if (targetAngle >  maxAngle) targetAngle =  maxAngle;
+        if (targetAngle < -maxAngle) targetAngle = -maxAngle;
+
+        float delta = targetAngle - m_camTrackAccum;
+
+        // Fração por frame: proporcional à proximidade da bola.
+        // timeToGoal > 1s → move devagar; < 0.3s → move mais rápido.
+        // Clampado entre 5% e 40% do delta por frame para parecer orgânico.
+        float fraction = 0.f;
+        if (sim.timeToGoal > 0.01f)
+            fraction = std::min(0.40f, std::max(0.05f, 0.15f / sim.timeToGoal));
+        else
+            fraction = 0.40f;
+
+        float sendAngle = delta * fraction;
+        int   sendCounts = static_cast<int>(sendAngle * COUNTS_PER_DEGREE);
+
+        if (sendCounts != 0)
+        {
+            INPUT mi = {};
+            mi.type       = INPUT_MOUSE;
+            mi.mi.dwFlags = MOUSEEVENTF_MOVE;
+            mi.mi.dx      = sendCounts;
+            mi.mi.dy      = 0;
+            SendInput(1, &mi, sizeof(INPUT));
+            m_camTrackAccum += static_cast<float>(sendCounts) / COUNTS_PER_DEGREE;
+        }
+        m_camTrackActive = true;
+    }
+    else if (m_camTrackActive && (!targeting || !sim.hit))
+    {
+        // Bola saiu do gol ou simulação falhou → reseta acumulador
+        m_camTrackAccum  = 0.f;
+        m_camTrackActive = false;
+    }
+
     // Trigger: dist <= diveFireDistance  OU  sim.timeToGoal <= jumpDiveTimeWindow
     // O segundo permite disparar antecipado em chutes rápidos em ângulo.
     const bool is7v7      = (cfg.gameMode == GameMode::Mode7v7);
@@ -492,6 +557,10 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
     }
 
     if (IsBallHittingGK(ball, gk)) { debug.blockReason = "ball hitting GK hitbox"; return; }
+
+    // Dive vai disparar — reseta tracking para o próximo chute
+    m_camTrackAccum  = 0.f;
+    m_camTrackActive = false;
 
     Vector3 relPos = PointToObjectSpace(
         gk.position, gk.rightVec, gk.upVec, gk.lookVec, ball.position);

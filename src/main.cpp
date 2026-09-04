@@ -251,6 +251,8 @@ static void WriteConfigEntries(FILE* f)
     fprintf(f, "ad_keyHoldMs=%d\n",            c.keyHoldMs);
     fprintf(f, "ad_camPreRotate=%d\n",         c.camPreRotate  ? 1 : 0);
     fprintf(f, "ad_camRotAngle=%.1f\n",        c.camRotAngle);
+    fprintf(f, "ad_camTrackEnabled=%d\n",      c.camTrackEnabled  ? 1 : 0);
+    fprintf(f, "ad_camTrackMaxAngle=%.1f\n",   c.camTrackMaxAngle);
 
     fprintf(f, "\n[Misc]\n");
     fprintf(f, "misc_menuKey=%d\n",     g_menuKey);
@@ -319,6 +321,8 @@ static void ReadConfigEntries(FILE* f)
         INT_KEY("ad_keyHoldMs",            c.keyHoldMs)
         BOOL_KEY("ad_camPreRotate",        c.camPreRotate)
         FLOAT_KEY("ad_camRotAngle",        c.camRotAngle)
+        BOOL_KEY("ad_camTrackEnabled",     c.camTrackEnabled)
+        FLOAT_KEY("ad_camTrackMaxAngle",   c.camTrackMaxAngle)
         INT_KEY("misc_menuKey",            g_menuKey)
         BOOL_KEY("misc_streamproof",       g_streamproof)
     }
@@ -507,6 +511,20 @@ static void DrawMenu(Overlay& overlay)
                         ImGui::SameLine(); ImGui::TextDisabled("(?)");
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Quantos graus a camera gira antes do dive.\n1 grau ~ 8 counts de mouse (sens padrao Roblox).\nPonto doce: 8-12 graus.\nAjuste ate o GK girar visivelmente na direcao certa.");
+                        ImGui::Unindent();
+                    }
+
+                    ImGui::Checkbox("Camera tracking organico", &g_dive.cfg.camTrackEnabled);
+                    ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Acompanha a bola com o mouse enquanto ela se aproxima.\nO GK vai girando a camera gradualmente na direcao do chute,\nigual a um GK humano que antecipa a bola com o olhar.\nO arrasto para automaticamente quando o dive dispara.");
+                    if (g_dive.cfg.camTrackEnabled)
+                    {
+                        ImGui::Indent();
+                        ImGui::SliderFloat("Angulo max tracking", &g_dive.cfg.camTrackMaxAngle, 5.f, 45.f, "%.0f graus");
+                        ImGui::SameLine(); ImGui::TextDisabled("(?)");
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Angulo maximo que o tracking pode acumular.\nChutes no canto chegam perto desse valor.\nChutes centrais ficam abaixo.\nSugerido: 15-25 graus.");
                         ImGui::Unindent();
                     }
 

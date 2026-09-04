@@ -176,6 +176,16 @@ public:
         //                  antes do input da tecla. Sugerido: 20–60 ms.
         bool  camPreRotate        = false;
         float camRotAngle         = 10.f;    // graus (8-12° é o ponto doce)
+
+        // ── Camera tracking contínuo ──────────────────────────────────────
+        // Enquanto a bola está no watch mode (trajectoryOK=true, dist > fireDistance),
+        // move o mouse gradualmente na direção do crossX previsto, simulando o
+        // movimento orgânico de um GK que acompanha a bola com a câmera.
+        // camTrackMaxAngle: ângulo máximo total que o arrasto pode acumular (graus).
+        //   Limita o quanto a câmera desvia para não parecer errado em chutes centrais.
+        //   Sugerido: 15-25°.
+        bool  camTrackEnabled     = false;
+        float camTrackMaxAngle    = 20.f;    // graus
     };
 
     Config cfg;
@@ -293,6 +303,12 @@ private:
     bool        m_watchActive    = false;  // bola está dentro do watchRange
     bool        m_trajectoryOK   = false;  // simulação confirmou trajetória para o gol
     SimResult   m_lastSim;                 // último resultado de simulação
+
+    // Camera tracking contínuo — movimento orgânico enquanto a bola se aproxima.
+    // A cada frame do watch mode envia o delta de mouse necessário para acompanhar
+    // o crossX previsto. Quando o dive dispara o arrasto para automaticamente.
+    float       m_camTrackAccum  = 0.f;   // ângulo acumulado já enviado (counts)
+    bool        m_camTrackActive = false; // true enquanto estiver rastreando
 
     // Estado anterior da bola — usado para calcular aceleração diferencial
     // (velAtual - velAnterior) / dt, que captura a curva real do jogo
