@@ -4,10 +4,11 @@
 /*                  https://offsets.imtheo.lol                  
 /* -------------------------------------------------------------
 /*  Dumped With     : RbxDumperV2                               
+/*  Source code     : https://git.imtheo.lol/theo/RbxDumperV2   
 /*  Roblox Version  : version-e7d81637d42c4b23
-/*  Dumper Version  : 2.1.7
-/*  Dumped At       : 17:43 02/09/2026 (GMT)
-/*  Total Offsets   : 388
+/*  Dumper Version  : 2.2.2
+/*  Dumped At       : 07:05 08/09/2026 (GMT)
+/*  Total Offsets   : 392
 /* -------------------------------------------------------------
 /*  Join the discord!                                           
 /*  https://offsets.imtheo.lol/discord                          
@@ -94,6 +95,10 @@ namespace Offsets {
          inline constexpr uintptr_t Size = 0x20;
     }
 
+    namespace CachedItem {
+         inline constexpr uintptr_t FileMeshData = 0x40;
+    }
+
     namespace Camera {
          inline constexpr uintptr_t CameraSubject = 0xc8;
          inline constexpr uintptr_t CameraType = 0x138;
@@ -177,10 +182,19 @@ namespace Offsets {
          inline constexpr uintptr_t RealDataModel = 0x1f8;
     }
 
+    namespace FileMeshData {
+         inline constexpr uintptr_t AABBMax = 0x2bc;
+         inline constexpr uintptr_t AABBMin = 0x2b0;
+         inline constexpr uintptr_t Faces = 0x30;
+         inline constexpr uintptr_t FacesEnd = 0x38;
+         inline constexpr uintptr_t Vertices = 0x0;
+         inline constexpr uintptr_t VerticesEnd = 0x8;
+    }
+
     namespace GuiBase2D {
-         inline constexpr uintptr_t AbsolutePosition = 0x10c;
+         inline constexpr uintptr_t AbsolutePosition = 0x0;
          inline constexpr uintptr_t AbsoluteRotation = 0xe8;
-         inline constexpr uintptr_t AbsoluteSize = 0x114;
+         inline constexpr uintptr_t AbsoluteSize = 0x0;
     }
 
     namespace GuiObject {
@@ -253,6 +267,16 @@ namespace Offsets {
          inline constexpr uintptr_t This = 0x8;
     }
 
+    namespace LRUHolder {
+         inline constexpr uintptr_t MemEnforcedLRUCache = 0x20;
+    }
+
+    namespace LRUNode {
+         inline constexpr uintptr_t AssetID = 0x10;
+         inline constexpr uintptr_t CachedItem = 0x40;
+         inline constexpr uintptr_t Next = 0x0;
+    }
+
     namespace Lighting {
          inline constexpr uintptr_t Ambient = 0xd0;
          inline constexpr uintptr_t Brightness = 0x118;
@@ -279,7 +303,7 @@ namespace Offsets {
     }
 
     namespace LocalScript {
-         inline constexpr uintptr_t ByteCode = 0x0;
+         inline constexpr uintptr_t ByteCode = 0xf00;
          inline constexpr uintptr_t GUID = 0xd0;
          inline constexpr uintptr_t Hash = 0x1a0;
     }
@@ -308,19 +332,12 @@ namespace Offsets {
          inline constexpr uintptr_t WoodPlanks = 0x15;
     }
 
-    namespace MeshContentProvider {
-         inline constexpr uintptr_t AssetID = 0x10;
-         inline constexpr uintptr_t Cache = 0xf0;
-         inline constexpr uintptr_t LRUCache = 0x20;
-         inline constexpr uintptr_t MeshData = 0x40;
-         inline constexpr uintptr_t ToMeshData = 0x40;
+    namespace MemEnforcedLRUCache {
+         inline constexpr uintptr_t Head = 0x8;
     }
 
-    namespace MeshData {
-         inline constexpr uintptr_t FaceEnd = 0x38;
-         inline constexpr uintptr_t FaceStart = 0x30;
-         inline constexpr uintptr_t VertexEnd = 0x8;
-         inline constexpr uintptr_t VertexStart = 0x0;
+    namespace MeshContentProvider {
+         inline constexpr uintptr_t LRUHolder = 0xd8;
     }
 
     namespace MeshPart {
@@ -435,14 +452,14 @@ namespace Offsets {
     }
 
     namespace RenderView {
-         inline constexpr uintptr_t DeviceD3D11 = 0x8;
-         inline constexpr uintptr_t LightingValid = 0x150;
-         inline constexpr uintptr_t SkyValid = 0x28d;
-         inline constexpr uintptr_t VisualEngine = 0x10;
+         inline constexpr uintptr_t DeviceD3D11 = 0x0;
+         inline constexpr uintptr_t LightingValid = 0x0;
+         inline constexpr uintptr_t SkyValid = 0x0;
+         inline constexpr uintptr_t VisualEngine = 0x0;
     }
 
     namespace RunService {
-         inline constexpr uintptr_t HeartbeatFPS = 0xc0;
+         inline constexpr uintptr_t HeartbeatFPS = 0xc5;
          inline constexpr uintptr_t HeartbeatTask = 0xe0;
     }
 
@@ -476,7 +493,7 @@ namespace Offsets {
     }
 
     namespace Sound {
-         inline constexpr uintptr_t IsPlaying = 0x140;
+         inline constexpr uintptr_t IsPlaying = 0x0;
          inline constexpr uintptr_t Looped = 0x13d;
          inline constexpr uintptr_t PlaybackSpeed = 0x11c;
          inline constexpr uintptr_t RollOffMaxDistance = 0x120;
@@ -487,7 +504,7 @@ namespace Offsets {
     }
 
     namespace SpawnLocation {
-         inline constexpr uintptr_t AllowTeamChangeOnTouch = 0x3d;
+         inline constexpr uintptr_t AllowTeamChangeOnTouch = 0x1f0;
          inline constexpr uintptr_t Enabled = 0x1f1;
          inline constexpr uintptr_t ForcefieldDuration = 0x1e8;
          inline constexpr uintptr_t Neutral = 0x1f2;
@@ -500,7 +517,7 @@ namespace Offsets {
     }
 
     namespace StatsItem {
-         inline constexpr uintptr_t Value = 0xc8;
+         inline constexpr uintptr_t Value = 0xbda;
     }
 
     namespace SunRaysEffect {
@@ -553,7 +570,7 @@ namespace Offsets {
          inline constexpr uintptr_t Enabled = 0x4b9;
          inline constexpr uintptr_t Grip = 0x4ac;
          inline constexpr uintptr_t ManualActivationOnly = 0x4ba;
-         inline constexpr uintptr_t RequiresHandle = 0x1d5;
+         inline constexpr uintptr_t RequiresHandle = 0x4bb;
          inline constexpr uintptr_t TextureId = 0x360;
          inline constexpr uintptr_t Tooltip = 0x468;
     }
@@ -569,7 +586,7 @@ namespace Offsets {
     namespace VehicleSeat {
          inline constexpr uintptr_t MaxSpeed = 0x228;
          inline constexpr uintptr_t SteerFloat = 0x22c;
-         inline constexpr uintptr_t ThrottleFloat = 0x188;
+         inline constexpr uintptr_t ThrottleFloat = 0x230;
          inline constexpr uintptr_t Torque = 0x234;
          inline constexpr uintptr_t TurnSpeed = 0x238;
     }
