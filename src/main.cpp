@@ -20,6 +20,7 @@ static Memory        g_mem;
 static RobloxReader* g_rbx      = nullptr;
 static bool          g_menuOpen = true;
 static int           g_menuKey  = VK_HOME;
+static int           g_diveKey  = 0; // 0 = sem keybind
 
 struct ESPConfig {
     bool  enabled      = true;
@@ -31,7 +32,7 @@ struct ESPConfig {
 };
 static ESPConfig g_cfg;
 static AutoDive  g_dive;
-static bool      g_streamproof = false;
+static bool      g_streamproof = true;
 
 // Sinaliza re-scan da lista de configs ao reabrir o menu
 static bool s_menuSlotsStale = true;
@@ -45,18 +46,104 @@ static ImU32 HealthColor(float hp, float maxHp)
     return IM_COL32(r, g, 0, 255);
 }
 
+// ==========================================================================
+// Toast — notificações no canto inferior direito
+// ==========================================================================
+struct Toast {
+    std::string text;
+    float       ttl;       // segundos restantes
+    ImVec4      color;
+};
+static std::vector<Toast> g_toasts;
+
+static void PushToast(const std::string& text,
+                      float duration = 2.5f,
+                      ImVec4 color = { 0.3f, 1.f, 0.3f, 1.f })
+{
+    g_toasts.push_back({ text, duration, color });
+}
+
+static void DrawToasts()
+{
+    if (g_toasts.empty()) return;
+
+    const float pad    = 12.f;
+    const float dt     = ImGui::GetIO().DeltaTime;
+    ImVec2      screen = ImGui::GetIO().DisplaySize;
+
+    // Calcula altura total para empilhar de baixo para cima
+    float totalH = 0.f;
+    for (auto& t : g_toasts)
+        totalH += ImGui::GetTextLineHeightWithSpacing() + pad * 2.f + 4.f;
+
+    float y = screen.y - pad - totalH;
+
+    ImDrawList* dl = ImGui::GetForegroundDrawList();
+
+    for (auto it = g_toasts.begin(); it != g_toasts.end(); )
+    {
+        it->ttl -= dt;
+        if (it->ttl <= 0.f) { it = g_toasts.erase(it); continue; }
+
+        float alpha = 1.f;
+        if (it->ttl < 0.4f) alpha = it->ttl / 0.4f;   // fade-out suave
+
+        ImVec2 sz  = ImGui::CalcTextSize(it->text.c_str());
+        float  w   = sz.x + pad * 2.f;
+        float  h   = sz.y + pad * 2.f;
+        float  x   = screen.x - w - pad;
+
+        // Fundo arredondado semi-transparente
+        ImU32 bg  = IM_COL32(20, 20, 20, (int)(200 * alpha));
+        ImU32 bdr = IM_COL32(60, 60, 60, (int)(255 * alpha));
+        dl->AddRectFilled(ImVec2(x, y), ImVec2(x + w, y + h), bg, 6.f);
+        dl->AddRect      (ImVec2(x, y), ImVec2(x + w, y + h), bdr, 6.f);
+
+        ImU32 col = IM_COL32(
+            (int)(it->color.x * 255.f),
+            (int)(it->color.y * 255.f),
+            (int)(it->color.z * 255.f),
+            (int)(255 * alpha));
+        dl->AddText(ImVec2(x + pad, y + pad), col, it->text.c_str());
+
+        y += h + 4.f;
+        ++it;
+    }
+}
+
 // --------------------------------------------------------------------------
 static void PollHotkeys()
 {
-    static int  prevKey  = -1;
-    static bool prevDown = false;
+    // ── Menu toggle ───────────────────────────────────────────────────────
+    static int  prevMenuKey  = -1;
+    static bool prevMenuDown = false;
 
-    bool down = (GetAsyncKeyState(g_menuKey) & 0x8000) != 0;
-    if (down && !prevDown)
+    bool menuDown = (GetAsyncKeyState(g_menuKey) & 0x8000) != 0;
+    if (menuDown && !prevMenuDown)
         g_menuOpen = !g_menuOpen;
 
-    if (g_menuKey != prevKey) { prevDown = false; prevKey = g_menuKey; }
-    else                        prevDown = down;
+    if (g_menuKey != prevMenuKey) { prevMenuDown = false; prevMenuKey = g_menuKey; }
+    else                           prevMenuDown = menuDown;
+
+    // ── AutoDive toggle ───────────────────────────────────────────────────
+    if (g_diveKey != 0)
+    {
+        static int  prevDiveKey  = -1;
+        static bool prevDiveDown = false;
+
+        bool diveDown = (GetAsyncKeyState(g_diveKey) & 0x8000) != 0;
+        if (diveDown && !prevDiveDown)
+        {
+            g_dive.cfg.enabled = !g_dive.cfg.enabled;
+            if (g_dive.cfg.enabled)
+                PushToast("Auto Dive: LIGADO",  2.f, { 0.3f, 1.f, 0.3f, 1.f });
+            else
+                PushToast("Auto Dive: DESLIGADO", 2.f, { 1.f, 0.4f, 0.4f, 1.f });
+        }
+
+        if (g_diveKey != prevDiveKey) { prevDiveDown = false; prevDiveKey = g_diveKey; }
+        else                           prevDiveDown = diveDown;
+    }
 }
 
 // --------------------------------------------------------------------------
@@ -252,6 +339,7 @@ static void WriteConfigEntries(FILE* f)
 
     fprintf(f, "\n[Misc]\n");
     fprintf(f, "misc_menuKey=%d\n",     g_menuKey);
+    fprintf(f, "misc_diveKey=%d\n",     g_diveKey);
     fprintf(f, "misc_streamproof=%d\n", g_streamproof ? 1 : 0);
 }
 
@@ -316,6 +404,7 @@ static void ReadConfigEntries(FILE* f)
         INT_KEY("ad_scanRate",             c.scanRate)
         INT_KEY("ad_keyHoldMs",            c.keyHoldMs)
         INT_KEY("misc_menuKey",            g_menuKey)
+        INT_KEY("misc_diveKey",            g_diveKey)
         BOOL_KEY("misc_streamproof",       g_streamproof)
     }
 
@@ -458,6 +547,66 @@ static void DrawMenu(Overlay& overlay)
             if (ImGui::BeginTabItem("Realistic Street Soccer"))
             {
                 ImGui::Checkbox("Auto Dive (GK)", &g_dive.cfg.enabled);
+
+                // ── Keybind toggle AutoDive ───────────────────────────────
+                {
+                    static bool s_waitingDiveKey = false;
+
+                    ImGui::SameLine();
+                    ImGui::TextDisabled("|");
+                    ImGui::SameLine();
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::Text("Toggle:");
+                    ImGui::SameLine();
+
+                    if (s_waitingDiveKey)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.6f, 0.4f, 0.0f, 1.f));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.5f, 0.0f, 1.f));
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.8f, 0.6f, 0.0f, 1.f));
+                        ImGui::Button("Aguardando... (Esc=cancelar, Del=remover)", ImVec2(-1, 0));
+                        ImGui::PopStyleColor(3);
+
+                        for (int vk = 1; vk < 256; ++vk)
+                        {
+                            if (vk == VK_LBUTTON || vk == VK_RBUTTON || vk == VK_MBUTTON) continue;
+                            if (vk == VK_SHIFT  || vk == VK_CONTROL || vk == VK_MENU)     continue;
+                            if (vk == VK_LSHIFT || vk == VK_RSHIFT)                       continue;
+                            if (vk == VK_LCONTROL || vk == VK_RCONTROL)                   continue;
+                            if (vk == VK_LMENU || vk == VK_RMENU)                         continue;
+
+                            if (GetAsyncKeyState(vk) & 0x8000)
+                            {
+                                if (vk == VK_ESCAPE)
+                                    s_waitingDiveKey = false;
+                                else if (vk == VK_DELETE)
+                                {
+                                    g_diveKey        = 0;
+                                    s_waitingDiveKey = false;
+                                }
+                                else
+                                {
+                                    g_diveKey        = vk;
+                                    s_waitingDiveKey = false;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        char diveLabel[64];
+                        if (g_diveKey == 0)
+                            std::snprintf(diveLabel, sizeof(diveLabel), "[ Nenhuma ]");
+                        else
+                            std::snprintf(diveLabel, sizeof(diveLabel), "[ %s ]", VKToName(g_diveKey));
+
+                        if (ImGui::Button(diveLabel, ImVec2(-1, 0)))
+                            s_waitingDiveKey = true;
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Clique para definir a tecla de toggle.\nDel para remover a keybind.");
+                    }
+                }
                 if (g_dive.cfg.enabled)
                 {
                     ImGui::Indent();
@@ -819,6 +968,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
         return 1;
     }
 
+    // Aplica streamproof imediatamente (padrão ligado)
+    overlay.SetStreamproof(g_streamproof);
+
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     g_rbx = new RobloxReader(g_mem);
@@ -888,6 +1040,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
                     overlay.GetTargetHWND());
 
         DrawMenu(overlay);
+        DrawToasts();
         renderer.EndFrame();
     }
 
