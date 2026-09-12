@@ -937,6 +937,69 @@ static void DrawMenu(Overlay& overlay)
                 ImGui::EndTabItem();
             }
 
+            // ── Aba: Debug ────────────────────────────────────────────────
+            if (ImGui::BeginTabItem("Debug"))
+            {
+                const AutoDive::DebugInfo& d = g_dive.debug;
+
+                ImGui::TextDisabled("-- AutoDive --");
+                ImGui::Text("Ultima tecla : %s", g_dive.LastDiveKey());
+                ImGui::Text("Motivo       : %s", d.blockReason.c_str());
+                ImGui::Separator();
+
+                ImGui::TextDisabled("-- Bola --");
+                ImGui::Text("Dist GK      : %.1f studs", d.distToBall);
+                ImGui::Text("WatchRange   : %s", d.inWatchRange  ? "SIM" : "nao");
+                ImGui::Text("Trajetoria OK: %s", d.trajectoryOK  ? "SIM" : "nao");
+                ImGui::Text("Sim valida   : %s", d.simValid      ? "SIM" : "nao");
+                ImGui::Text("Pos local Z  : %.2f (espaco do gol)", d.ballLocalZ);
+                ImGui::Separator();
+
+                ImGui::TextDisabled("-- Previsao (SimulateBallPath) --");
+                // Cor: verde se dentro do gol, amarelo se fora
+                {
+                    float hw = g_rbx ? g_rbx->GetGoal().size.x * 0.5f + g_dive.cfg.goalMargin : 0.f;
+                    float hh = g_rbx ? g_rbx->GetGoal().size.y * 0.5f + g_dive.cfg.goalMargin : 0.f;
+                    bool inGoal = (std::fabsf(d.predGoalX) <= hw && std::fabsf(d.predGoalY) <= hh);
+                    ImVec4 col = inGoal ? ImVec4(0.2f,1.f,0.2f,1.f) : ImVec4(1.f,0.8f,0.1f,1.f);
+                    ImGui::TextColored(col, "crossX       : %.2f", d.predGoalX);
+                    ImGui::TextColored(col, "crossY       : %.2f", d.predGoalY);
+                }
+                ImGui::Text("decisionX    : %.2f  (espaco GK)", d.decisionX);
+                ImGui::Text("ballHigh     : %s", d.ballHigh ? "ALTO" : "baixo");
+                ImGui::Separator();
+
+                ImGui::TextDisabled("-- Posicao relativa (espaco GK) --");
+                ImGui::Text("relX         : %.2f", d.relPosX);
+                ImGui::Text("relY         : %.2f", d.relPosY);
+                ImGui::Text("relZ         : %.2f", d.relPosZ);
+                ImGui::Separator();
+
+                ImGui::TextDisabled("-- Spin / Curva --");
+                ImGui::Text("spin X       : %.3f (topspin/backspin)", d.spinX);
+                ImGui::Text("spin Y       : %.3f (sidespin lateral)",  d.spinY);
+                ImGui::Text("spin Z       : %.3f",                     d.spinZ);
+                ImGui::Separator();
+
+                ImGui::TextDisabled("-- Aceleracao medida (EMA) --");
+                float accelMag = std::sqrtf(d.measuredAccelX*d.measuredAccelX
+                                          + d.measuredAccelY*d.measuredAccelY
+                                          + d.measuredAccelZ*d.measuredAccelZ);
+                ImGui::Text("accelX       : %.2f", d.measuredAccelX);
+                ImGui::Text("accelY       : %.2f", d.measuredAccelY);
+                ImGui::Text("accelZ       : %.2f", d.measuredAccelZ);
+                ImGui::Text("|accel|      : %.2f studs/s2", accelMag);
+                ImGui::Separator();
+
+                ImGui::TextDisabled("-- Gol --");
+                ImGui::Text("goalSize X   : %.1f  Z: %.1f", d.goalSizeX, d.goalSizeZ);
+                ImGui::Text("goalPos  X   : %.1f  Z: %.1f", d.goalPosX,  d.goalPosZ);
+                ImGui::Text("ballPos  X   : %.1f  Z: %.1f", d.ballPosX,  d.ballPosZ);
+                ImGui::Text("ballVel  X   : %.1f  Z: %.1f", d.ballVelX,  d.ballVelZ);
+
+                ImGui::EndTabItem();
+            }
+
             ImGui::EndTabBar();
         }
     }

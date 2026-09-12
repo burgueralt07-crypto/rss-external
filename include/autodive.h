@@ -201,9 +201,11 @@ public:
         float measuredAccelZ = 0.f;
 
         // Trajetória simulada — ponto previsto no plano do gol
-        float predGoalX = 0.f;   // local X no espaço do gol onde a bola deve cruzar
-        float predGoalY = 0.f;   // local Y no espaço do gol
-        bool  simValid  = false; // true se a simulação encontrou cruzamento com o plano
+        float predGoalX  = 0.f;   // local X no espaço do gol onde a bola deve cruzar
+        float predGoalY  = 0.f;   // local Y no espaço do gol
+        bool  simValid   = false; // true se a simulação encontrou cruzamento com o plano
+        bool  ballHigh   = false; // classificação alto/baixo (com hysteresis)
+        float decisionX  = 0.f;  // X de decisão no espaço do GK (crossX projetado ou relPos.x)
 
         // WatchRange
         bool  inWatchRange  = false;  // bola está no range de monitoramento
@@ -287,13 +289,26 @@ private:
     Vector3     m_filteredAccel;           // aceleração filtrada (EMA)
     bool        m_filteredAccelValid = false; // false até ter ao menos uma medição
 
+    // Hysteresis da classificação alto/baixo — evita oscilação na fronteira.
+    // Persistido entre frames; resetado quando a bola para ou é presa.
+    bool        m_prevBallHigh = false;
+
     std::thread       m_thread;
     std::atomic<bool> m_running{ false };
 
-    // Thread dedicada ao key-up — drena m_keyUpQueue sem criar threads avulsas
+    // Thread dedicada ao key-up e key-down atrasado.
+    //
+    // KeyUpEntry representa uma única ação agendada:
+    //   delayMs == 0  → só key-up (comportamento original)
+    //   delayMs  > 0  → key-down após delayMs, depois key-up após holdMs
+    //
+    // Isso elimina a std::thread(...).detach() do combo Space+Q/E:
+    // antes criava uma thread avulsa para cada disparo; agora a KeyUpLoop
+    // já trata o delay do key-down na mesma thread dedicada.
     struct KeyUpEntry {
         WORD                                     scancode;
-        std::chrono::steady_clock::time_point    releaseAt;
+        std::chrono::steady_clock::time_point    releaseAt;   // quando soltar (key-up)
+        int                                      delayMs = 0; // > 0 → faz key-down antes
     };
     std::thread                m_keyUpThread;
     std::mutex                 m_keyUpMtx;
@@ -301,4 +316,19 @@ private:
     std::queue<KeyUpEntry>     m_keyUpQueue;
 
     void KeyUpLoop();
+
+    // Agenda key-down atrasado + key-up via KeyUpLoop, sem criar thread nova.
+    // delayMs: espera antes do key-down. holdMs: duração do press.
+    void PressKeyDelayed(WORD vk, int delayMs, int holdMs)
+    {
+        WORD sc = static_cast<WORD>(MapVirtualKeyW(vk, MAPVK_VK_TO_VSC));
+        auto releaseAt = std::chrono::steady_clock::now()
+                       + std::chrono::milliseconds(delayMs)
+                       + std::chrono::milliseconds(holdMs);
+        {
+            std::lock_guard<std::mutex> lk(m_keyUpMtx);
+            m_keyUpQueue.push({ sc, releaseAt, delayMs });
+        }
+        m_keyUpCv.notify_one();
+    }
 };

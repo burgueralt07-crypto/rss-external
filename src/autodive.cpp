@@ -22,10 +22,19 @@ void AutoDive::Stop()
 }
 
 // --------------------------------------------------------------------------
-// KeyUpLoop — thread dedicada ao key-up
+// KeyUpLoop — thread dedicada ao key-up e key-down atrasado
 //
-// Dorme até o próximo key-up agendado e envia SendInput quando chegar a hora.
-// Substitui as std::thread::detach() anteriores — sem proliferação de threads.
+// Cada entrada da fila (KeyUpEntry) pode representar:
+//   delayMs == 0  → só key-up em releaseAt (comportamento original de PressKey)
+//   delayMs  > 0  → key-down após delayMs; depois key-up em releaseAt
+//
+// Isso elimina completamente a std::thread(...).detach() que existia no combo
+// Space+Q/E: em vez de criar uma thread avulsa a cada disparo, enfileiramos
+// a entrada com delayMs preenchido e a KeyUpLoop trata tudo.
+//
+// Ordem de processamento: FIFO. Para o combo Space+Q/E, o Space é disparado
+// imediatamente via PressKey(); o Q/E é enfileirado via PressKeyDelayed()
+// e processado aqui na ordem correta.
 // --------------------------------------------------------------------------
 void AutoDive::KeyUpLoop()
 {
@@ -34,7 +43,6 @@ void AutoDive::KeyUpLoop()
         KeyUpEntry entry{};
         {
             std::unique_lock<std::mutex> lk(m_keyUpMtx);
-            // Espera até ter algo na fila ou ser acordada para sair
             m_keyUpCv.wait(lk, [this] {
                 return !m_keyUpQueue.empty() || !m_running;
             });
@@ -44,7 +52,24 @@ void AutoDive::KeyUpLoop()
             m_keyUpQueue.pop();
         }
 
-        // Dorme até o momento de soltar a tecla
+        if (entry.delayMs > 0)
+        {
+            // Combo atrasado: dorme o delay, dispara key-down, depois dorme
+            // até releaseAt e dispara key-up.
+            std::this_thread::sleep_for(std::chrono::milliseconds(entry.delayMs));
+
+            // Verifica se ainda devemos agir (Stop() pode ter sido chamado)
+            if (!m_running) break;
+
+            INPUT down = {};
+            down.type       = INPUT_KEYBOARD;
+            down.ki.wVk     = 0;
+            down.ki.wScan   = entry.scancode;
+            down.ki.dwFlags = KEYEVENTF_SCANCODE;
+            SendInput(1, &down, sizeof(INPUT));
+        }
+
+        // Dorme até o momento do key-up
         std::this_thread::sleep_until(entry.releaseAt);
 
         INPUT up = {};
@@ -126,6 +151,7 @@ void AutoDive::ScanLoop(RobloxReader* rbx)
                 m_prevBallValid      = false;
                 m_filteredAccelValid = false;
                 m_filteredAccel      = {};
+                m_prevBallHigh       = false;
                 ball.measuredAccel   = {};
             }
 
@@ -264,6 +290,7 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
         const Vector3 a4 = getAcceleration(v4, timeAcc + dt);
 
         const Vector3 prevPos = pos;   // salva ANTES de avançar — usado na interpolação
+        const Vector3 prevVel = vel;   // salva ANTES de avançar — usado na interpolação de velAtCross
 
         vel = vel + (a1 + a2 * 2.f + a3 * 2.f + a4) * (dt / 6.f);
         pos = pos + (v1 + v2 * 2.f + v3 * 2.f + v4) * (dt / 6.f);
@@ -301,7 +328,11 @@ AutoDive::SimResult AutoDive::SimulateBallPath(const BallState& ball,
             res.crossX     = prevLocal.x + alpha * (localPos.x - prevLocal.x);
             res.crossY     = prevLocal.y + alpha * (localPos.y - prevLocal.y);
             res.timeToGoal = timeAcc - dt + alpha * dt;
-            res.velAtCross = vel;
+            // velAtCross: interpola entre a vel do passo anterior e a atual
+            // para ter a velocidade no ponto exato de cruzamento.
+            // Antes pegava só 'vel' (fim do passo), o que superestimava
+            // a componente Y quando a bola ainda estava subindo.
+            res.velAtCross = prevVel + (vel - prevVel) * alpha;
             res.worldCross = prevPos + (pos - prevPos) * alpha;
             return res;
         }
@@ -478,31 +509,22 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
 
     if (is7v7)
     {
-        // Ponto de cruzamento previsto no espaço do GK — referência de direção correta
-        // independente do time (Home ou Away).
-        //
-        // Antes usávamos -sim.crossX (espaço do gol), que exigia saber se o rightVec
-        // do gol estava alinhado ou oposto ao rightVec do GK. Isso causava inversão
-        // de lado ao jogar como Away GK, já que a part AntiOwnGoal tem rotação 180°
-        // em relação ao Home.
-        //
-        // Solução: projetar sim.worldCross no espaço local do GK. O eixo direito do GK
-        // (gk.rightVec) aponta para a direita do GK independente do time.
-        // Se worldCrossInGK.x > 0 → bola vai à direita do GK → E.
-        // Se worldCrossInGK.x < 0 → bola vai à esquerda do GK → Q.
-        //
-        // Fallback para relPos.x se simulação não encontrou cruzamento.
-        float decisionX = relPos.x;   // fallback: posição atual no espaço do GK
+        // ── Decisão de direção ────────────────────────────────────────────
+        // Usa crossX projetado no espaço do GK (independente de Home/Away).
+        // Fallback para relPos.x se a simulação não encontrou cruzamento.
+        float decisionX = relPos.x;
         if (sim.hit)
         {
             Vector3 worldCrossInGK = PointToObjectSpace(
                 gk.position, gk.rightVec, gk.upVec, gk.lookVec, sim.worldCross);
             decisionX = worldCrossInGK.x;
         }
-        float absDecisionX = std::fabsf(decisionX);
+        const float absDecisionX = std::fabsf(decisionX);
+        debug.decisionX = decisionX;
 
-        // Usa sim.crossY (onde a bola VAI cruzar o plano do gol) para decidir
-        // se o chute é alto. Fallback para posição atual se simulação falhou.
+        // ── Decisão de altura ─────────────────────────────────────────────
+        // goalLocalY = onde a bola vai cruzar o plano do gol (eixo Y local).
+        // Y=0 é o centro geométrico da part AntiOwnGoal.
         float goalLocalY = 0.f;
         if (sim.hit)
         {
@@ -515,34 +537,38 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
             goalLocalY = ballInGoal.y;
         }
 
-        // jumpMinCrossY: altura mínima de cruzamento para considerar "alto"
-        // Evita Jump+Dive em chutes que sobem levemente mas entram embaixo do gol.
-        bool ballHigh = (goalLocalY >= cfg.jumpMinCrossY);
+        // Hysteresis em torno de jumpMinCrossY — evita flip-flop na fronteira.
+        constexpr float kHysteresis = 0.4f;
+        bool ballHigh;
+        {
+            const float threshUp   = cfg.jumpMinCrossY + kHysteresis;
+            const float threshDown = cfg.jumpMinCrossY - kHysteresis;
+            if      (goalLocalY >= threshUp)   ballHigh = true;
+            else if (goalLocalY <= threshDown) ballHigh = false;
+            else                               ballHigh = m_prevBallHigh;
+        }
+        m_prevBallHigh = ballHigh;
 
-        // ── Detecção de curva que sobe (override de ballHigh) ────────────
-        // Caso 1: bola ainda subindo ao cruzar o plano do gol.
-        //   A simulação subestima crossY quando a curva vertical aparece tarde
-        //   no EMA. Se velAtCross.y é positivo e alto, a bola vai chegar alta
-        //   mesmo que crossY previsto seja baixo.
+        // Override para chutes com curva que sobe mas crossY subestimado pelo EMA.
         if (!ballHigh && cfg.velAtCrossYMin > 0.f &&
             sim.hit && sim.velAtCross.y >= cfg.velAtCrossYMin)
         {
             ballHigh = true;
         }
-        // Caso 2: aceleração vertical medida positiva no instante do disparo.
-        //   Indica que a curva está ativamente empurrando a bola para cima agora.
+        // Override para curva empurrando a bola para cima no instante do disparo.
         if (!ballHigh && cfg.measuredAccelYMin > 0.f &&
             ball.measuredAccel.y >= cfg.measuredAccelYMin)
         {
             ballHigh = true;
         }
 
+        debug.ballHigh    = ballHigh;
         debug.blockReason = ballHigh ? "[zona alta]" : "[zona baixa]";
 
         if (ballHigh)
         {
-            // ── Metade SUPERIOR do gol → Jump+Dive (Space+Q/E) ───────────
-            // Usa decisionX (crossX com curva) para decidir a direção
+            // ── Zona ALTA ─────────────────────────────────────────────────
+            // Jump puro central: |decisionX| <= jumpPureXMax7v7
             if (cfg.highJump && absDecisionX <= cfg.jumpPureXMax7v7)
             {
                 PressKey(VK_SPACE, cfg.keyHoldMs);
@@ -550,54 +576,32 @@ void AutoDive::Evaluate(const GKState& gk, const BallState& ball, const GoalStat
                 debug.blockReason = "FIRED - Jump 7v7";
                 return;
             }
+            // Jump+Dive lateral: |decisionX| >= jumpDiveXMin7v7
             if (absDecisionX >= cfg.jumpDiveXMin7v7)
             {
                 WORD        diveKey = (decisionX > 0.f) ? 'E' : 'Q';
-                const char* keyName = (decisionX > 0.f) ? "Space+E (Jump+Right)" : "Space+Q (Jump+Left)";
-                // Space imediato; Q/E enfileirado após jumpDiveDelayMs via KeyUpLoop
+                const char* keyName = (decisionX > 0.f) ? "Space+E (Jump+Right)"
+                                                        : "Space+Q (Jump+Left)";
+                // Space imediato — Q/E via PressKeyDelayed (sem thread avulsa)
                 PressKey(VK_SPACE, cfg.keyHoldMs);
-                {
-                    // Agenda key-down do Q/E após o delay usando a fila de key-up:
-                    // enfileiramos uma entrada falsa com releaseAt = agora + delay,
-                    // mas precisamos do key-down também. Usamos uma thread mínima só
-                    // para o key-down do Q/E (única situação que ainda exige isso).
-                    WORD sc      = static_cast<WORD>(MapVirtualKeyW(diveKey, MAPVK_VK_TO_VSC));
-                    int  holdMs  = cfg.keyHoldMs;
-                    int  delayMs = cfg.jumpDiveDelayMs;
-                    std::thread([this, sc, delayMs, holdMs]() {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(delayMs));
-                        INPUT down = {};
-                        down.type       = INPUT_KEYBOARD;
-                        down.ki.wScan   = sc;
-                        down.ki.dwFlags = KEYEVENTF_SCANCODE;
-                        SendInput(1, &down, sizeof(INPUT));
-                        // Enfileira o key-up via fila dedicada
-                        auto releaseAt = std::chrono::steady_clock::now() +
-                                         std::chrono::milliseconds(holdMs);
-                        {
-                            std::lock_guard<std::mutex> lk(m_keyUpMtx);
-                            m_keyUpQueue.push({ sc, releaseAt });
-                        }
-                        m_keyUpCv.notify_one();
-                    }).detach();
-                }
+                PressKeyDelayed(diveKey, cfg.jumpDiveDelayMs, cfg.keyHoldMs);
+
                 m_lastKey = keyName; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = std::string("FIRED - ") + keyName;
                 return;
             }
-            // Zona morta: fallback Jump puro
+            // Zona morta entre jumpPureXMax7v7 e jumpDiveXMin7v7 → Jump puro fallback
             if (cfg.highJump)
             {
                 PressKey(VK_SPACE, cfg.keyHoldMs);
-                m_lastKey = "Space (Jump 7v7)"; m_firedThisFrame = true; m_lastDiveTime = now;
+                m_lastKey = "Space (Jump 7v7 fallback)"; m_firedThisFrame = true; m_lastDiveTime = now;
                 debug.blockReason = "FIRED - Jump 7v7 fallback";
                 return;
             }
         }
         else
         {
-            // ── Metade INFERIOR do gol → dive normal (Q/E) ───────────────
-            // Usa decisionX (crossX com curva) para saber lado real de chegada
+            // ── Zona BAIXA ────────────────────────────────────────────────
             if (decisionX > cfg.diveXThreshold7v7)
             {
                 PressKey('E', cfg.keyHoldMs);
