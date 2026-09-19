@@ -15,10 +15,14 @@
 #include <string>
 #include <string_view>
 #include <charconv>
+#include <vector>
 #include <Windows.h>
 #include <winhttp.h>
+#include <tlhelp32.h>
+#include <version.h>
 
 #pragma comment(lib, "winhttp.lib")
+#pragma comment(lib, "version.lib")
 
 namespace OffsetUpdater {
 
@@ -274,6 +278,136 @@ inline int FetchAndApplyFromVersion(const std::string& version,
     }
 
     return ParseHpp(body, outVersion);
+}
+
+// --------------------------------------------------------------------------
+// GetRobloxVersion — lê a versão do RobloxPlayerBeta.exe em execução
+//
+// Estratégia: itera os processos, acha RobloxPlayerBeta.exe, lê o path
+// do executável e extrai a versão via GetFileVersionInfoW.
+//
+// O campo FileVersion do Roblox tem formato "major.minor.patch.build"
+// mas o que o site usa é o hash na pasta de instalação:
+//   C:\Users\...\AppData\Local\Roblox\Versions\version-XXXX\RobloxPlayerBeta.exe
+// Então extraímos "version-XXXX" do path.
+//
+// Fallback: se não achar no path, usa o ProductVersion string do VERSIONINFO.
+// --------------------------------------------------------------------------
+inline bool GetRobloxVersion(std::string& outVersion, std::string& outErr)
+{
+    // Snapshot de todos os processos
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnap == INVALID_HANDLE_VALUE)
+    {
+        outErr = "CreateToolhelp32Snapshot failed";
+        return false;
+    }
+
+    PROCESSENTRY32W pe{};
+    pe.dwSize = sizeof(pe);
+    DWORD robloxPid = 0;
+
+    if (Process32FirstW(hSnap, &pe))
+    {
+        do {
+            if (_wcsicmp(pe.szExeFile, L"RobloxPlayerBeta.exe") == 0)
+            {
+                robloxPid = pe.th32ProcessID;
+                break;
+            }
+        } while (Process32NextW(hSnap, &pe));
+    }
+    CloseHandle(hSnap);
+
+    if (robloxPid == 0)
+    {
+        outErr = "Roblox nao encontrado";
+        return false;
+    }
+
+    // Abre o processo para ler o path do exe
+    HANDLE hProc = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, robloxPid);
+    if (!hProc)
+    {
+        outErr = "OpenProcess failed";
+        return false;
+    }
+
+    wchar_t exePath[MAX_PATH] = {};
+    DWORD pathLen = MAX_PATH;
+    bool gotPath = QueryFullProcessImageNameW(hProc, 0, exePath, &pathLen) != 0;
+    CloseHandle(hProc);
+
+    if (!gotPath)
+    {
+        outErr = "QueryFullProcessImageName failed";
+        return false;
+    }
+
+    // Tenta extrair "version-XXXX" do path
+    // Formato: ...\Roblox\Versions\version-XXXX\RobloxPlayerBeta.exe
+    std::wstring wpath(exePath);
+    const std::wstring marker = L"version-";
+    auto mpos = wpath.find(marker);
+    if (mpos != std::wstring::npos)
+    {
+        // Pega até a próxima barra
+        auto slash = wpath.find(L'\\', mpos);
+        std::wstring wver = wpath.substr(mpos, slash == std::wstring::npos
+                                               ? std::wstring::npos
+                                               : slash - mpos);
+        outVersion = std::string(wver.begin(), wver.end());
+        return true;
+    }
+
+    // Fallback: lê ProductVersion do VERSIONINFO do exe
+    DWORD dummy = 0;
+    DWORD infoSize = GetFileVersionInfoSizeW(exePath, &dummy);
+    if (infoSize == 0)
+    {
+        outErr = "version-XXXX nao encontrado no path e GetFileVersionInfoSize falhou";
+        return false;
+    }
+
+    std::vector<BYTE> buf(infoSize);
+    if (!GetFileVersionInfoW(exePath, 0, infoSize, buf.data()))
+    {
+        outErr = "GetFileVersionInfo failed";
+        return false;
+    }
+
+    wchar_t* pVer = nullptr;
+    UINT verLen = 0;
+    // Tenta pegar o ProductVersion como string
+    if (VerQueryValueW(buf.data(), L"\\StringFileInfo\\040904b0\\ProductVersion",
+                       (LPVOID*)&pVer, &verLen) && pVer && verLen > 0)
+    {
+        // Converte para "version-MAJOR.MINOR.PATCH.BUILD"
+        std::wstring ws(pVer, verLen);
+        outVersion = "version-" + std::string(ws.begin(), ws.end());
+        return true;
+    }
+
+    outErr = "nao foi possivel determinar a versao do Roblox";
+    return false;
+}
+
+// --------------------------------------------------------------------------
+// AutoFetchAndApply — detecta a versão do Roblox e aplica os offsets
+//
+// Uso no startup:
+//   std::thread([] {
+//       std::string ver, err;
+//       int n = OffsetUpdater::AutoFetchAndApply(ver, err);
+//       // n >= 0 = sucesso, n < 0 = erro
+//   }).detach();
+// --------------------------------------------------------------------------
+inline int AutoFetchAndApply(std::string& outVersion, std::string& outErr)
+{
+    std::string ver;
+    if (!GetRobloxVersion(ver, outErr)) return -1;
+
+    return FetchAndApplyFromVersion(ver, outVersion, outErr);
 }
 
 } // namespace OffsetUpdater

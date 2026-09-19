@@ -1061,6 +1061,18 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     g_rbx = new RobloxReader(g_mem);
+
+    // Auto-update de offsets: detecta versão do Roblox e busca o .hpp correto
+    g_offsetUpdating = true;
+    std::thread([]() {
+        std::string outVer, outErr;
+        int n = OffsetUpdater::AutoFetchAndApply(outVer, outErr);
+        g_offsetChanged  = n;
+        g_offsetVersion  = outVer;
+        g_offsetErr      = outErr;
+        g_offsetUpdating = false;
+    }).detach();
+
     TryAttach();
 
     // Auto-load: lê meta e carrega o slot configurado se autoLoad=1
