@@ -4,6 +4,7 @@
 #include "rbx.h"
 #include "rmath.h"
 #include "autodive.h"
+#include "offset_updater.h"
 
 #include <imgui.h>
 #include <Windows.h>
@@ -12,6 +13,7 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <atomic>
 
 static constexpr wchar_t TARGET_WINDOW[]  = L"Roblox";
 static constexpr wchar_t TARGET_PROCESS[] = L"RobloxPlayerBeta.exe";
@@ -21,6 +23,12 @@ static RobloxReader* g_rbx      = nullptr;
 static bool          g_menuOpen = true;
 static int           g_menuKey  = VK_HOME;
 static int           g_diveKey  = 0; // 0 = sem keybind
+
+// Offset updater
+static int                g_offsetChanged = 0;   // >= 0 = campos alterados, -1 = erro
+static std::string        g_offsetVersion;        // ex: "version-4310300497aa4917"
+static std::string        g_offsetErr;            // mensagem de erro
+static std::atomic<bool>  g_offsetUpdating{false};
 
 struct ESPConfig {
     bool  enabled      = true;
@@ -933,6 +941,85 @@ static void DrawMenu(Overlay& overlay)
                 if (ImGui::Button("Fechar External", ImVec2(-1, 0)))
                     PostQuitMessage(0);
                 ImGui::PopStyleColor(3);
+
+                ImGui::Separator();
+
+                // ── Offset Updater ────────────────────────────────────────
+                // Cole o conteúdo de offsets.imtheo.lol/<version>/offsets.hpp
+                // e clique Aplicar para atualizar os offsets em runtime.
+                ImGui::TextDisabled("Offset Updater");
+
+                // Buffer para colar o .hpp (512 KB)
+                static char* s_hppBuf = nullptr;
+                if (!s_hppBuf) { s_hppBuf = new char[524288]; s_hppBuf[0] = '\0'; }
+
+                // Status
+                bool updRunning = g_offsetUpdating.load();
+                if (updRunning)
+                    ImGui::TextColored(ImVec4(0.9f, 0.9f, 0.3f, 1.f), "buscando...");
+                else if (g_offsetChanged < 0)
+                    ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Erro: %s", g_offsetErr.c_str());
+                else if (!g_offsetVersion.empty())
+                    ImGui::TextColored(ImVec4(g_offsetChanged > 0 ? 0.3f : 0.5f, 1.f, 0.5f, 1.f),
+                        "%s  |  %s",
+                        g_offsetChanged > 0 ? "Atualizado" : "OK (sem mudancas)",
+                        g_offsetVersion.c_str());
+                else
+                    ImGui::TextDisabled("Cole o offsets.hpp abaixo");
+
+                // Textarea para colar o .hpp
+                float areaH = ImGui::GetTextLineHeightWithSpacing() * 5.f;
+                ImGui::InputTextMultiline("##hpp", s_hppBuf, 524288, ImVec2(-1, areaH));
+
+                // Linha com dois botões: Colar+Aplicar  |  Buscar por versão
+                float bw = (ImGui::GetContentRegionAvail().x - 4.f) * 0.5f;
+
+                // Botão 1: aplica o conteúdo colado diretamente
+                bool canPaste = s_hppBuf[0] != '\0' && !updRunning;
+                if (!canPaste) ImGui::BeginDisabled();
+                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.1f, 0.45f, 0.1f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.15f, 0.65f, 0.15f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.2f, 0.85f, 0.2f, 1.f));
+                if (ImGui::Button("Aplicar .hpp##paste", ImVec2(bw, 0)) && canPaste)
+                {
+                    g_offsetChanged = 0;
+                    g_offsetErr     = "";
+                    g_offsetVersion = "";
+                    g_offsetChanged = OffsetUpdater::ParseHpp(std::string(s_hppBuf), g_offsetVersion);
+                }
+                ImGui::PopStyleColor(3);
+                if (!canPaste) ImGui::EndDisabled();
+
+                ImGui::SameLine();
+
+                // Botão 2: campo de versão inline + busca via WinHTTP
+                static char s_verBuf[128] = {};
+                ImGui::SetNextItemWidth(bw - 70.f);
+                ImGui::InputTextWithHint("##ver", "version-xxxx", s_verBuf, sizeof(s_verBuf));
+                ImGui::SameLine();
+                bool canFetch = s_verBuf[0] != '\0' && !updRunning;
+                if (!canFetch) ImGui::BeginDisabled();
+                ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.1f, 0.4f, 0.7f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.55f, 0.9f, 1.f));
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.3f, 0.65f, 1.0f, 1.f));
+                if (ImGui::Button("Buscar##fetch", ImVec2(-1, 0)) && canFetch)
+                {
+                    std::string ver(s_verBuf);
+                    g_offsetUpdating = true;
+                    g_offsetChanged  = 0;
+                    g_offsetErr      = "";
+                    g_offsetVersion  = "";
+                    std::thread([ver]() {
+                        std::string outVer, outErr;
+                        int n = OffsetUpdater::FetchAndApplyFromVersion(ver, outVer, outErr);
+                        g_offsetChanged  = n;
+                        g_offsetVersion  = outVer;
+                        g_offsetErr      = outErr;
+                        g_offsetUpdating = false;
+                    }).detach();
+                }
+                ImGui::PopStyleColor(3);
+                if (!canFetch) ImGui::EndDisabled();
 
                 ImGui::EndTabItem();
             }
