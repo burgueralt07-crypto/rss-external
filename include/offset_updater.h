@@ -19,7 +19,6 @@
 #include <Windows.h>
 #include <winhttp.h>
 #include <tlhelp32.h>
-#include <version.h>
 
 #pragma comment(lib, "winhttp.lib")
 #pragma comment(lib, "version.lib")
