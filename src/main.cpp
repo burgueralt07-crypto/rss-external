@@ -972,7 +972,7 @@ static void DrawMenu(Overlay& overlay)
                 ImGui::InputTextMultiline("##hpp", s_hppBuf, 524288, ImVec2(-1, areaH));
 
                 // Linha com dois botões: Colar+Aplicar  |  Buscar por versão
-                float bw = (ImGui::GetContentRegionAvail().x - 4.f) * 0.5f;
+                float updBw = (ImGui::GetContentRegionAvail().x - 4.f) * 0.5f;
 
                 // Botão 1: aplica o conteúdo colado diretamente
                 bool canPaste = s_hppBuf[0] != '\0' && !updRunning;
@@ -980,7 +980,7 @@ static void DrawMenu(Overlay& overlay)
                 ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.1f, 0.45f, 0.1f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.15f, 0.65f, 0.15f, 1.f));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.2f, 0.85f, 0.2f, 1.f));
-                if (ImGui::Button("Aplicar .hpp##paste", ImVec2(bw, 0)) && canPaste)
+                if (ImGui::Button("Aplicar .hpp##paste", ImVec2(updBw, 0)) && canPaste)
                 {
                     g_offsetChanged = 0;
                     g_offsetErr     = "";
@@ -994,7 +994,7 @@ static void DrawMenu(Overlay& overlay)
 
                 // Botão 2: campo de versão inline + busca via WinHTTP
                 static char s_verBuf[128] = {};
-                ImGui::SetNextItemWidth(bw - 70.f);
+                ImGui::SetNextItemWidth(updBw - 70.f);
                 ImGui::InputTextWithHint("##ver", "version-xxxx", s_verBuf, sizeof(s_verBuf));
                 ImGui::SameLine();
                 bool canFetch = s_verBuf[0] != '\0' && !updRunning;
