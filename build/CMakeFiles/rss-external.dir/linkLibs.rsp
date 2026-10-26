@@ -1,0 +1,1 @@
+ -ld3d11 -ldxgi -ld3dcompiler -ldwmapi -luser32 -lgdi32 -lole32 -loleaut32 -lshell32 -ladvapi32 -luuid -lwinhttp -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

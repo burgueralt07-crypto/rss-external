@@ -1,0 +1,3 @@
+C:\Users\GUILH\Downloads\w64devkit\bin\cmake.exe -E rm -f CMakeFiles\rss-external.dir/objects.a
+C:\Users\GUILH\Downloads\w64devkit\bin\ar.exe qc CMakeFiles\rss-external.dir/objects.a @CMakeFiles\rss-external.dir\objects1.rsp
+C:\Users\GUILH\Downloads\w64devkit\bin\c++.exe -O3 -DNDEBUG -mwindows -mwindows -Wl,--gc-sections -s -Wl,--whole-archive CMakeFiles\rss-external.dir/objects.a -Wl,--no-whole-archive -o Release\rss-external.exe -Wl,--out-implib,librss-external.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\rss-external.dir\linkLibs.rsp

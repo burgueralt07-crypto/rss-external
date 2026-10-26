@@ -1,0 +1,1949 @@
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineSystem.cmake:218 (message)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      The system is: Windows - 10.0.19045 - AMD64
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeMinGWFindMake.cmake:5 (find_program)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_MAKE_PROGRAM"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "mingw32-make.exe"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+      - "/REGISTRY-NOTFOUND/bin/"
+      - "c:/MinGW/bin/"
+      - "/MinGW/bin/"
+      - "/REGISTRY-NOTFOUND/MinGW/bin/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/mingw32-make.exe.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/mingw32-make.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompiler.cmake:63 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:69 (_cmake_find_compiler)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_CXX_COMPILER"
+    description: "CXX compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: false
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "c++"
+      - "g++"
+      - "cl"
+      - "bcc"
+      - "icx"
+      - "clang++"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/c++.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/c++.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake:501 (find_file)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake:538 (CMAKE_DETERMINE_COMPILER_ID_WRITE)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake:8 (CMAKE_DETERMINE_COMPILER_ID_BUILD)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:125 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "file"
+    variable: "src_in"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "CMakeCXXCompilerId.cpp.in"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/"
+    found: "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeCXXCompilerId.cpp.in"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:125 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler: C:/Users/GUILH/Downloads/w64devkit/bin/c++.exe 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.exe"
+      
+      The CXX compiler identification is GNU, found in:
+        C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/4.4.4/CompilerIdCXX/a.exe
+      
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_AR"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ar"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/ar.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/ar.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_RANLIB"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ranlib"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/ranlib.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/ranlib.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_STRIP"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "strip"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/strip.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/strip.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_LINKER"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ld"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/ld.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_NM"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "nm"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/nm.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/nm.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_OBJDUMP"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "objdump"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/objdump.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/objdump.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_OBJCOPY"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "objcopy"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/objcopy.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/objcopy.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_READELF"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "readelf"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/readelf.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/readelf.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/readelf"
+      - "C:/Windows/System32/readelf.com"
+      - "C:/Windows/System32/readelf.exe"
+      - "C:/Windows/System32/readelf"
+      - "C:/Windows/readelf.com"
+      - "C:/Windows/readelf.exe"
+      - "C:/Windows/readelf"
+      - "C:/Windows/System32/wbem/readelf.com"
+      - "C:/Windows/System32/wbem/readelf.exe"
+      - "C:/Windows/System32/wbem/readelf"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/readelf.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/readelf.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/readelf"
+      - "C:/Windows/System32/OpenSSH/readelf.com"
+      - "C:/Windows/System32/OpenSSH/readelf.exe"
+      - "C:/Windows/System32/OpenSSH/readelf"
+      - "C:/Program Files/dotnet/readelf.com"
+      - "C:/Program Files/dotnet/readelf.exe"
+      - "C:/Program Files/dotnet/readelf"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/readelf.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/readelf.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/readelf"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/readelf.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/readelf.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/readelf"
+      - "C:/ProgramData/Msn-Bot/node/readelf.com"
+      - "C:/ProgramData/Msn-Bot/node/readelf.exe"
+      - "C:/ProgramData/Msn-Bot/node/readelf"
+      - "C:/Program Files/Git/cmd/readelf.com"
+      - "C:/Program Files/Git/cmd/readelf.exe"
+      - "C:/Program Files/Git/cmd/readelf"
+      - "C:/Program Files/nodejs/readelf.com"
+      - "C:/Program Files/nodejs/readelf.exe"
+      - "C:/Program Files/nodejs/readelf"
+      - "C:/Users/GUILH/.local/bin/readelf.com"
+      - "C:/Users/GUILH/.local/bin/readelf.exe"
+      - "C:/Users/GUILH/.local/bin/readelf"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/readelf.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/readelf.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/readelf"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/readelf.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/readelf.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/readelf"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/readelf.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/readelf.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/readelf"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/readelf.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/readelf.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/readelf"
+      - "C:/Users/GUILH/.dotnet/tools/readelf.com"
+      - "C:/Users/GUILH/.dotnet/tools/readelf.exe"
+      - "C:/Users/GUILH/.dotnet/tools/readelf"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/readelf.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/readelf.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/readelf"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/readelf.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/readelf.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/readelf"
+      - "C:/Users/GUILH/AppData/Roaming/npm/readelf.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/readelf.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/readelf"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_DLLTOOL"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "dlltool"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/dlltool.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/dlltool.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_ADDR2LINE"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "addr2line"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/addr2line.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/addr2line.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake:247 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_TAPI"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "tapi"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/tapi.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/tapi.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/tapi"
+      - "C:/Windows/System32/tapi.com"
+      - "C:/Windows/System32/tapi.exe"
+      - "C:/Windows/System32/tapi"
+      - "C:/Windows/tapi.com"
+      - "C:/Windows/tapi.exe"
+      - "C:/Windows/tapi"
+      - "C:/Windows/System32/wbem/tapi.com"
+      - "C:/Windows/System32/wbem/tapi.exe"
+      - "C:/Windows/System32/wbem/tapi"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/tapi.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/tapi.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/tapi"
+      - "C:/Windows/System32/OpenSSH/tapi.com"
+      - "C:/Windows/System32/OpenSSH/tapi.exe"
+      - "C:/Windows/System32/OpenSSH/tapi"
+      - "C:/Program Files/dotnet/tapi.com"
+      - "C:/Program Files/dotnet/tapi.exe"
+      - "C:/Program Files/dotnet/tapi"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/tapi.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/tapi.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/tapi"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/tapi.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/tapi.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/tapi"
+      - "C:/ProgramData/Msn-Bot/node/tapi.com"
+      - "C:/ProgramData/Msn-Bot/node/tapi.exe"
+      - "C:/ProgramData/Msn-Bot/node/tapi"
+      - "C:/Program Files/Git/cmd/tapi.com"
+      - "C:/Program Files/Git/cmd/tapi.exe"
+      - "C:/Program Files/Git/cmd/tapi"
+      - "C:/Program Files/nodejs/tapi.com"
+      - "C:/Program Files/nodejs/tapi.exe"
+      - "C:/Program Files/nodejs/tapi"
+      - "C:/Users/GUILH/.local/bin/tapi.com"
+      - "C:/Users/GUILH/.local/bin/tapi.exe"
+      - "C:/Users/GUILH/.local/bin/tapi"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/tapi.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/tapi.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/tapi"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/tapi.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/tapi.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/tapi"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/tapi.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/tapi.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/tapi"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/tapi.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/tapi.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/tapi"
+      - "C:/Users/GUILH/.dotnet/tools/tapi.com"
+      - "C:/Users/GUILH/.dotnet/tools/tapi.exe"
+      - "C:/Users/GUILH/.dotnet/tools/tapi"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/tapi.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/tapi.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/tapi"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/tapi.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/tapi.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/tapi"
+      - "C:/Users/GUILH/AppData/Roaming/npm/tapi.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/tapi.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/tapi"
+    found: false
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/Compiler/GNU-FindBinUtils.cmake:18 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:207 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_CXX_COMPILER_AR"
+    description: "A wrapper around 'ar' adding the appropriate '--plugin' option for the GCC compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gcc-ar-16.2"
+      - "gcc-ar-16"
+      - "gcc-ar16"
+      - "gcc-ar"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar-16.2"
+      - "C:/Windows/System32/gcc-ar-16.2.com"
+      - "C:/Windows/System32/gcc-ar-16.2.exe"
+      - "C:/Windows/System32/gcc-ar-16.2"
+      - "C:/Windows/gcc-ar-16.2.com"
+      - "C:/Windows/gcc-ar-16.2.exe"
+      - "C:/Windows/gcc-ar-16.2"
+      - "C:/Windows/System32/wbem/gcc-ar-16.2.com"
+      - "C:/Windows/System32/wbem/gcc-ar-16.2.exe"
+      - "C:/Windows/System32/wbem/gcc-ar-16.2"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar-16.2.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar-16.2.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar-16.2"
+      - "C:/Windows/System32/OpenSSH/gcc-ar-16.2.com"
+      - "C:/Windows/System32/OpenSSH/gcc-ar-16.2.exe"
+      - "C:/Windows/System32/OpenSSH/gcc-ar-16.2"
+      - "C:/Program Files/dotnet/gcc-ar-16.2.com"
+      - "C:/Program Files/dotnet/gcc-ar-16.2.exe"
+      - "C:/Program Files/dotnet/gcc-ar-16.2"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16.2.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16.2.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16.2"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16.2.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16.2.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16.2"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar-16.2.com"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar-16.2.exe"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar-16.2"
+      - "C:/Program Files/Git/cmd/gcc-ar-16.2.com"
+      - "C:/Program Files/Git/cmd/gcc-ar-16.2.exe"
+      - "C:/Program Files/Git/cmd/gcc-ar-16.2"
+      - "C:/Program Files/nodejs/gcc-ar-16.2.com"
+      - "C:/Program Files/nodejs/gcc-ar-16.2.exe"
+      - "C:/Program Files/nodejs/gcc-ar-16.2"
+      - "C:/Users/GUILH/.local/bin/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/.local/bin/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/.local/bin/gcc-ar-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar-16.2"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar-16.2"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar-16.2"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar-16.2.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar-16.2.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar-16.2"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar-16.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar-16.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar-16"
+      - "C:/Windows/System32/gcc-ar-16.com"
+      - "C:/Windows/System32/gcc-ar-16.exe"
+      - "C:/Windows/System32/gcc-ar-16"
+      - "C:/Windows/gcc-ar-16.com"
+      - "C:/Windows/gcc-ar-16.exe"
+      - "C:/Windows/gcc-ar-16"
+      - "C:/Windows/System32/wbem/gcc-ar-16.com"
+      - "C:/Windows/System32/wbem/gcc-ar-16.exe"
+      - "C:/Windows/System32/wbem/gcc-ar-16"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar-16.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar-16.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar-16"
+      - "C:/Windows/System32/OpenSSH/gcc-ar-16.com"
+      - "C:/Windows/System32/OpenSSH/gcc-ar-16.exe"
+      - "C:/Windows/System32/OpenSSH/gcc-ar-16"
+      - "C:/Program Files/dotnet/gcc-ar-16.com"
+      - "C:/Program Files/dotnet/gcc-ar-16.exe"
+      - "C:/Program Files/dotnet/gcc-ar-16"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar-16"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar-16"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar-16.com"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar-16.exe"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar-16"
+      - "C:/Program Files/Git/cmd/gcc-ar-16.com"
+      - "C:/Program Files/Git/cmd/gcc-ar-16.exe"
+      - "C:/Program Files/Git/cmd/gcc-ar-16"
+      - "C:/Program Files/nodejs/gcc-ar-16.com"
+      - "C:/Program Files/nodejs/gcc-ar-16.exe"
+      - "C:/Program Files/nodejs/gcc-ar-16"
+      - "C:/Users/GUILH/.local/bin/gcc-ar-16.com"
+      - "C:/Users/GUILH/.local/bin/gcc-ar-16.exe"
+      - "C:/Users/GUILH/.local/bin/gcc-ar-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar-16"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar-16.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar-16"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar-16.com"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar-16.exe"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar-16"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar-16.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar-16.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar-16"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar16.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar16.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar16"
+      - "C:/Windows/System32/gcc-ar16.com"
+      - "C:/Windows/System32/gcc-ar16.exe"
+      - "C:/Windows/System32/gcc-ar16"
+      - "C:/Windows/gcc-ar16.com"
+      - "C:/Windows/gcc-ar16.exe"
+      - "C:/Windows/gcc-ar16"
+      - "C:/Windows/System32/wbem/gcc-ar16.com"
+      - "C:/Windows/System32/wbem/gcc-ar16.exe"
+      - "C:/Windows/System32/wbem/gcc-ar16"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar16.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar16.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ar16"
+      - "C:/Windows/System32/OpenSSH/gcc-ar16.com"
+      - "C:/Windows/System32/OpenSSH/gcc-ar16.exe"
+      - "C:/Windows/System32/OpenSSH/gcc-ar16"
+      - "C:/Program Files/dotnet/gcc-ar16.com"
+      - "C:/Program Files/dotnet/gcc-ar16.exe"
+      - "C:/Program Files/dotnet/gcc-ar16"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar16.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar16.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ar16"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar16.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar16.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ar16"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar16.com"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar16.exe"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ar16"
+      - "C:/Program Files/Git/cmd/gcc-ar16.com"
+      - "C:/Program Files/Git/cmd/gcc-ar16.exe"
+      - "C:/Program Files/Git/cmd/gcc-ar16"
+      - "C:/Program Files/nodejs/gcc-ar16.com"
+      - "C:/Program Files/nodejs/gcc-ar16.exe"
+      - "C:/Program Files/nodejs/gcc-ar16"
+      - "C:/Users/GUILH/.local/bin/gcc-ar16.com"
+      - "C:/Users/GUILH/.local/bin/gcc-ar16.exe"
+      - "C:/Users/GUILH/.local/bin/gcc-ar16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ar16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ar16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ar16"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar16.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar16.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ar16"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar16.com"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar16.exe"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ar16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ar16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ar16"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar16.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar16.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ar16"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ar.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/Compiler/GNU-FindBinUtils.cmake:30 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake:207 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_CXX_COMPILER_RANLIB"
+    description: "A wrapper around 'ranlib' adding the appropriate '--plugin' option for the GCC compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gcc-ranlib-16.2"
+      - "gcc-ranlib-16"
+      - "gcc-ranlib16"
+      - "gcc-ranlib"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib-16.2"
+      - "C:/Windows/System32/gcc-ranlib-16.2.com"
+      - "C:/Windows/System32/gcc-ranlib-16.2.exe"
+      - "C:/Windows/System32/gcc-ranlib-16.2"
+      - "C:/Windows/gcc-ranlib-16.2.com"
+      - "C:/Windows/gcc-ranlib-16.2.exe"
+      - "C:/Windows/gcc-ranlib-16.2"
+      - "C:/Windows/System32/wbem/gcc-ranlib-16.2.com"
+      - "C:/Windows/System32/wbem/gcc-ranlib-16.2.exe"
+      - "C:/Windows/System32/wbem/gcc-ranlib-16.2"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib-16.2.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib-16.2.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib-16.2"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib-16.2.com"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib-16.2.exe"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib-16.2"
+      - "C:/Program Files/dotnet/gcc-ranlib-16.2.com"
+      - "C:/Program Files/dotnet/gcc-ranlib-16.2.exe"
+      - "C:/Program Files/dotnet/gcc-ranlib-16.2"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16.2.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16.2.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16.2"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16.2.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16.2.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16.2"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib-16.2.com"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib-16.2.exe"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib-16.2"
+      - "C:/Program Files/Git/cmd/gcc-ranlib-16.2.com"
+      - "C:/Program Files/Git/cmd/gcc-ranlib-16.2.exe"
+      - "C:/Program Files/Git/cmd/gcc-ranlib-16.2"
+      - "C:/Program Files/nodejs/gcc-ranlib-16.2.com"
+      - "C:/Program Files/nodejs/gcc-ranlib-16.2.exe"
+      - "C:/Program Files/nodejs/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib-16.2.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib-16.2.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib-16.2"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib-16"
+      - "C:/Windows/System32/gcc-ranlib-16.com"
+      - "C:/Windows/System32/gcc-ranlib-16.exe"
+      - "C:/Windows/System32/gcc-ranlib-16"
+      - "C:/Windows/gcc-ranlib-16.com"
+      - "C:/Windows/gcc-ranlib-16.exe"
+      - "C:/Windows/gcc-ranlib-16"
+      - "C:/Windows/System32/wbem/gcc-ranlib-16.com"
+      - "C:/Windows/System32/wbem/gcc-ranlib-16.exe"
+      - "C:/Windows/System32/wbem/gcc-ranlib-16"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib-16.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib-16.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib-16"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib-16.com"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib-16.exe"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib-16"
+      - "C:/Program Files/dotnet/gcc-ranlib-16.com"
+      - "C:/Program Files/dotnet/gcc-ranlib-16.exe"
+      - "C:/Program Files/dotnet/gcc-ranlib-16"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib-16"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib-16"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib-16.com"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib-16.exe"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib-16"
+      - "C:/Program Files/Git/cmd/gcc-ranlib-16.com"
+      - "C:/Program Files/Git/cmd/gcc-ranlib-16.exe"
+      - "C:/Program Files/Git/cmd/gcc-ranlib-16"
+      - "C:/Program Files/nodejs/gcc-ranlib-16.com"
+      - "C:/Program Files/nodejs/gcc-ranlib-16.exe"
+      - "C:/Program Files/nodejs/gcc-ranlib-16"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib-16"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib-16"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib-16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib-16"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib-16.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib-16.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib-16"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib16.com"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib16"
+      - "C:/Windows/System32/gcc-ranlib16.com"
+      - "C:/Windows/System32/gcc-ranlib16.exe"
+      - "C:/Windows/System32/gcc-ranlib16"
+      - "C:/Windows/gcc-ranlib16.com"
+      - "C:/Windows/gcc-ranlib16.exe"
+      - "C:/Windows/gcc-ranlib16"
+      - "C:/Windows/System32/wbem/gcc-ranlib16.com"
+      - "C:/Windows/System32/wbem/gcc-ranlib16.exe"
+      - "C:/Windows/System32/wbem/gcc-ranlib16"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib16.com"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib16.exe"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/gcc-ranlib16"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib16.com"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib16.exe"
+      - "C:/Windows/System32/OpenSSH/gcc-ranlib16"
+      - "C:/Program Files/dotnet/gcc-ranlib16.com"
+      - "C:/Program Files/dotnet/gcc-ranlib16.exe"
+      - "C:/Program Files/dotnet/gcc-ranlib16"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib16.com"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib16.exe"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/gcc-ranlib16"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib16.com"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib16.exe"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/gcc-ranlib16"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib16.com"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib16.exe"
+      - "C:/ProgramData/Msn-Bot/node/gcc-ranlib16"
+      - "C:/Program Files/Git/cmd/gcc-ranlib16.com"
+      - "C:/Program Files/Git/cmd/gcc-ranlib16.exe"
+      - "C:/Program Files/Git/cmd/gcc-ranlib16"
+      - "C:/Program Files/nodejs/gcc-ranlib16.com"
+      - "C:/Program Files/nodejs/gcc-ranlib16.exe"
+      - "C:/Program Files/nodejs/gcc-ranlib16"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib16.com"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/.local/bin/gcc-ranlib16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/gcc-ranlib16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/gcc-ranlib16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/gcc-ranlib16"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib16.com"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/gcc-ranlib16"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib16.com"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/.dotnet/tools/gcc-ranlib16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/gcc-ranlib16"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib16.com"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/gcc-ranlib16"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib16.com"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib16.exe"
+      - "C:/Users/GUILH/AppData/Roaming/npm/gcc-ranlib16"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/gcc-ranlib.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineRCCompiler.cmake:40 (find_program)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/Platform/Windows-GNU.cmake:167 (enable_language)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/Platform/Windows-GNU-CXX.cmake:2 (__windows_compiler_gnu)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeCXXInformation.cmake:48 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_RC_COMPILER"
+    description: "RC compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "windres"
+      - "windres"
+    candidate_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Windows/System32/"
+      - "C:/Windows/"
+      - "C:/Windows/System32/wbem/"
+      - "C:/Windows/System32/WindowsPowerShell/v1.0/"
+      - "C:/Windows/System32/OpenSSH/"
+      - "C:/Program Files/dotnet/"
+      - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR/"
+      - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common/"
+      - "C:/ProgramData/Msn-Bot/node/"
+      - "C:/Program Files/Git/cmd/"
+      - "C:/Program Files/nodejs/"
+      - "C:/Users/GUILH/.local/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+      - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps/"
+      - "C:/Users/GUILH/.dotnet/tools/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin/"
+      - "C:/Users/GUILH/AppData/Local/Programs/Ollama/"
+      - "C:/Users/GUILH/AppData/Roaming/npm/"
+      - "C:/Program Files/bin/"
+      - "C:/Program Files/sbin/"
+      - "C:/Program Files/"
+      - "C:/Program Files (x86)/bin/"
+      - "C:/Program Files (x86)/sbin/"
+      - "C:/Program Files (x86)/"
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/"
+      - "C:/Users/GUILH/Downloads/w64devkit/sbin/"
+      - "C:/Users/GUILH/Downloads/w64devkit/"
+      - "C:/Program Files (x86)/rss-external/bin/"
+      - "C:/Program Files (x86)/rss-external/sbin/"
+      - "C:/Program Files (x86)/rss-external/"
+    searched_directories:
+      - "C:/Users/GUILH/Downloads/w64devkit/bin/windres.com"
+    found: "C:/Users/GUILH/Downloads/w64devkit/bin/windres.exe"
+    search_context:
+      ENV{PATH}:
+        - "C:/Users/GUILH/Downloads/w64devkit/bin"
+        - "C:/WINDOWS/system32"
+        - "C:/WINDOWS"
+        - "C:/WINDOWS/System32/Wbem"
+        - "C:/WINDOWS/System32/WindowsPowerShell/v1.0/"
+        - "C:/WINDOWS/System32/OpenSSH/"
+        - "C:/Program Files/dotnet/"
+        - "C:/Program Files/NVIDIA Corporation/NVIDIA App/NvDLISR"
+        - "C:/Program Files (x86)/NVIDIA Corporation/PhysX/Common"
+        - "C:/ProgramData/Msn-Bot/node"
+        - "C:/Program Files/Git/cmd"
+        - "C:/Program Files/nodejs/"
+        - "C:/Users/GUILH/.local/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/Scripts/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Python312/"
+        - "C:/Users/GUILH/AppData/Local/Programs/Python/Launcher/"
+        - "C:/Users/GUILH/AppData/Local/Microsoft/WindowsApps"
+        - "C:/Users/GUILH/.dotnet/tools"
+        - "C:/Users/GUILH/AppData/Local/Programs/Microsoft VS Code/bin"
+        - "C:/Users/GUILH/AppData/Local/Programs/Ollama"
+        - "C:/Users/GUILH/AppData/Roaming/npm"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/rss-external"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/Users/GUILH/Downloads/w64devkit"
+        - "C:/Program Files (x86)/rss-external"
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake:123 (try_compile)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/CMakeScratch/TryCompile-puhvaq"
+      binary: "C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/CMakeScratch/TryCompile-puhvaq"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_CXX_SCAN_FOR_MODULES: "OFF"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: false
+      stdout: |
+        Change Dir: 'C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/CMakeScratch/TryCompile-puhvaq'
+        
+        Run Build Command(s): C:/Users/GUILH/Downloads/w64devkit/bin/cmake.exe -E env VERBOSE=1 C:/Users/GUILH/Downloads/w64devkit/bin/mingw32-make.exe -f Makefile cmTC_38e2a/fast
+        make  -f CMakeFiles\\cmTC_38e2a.dir\\build.make CMakeFiles/cmTC_38e2a.dir/build
+        make[1]: Entering directory 'C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/CMakeScratch/TryCompile-puhvaq'
+        Building CXX object CMakeFiles/cmTC_38e2a.dir/CMakeCXXCompilerABI.cpp.obj
+        C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\c++.exe   -v -o CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj -c C:\\Users\\GUILH\\Downloads\\w64devkit\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp
+        Using built-in specs.
+        COLLECT_GCC=C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\g++.exe
+        Target: x86_64-w64-mingw32
+        Configured with: /dl/gcc/configure --prefix=/w64devkit --with-sysroot=/w64devkit --with-native-system-header-dir=/include --with-arch-32=pentium4 --enable-multilib --target=x86_64-w64-mingw32 --host=x86_64-w64-mingw32 --enable-static --disable-shared --with-pic --with-gmp=/deps --with-mpc=/deps --with-mpfr=/deps --enable-languages=c,c++,fortran --enable-libgomp --enable-threads=posix --enable-tls --enable-version-specific-runtime-libs --disable-libstdcxx-verbose --disable-dependency-tracking --disable-lto --disable-nls --disable-win32-registry --enable-mingw-wildcard CFLAGS_FOR_TARGET=-O2 CXXFLAGS_FOR_TARGET=-O2 LDFLAGS_FOR_TARGET=-s CFLAGS=-O2 CXXFLAGS=-O2 LDFLAGS=-s
+        Thread model: posix
+        Supported LTO compression algorithms: zlib
+        gcc version 16.2.0 (GCC) 
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles\\cmTC_38e2a.dir\\'
+         C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/cc1plus.exe -quiet -v -iprefix C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/ -isysroot C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -D_REENTRANT C:\\Users\\GUILH\\Downloads\\w64devkit\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles\\cmTC_38e2a.dir\\ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -o C:\\Users\\GUILH\\AppData\\Local\\Temp\\ccr2IXnP.s
+        GNU C++20 (GCC) version 16.2.0 (x86_64-w64-mingw32)
+        	compiled by GNU C version 16.2.0, GMP version 6.3.0, MPFR version 4.2.2, MPC version 1.4.1, isl version none
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        ignoring nonexistent directory "C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../x86_64-w64-mingw32/include"
+        ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++"
+        ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32"
+        ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward"
+        ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include"
+        ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed"
+        ignoring nonexistent directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../x86_64-w64-mingw32/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++
+         C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32
+         C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward
+         C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include
+         C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed
+         C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../include
+        End of search list.
+        Compiler executable checksum: cf47552918dd0aae00bdcc39361f59b0
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles\\cmTC_38e2a.dir\\'
+         C:/Users/GUILH/Downloads/w64devkit/bin/as.exe -v -o CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj C:\\Users\\GUILH\\AppData\\Local\\Temp\\ccr2IXnP.s
+        GNU assembler version 2.47 (x86_64-w64-mingw32) using BFD version (GNU Binutils) 2.47.20260726
+        COMPILER_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/;C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/;C:/Users/GUILH/Downloads/w64devkit/bin/
+        LIBRARY_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/;C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/;C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/;C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.'
+        Linking CXX executable cmTC_38e2a.exe
+        C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\cmake.exe -E cmake_link_script CMakeFiles\\cmTC_38e2a.dir\\link.txt --verbose=1
+        Using built-in specs.
+        COLLECT_GCC=C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\g++.exe
+        COLLECT_LTO_WRAPPER=C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/lto-wrapper.exe
+        Target: x86_64-w64-mingw32
+        Configured with: /dl/gcc/configure --prefix=/w64devkit --with-sysroot=/w64devkit --with-native-system-header-dir=/include --with-arch-32=pentium4 --enable-multilib --target=x86_64-w64-mingw32 --host=x86_64-w64-mingw32 --enable-static --disable-shared --with-pic --with-gmp=/deps --with-mpc=/deps --with-mpfr=/deps --enable-languages=c,c++,fortran --enable-libgomp --enable-threads=posix --enable-tls --enable-version-specific-runtime-libs --disable-libstdcxx-verbose --disable-dependency-tracking --disable-lto --disable-nls --disable-win32-registry --enable-mingw-wildcard CFLAGS_FOR_TARGET=-O2 CXXFLAGS_FOR_TARGET=-O2 LDFLAGS_FOR_TARGET=-s CFLAGS=-O2 CXXFLAGS=-O2 LDFLAGS=-s
+        Thread model: posix
+        Supported LTO compression algorithms: zlib
+        gcc version 16.2.0 (GCC) 
+        COMPILER_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/;C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/;C:/Users/GUILH/Downloads/w64devkit/bin/
+        LIBRARY_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/;C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/;C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/;C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_38e2a.exe' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_38e2a.'
+         C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/collect2.exe --sysroot=C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -m i386pep -Bdynamic -o cmTC_38e2a.exe C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0 -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../.. -v --whole-archive CMakeFiles\\cmTC_38e2a.dir/objects.a --no-whole-archive --out-implib libcmTC_38e2a.dll.a --major-image-version 0 --minor-image-version 0 -lstdc++ -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o
+        collect2 version 16.2.0
+        C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe --sysroot=C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -m i386pep -Bdynamic -o cmTC_38e2a.exe C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0 -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../.. -v --whole-archive CMakeFiles\\cmTC_38e2a.dir/objects.a --no-whole-archive --out-implib libcmTC_38e2a.dll.a --major-image-version 0 --minor-image-version 0 -lstdc++ -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o
+        GNU ld (GNU Binutils) 2.47.20260726
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_38e2a.exe' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_38e2a.'
+        C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\cmake.exe -E rm -f CMakeFiles\\cmTC_38e2a.dir/objects.a
+        C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\ar.exe qc CMakeFiles\\cmTC_38e2a.dir/objects.a @CMakeFiles\\cmTC_38e2a.dir\\objects1.rsp
+        C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\c++.exe  -v -Wl,-v -Wl,--whole-archive CMakeFiles\\cmTC_38e2a.dir/objects.a -Wl,--no-whole-archive -o cmTC_38e2a.exe -Wl,--out-implib,libcmTC_38e2a.dll.a -Wl,--major-image-version,0,--minor-image-version,0
+        make[1]: Leaving directory 'C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/CMakeScratch/TryCompile-puhvaq'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake:255 (message)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++]
+          add: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32]
+          add: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward]
+          add: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include]
+          add: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed]
+          add: [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../include]
+        end of search list found
+        collapse include dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++]
+        collapse include dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32]
+        collapse include dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward]
+        collapse include dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include]
+        collapse include dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed]
+        collapse include dir [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../include] ==> [C:/Users/GUILH/Downloads/w64devkit/include]
+        implicit include dirs: [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++;C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32;C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward;C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include;C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed;C:/Users/GUILH/Downloads/w64devkit/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake:291 (message)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|wild|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|wild))("|,| |$)]
+        ignore line: [Change Dir: 'C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/CMakeScratch/TryCompile-puhvaq']
+        ignore line: []
+        ignore line: [Run Build Command(s): C:/Users/GUILH/Downloads/w64devkit/bin/cmake.exe -E env VERBOSE=1 C:/Users/GUILH/Downloads/w64devkit/bin/mingw32-make.exe -f Makefile cmTC_38e2a/fast]
+        ignore line: [make  -f CMakeFiles\\cmTC_38e2a.dir\\build.make CMakeFiles/cmTC_38e2a.dir/build]
+        ignore line: [make[1]: Entering directory 'C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/CMakeScratch/TryCompile-puhvaq']
+        ignore line: [Building CXX object CMakeFiles/cmTC_38e2a.dir/CMakeCXXCompilerABI.cpp.obj]
+        ignore line: [C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\c++.exe   -v -o CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj -c C:\\Users\\GUILH\\Downloads\\w64devkit\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\g++.exe]
+        ignore line: [Target: x86_64-w64-mingw32]
+        ignore line: [Configured with: /dl/gcc/configure --prefix=/w64devkit --with-sysroot=/w64devkit --with-native-system-header-dir=/include --with-arch-32=pentium4 --enable-multilib --target=x86_64-w64-mingw32 --host=x86_64-w64-mingw32 --enable-static --disable-shared --with-pic --with-gmp=/deps --with-mpc=/deps --with-mpfr=/deps --enable-languages=c c++ fortran --enable-libgomp --enable-threads=posix --enable-tls --enable-version-specific-runtime-libs --disable-libstdcxx-verbose --disable-dependency-tracking --disable-lto --disable-nls --disable-win32-registry --enable-mingw-wildcard CFLAGS_FOR_TARGET=-O2 CXXFLAGS_FOR_TARGET=-O2 LDFLAGS_FOR_TARGET=-s CFLAGS=-O2 CXXFLAGS=-O2 LDFLAGS=-s]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib]
+        ignore line: [gcc version 16.2.0 (GCC) ]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles\\cmTC_38e2a.dir\\']
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/cc1plus.exe -quiet -v -iprefix C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/ -isysroot C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -D_REENTRANT C:\\Users\\GUILH\\Downloads\\w64devkit\\share\\cmake-4.4\\Modules\\CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles\\cmTC_38e2a.dir\\ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -o C:\\Users\\GUILH\\AppData\\Local\\Temp\\ccr2IXnP.s]
+        ignore line: [GNU C++20 (GCC) version 16.2.0 (x86_64-w64-mingw32)]
+        ignore line: [	compiled by GNU C version 16.2.0  GMP version 6.3.0  MPFR version 4.2.2  MPC version 1.4.1  isl version none]
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [ignoring nonexistent directory "C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../x86_64-w64-mingw32/include"]
+        ignore line: [ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++"]
+        ignore line: [ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32"]
+        ignore line: [ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward"]
+        ignore line: [ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include"]
+        ignore line: [ignoring duplicate directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed"]
+        ignore line: [ignoring nonexistent directory "C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../x86_64-w64-mingw32/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++]
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/x86_64-w64-mingw32]
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/backward]
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include]
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/include-fixed]
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/lib/gcc/../../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../include]
+        ignore line: [End of search list.]
+        ignore line: [Compiler executable checksum: cf47552918dd0aae00bdcc39361f59b0]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles\\cmTC_38e2a.dir\\']
+        ignore line: [ C:/Users/GUILH/Downloads/w64devkit/bin/as.exe -v -o CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj C:\\Users\\GUILH\\AppData\\Local\\Temp\\ccr2IXnP.s]
+        ignore line: [GNU assembler version 2.47 (x86_64-w64-mingw32) using BFD version (GNU Binutils) 2.47.20260726]
+        ignore line: [COMPILER_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/]
+        ignore line: [LIBRARY_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.obj' '-c' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles\\cmTC_38e2a.dir\\CMakeCXXCompilerABI.cpp.']
+        ignore line: [Linking CXX executable cmTC_38e2a.exe]
+        ignore line: [C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\cmake.exe -E cmake_link_script CMakeFiles\\cmTC_38e2a.dir\\link.txt --verbose=1]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=C:\\Users\\GUILH\\Downloads\\w64devkit\\bin\\g++.exe]
+        ignore line: [COLLECT_LTO_WRAPPER=C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/lto-wrapper.exe]
+        ignore line: [Target: x86_64-w64-mingw32]
+        ignore line: [Configured with: /dl/gcc/configure --prefix=/w64devkit --with-sysroot=/w64devkit --with-native-system-header-dir=/include --with-arch-32=pentium4 --enable-multilib --target=x86_64-w64-mingw32 --host=x86_64-w64-mingw32 --enable-static --disable-shared --with-pic --with-gmp=/deps --with-mpc=/deps --with-mpfr=/deps --enable-languages=c c++ fortran --enable-libgomp --enable-threads=posix --enable-tls --enable-version-specific-runtime-libs --disable-libstdcxx-verbose --disable-dependency-tracking --disable-lto --disable-nls --disable-win32-registry --enable-mingw-wildcard CFLAGS_FOR_TARGET=-O2 CXXFLAGS_FOR_TARGET=-O2 LDFLAGS_FOR_TARGET=-s CFLAGS=-O2 CXXFLAGS=-O2 LDFLAGS=-s]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib]
+        ignore line: [gcc version 16.2.0 (GCC) ]
+        ignore line: [COMPILER_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/]
+        ignore line: [LIBRARY_PATH=C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_38e2a.exe' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_38e2a.']
+        link line: [ C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/collect2.exe --sysroot=C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -m i386pep -Bdynamic -o cmTC_38e2a.exe C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0 -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../.. -v --whole-archive CMakeFiles\\cmTC_38e2a.dir/objects.a --no-whole-archive --out-implib libcmTC_38e2a.dll.a --major-image-version 0 --minor-image-version 0 -lstdc++ -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o]
+          arg [C:/Users/GUILH/Downloads/w64devkit/bin/../libexec/gcc/x86_64-w64-mingw32/16.2.0/collect2.exe] ==> ignore
+          arg [--sysroot=C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit] ==> ignore
+          arg [-m] ==> ignore
+          arg [i386pep] ==> ignore
+          arg [-Bdynamic] ==> search dynamic
+          arg [-o] ==> ignore
+          arg [cmTC_38e2a.exe] ==> ignore
+          arg [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o] ==> obj [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o]
+          arg [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o] ==> obj [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o]
+          arg [-LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0] ==> dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0]
+          arg [-LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc] ==> dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc]
+          arg [-LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib] ==> dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib]
+          arg [-LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../..] ==> dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../..]
+          arg [-v] ==> ignore
+          arg [--whole-archive] ==> ignore
+          arg [CMakeFiles\\cmTC_38e2a.dir/objects.a] ==> ignore
+          arg [--no-whole-archive] ==> ignore
+          arg [--out-implib] ==> ignore
+          arg [libcmTC_38e2a.dll.a] ==> ignore
+          arg [--major-image-version] ==> ignore
+          arg [0] ==> ignore
+          arg [--minor-image-version] ==> ignore
+          arg [0] ==> ignore
+          arg [-lstdc++] ==> lib [stdc++]
+          arg [-lmingw32] ==> lib [mingw32]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lmingwex] ==> lib [mingwex]
+          arg [-lmsvcrt] ==> lib [msvcrt]
+          arg [-lkernel32] ==> lib [kernel32]
+          arg [-lpthread] ==> lib [pthread]
+          arg [-ladvapi32] ==> lib [advapi32]
+          arg [-lshell32] ==> lib [shell32]
+          arg [-luser32] ==> lib [user32]
+          arg [-lkernel32] ==> lib [kernel32]
+          arg [-lmingw32] ==> lib [mingw32]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lmingwex] ==> lib [mingwex]
+          arg [-lmsvcrt] ==> lib [msvcrt]
+          arg [-lkernel32] ==> lib [kernel32]
+          arg [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o] ==> obj [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o]
+        ignore line: [collect2 version 16.2.0]
+        link line: [C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe --sysroot=C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -m i386pep -Bdynamic -o cmTC_38e2a.exe C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0 -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../.. -v --whole-archive CMakeFiles\\cmTC_38e2a.dir/objects.a --no-whole-archive --out-implib libcmTC_38e2a.dll.a --major-image-version 0 --minor-image-version 0 -lstdc++ -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o] ==> linker [C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe]
+        link line: [C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe --sysroot=C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -m i386pep -Bdynamic -o cmTC_38e2a.exe C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0 -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../.. -v --whole-archive CMakeFiles\\cmTC_38e2a.dir/objects.a --no-whole-archive --out-implib libcmTC_38e2a.dll.a --major-image-version 0 --minor-image-version 0 -lstdc++ -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o] ==> linker architecture flags [-m;i386pep]
+        ignore line: [C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe --sysroot=C:/Users/GUILH/Downloads/w64devkit/bin/../../w64devkit -m i386pep -Bdynamic -o cmTC_38e2a.exe C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0 -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib -LC:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../.. -v --whole-archive CMakeFiles\\cmTC_38e2a.dir/objects.a --no-whole-archive --out-implib libcmTC_38e2a.dll.a --major-image-version 0 --minor-image-version 0 -lstdc++ -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 -lpthread -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc -lmingwex -lmsvcrt -lkernel32 C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o]
+        linker tool for 'CXX': C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe -m;i386pep
+        remove lib [msvcrt]
+        remove lib [msvcrt]
+        collapse obj [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib/crt2.o] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/crt2.o]
+        collapse obj [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o]
+        collapse obj [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o]
+        collapse library dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0]
+        collapse library dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc] ==> [C:/Users/GUILH/Downloads/w64devkit/lib/gcc]
+        collapse library dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../../../lib] ==> [C:/Users/GUILH/Downloads/w64devkit/lib]
+        collapse library dir [C:/Users/GUILH/Downloads/w64devkit/bin/../lib/gcc/x86_64-w64-mingw32/16.2.0/../../..] ==> [C:/Users/GUILH/Downloads/w64devkit/lib]
+        implicit libs: [stdc++;mingw32;gcc;mingwex;kernel32;pthread;advapi32;shell32;user32;kernel32;mingw32;gcc;mingwex;kernel32]
+        implicit objs: [C:/Users/GUILH/Downloads/w64devkit/lib/crt2.o;C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/crtbegin.o;C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/crtend.o]
+        implicit dirs: [C:/Users/GUILH/Downloads/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0;C:/Users/GUILH/Downloads/w64devkit/lib/gcc;C:/Users/GUILH/Downloads/w64devkit/lib]
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/Internal/CMakeDetermineLinkerId.cmake:41 (message)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake:337 (cmake_determine_linker_id)"
+      - "C:/Users/GUILH/Downloads/w64devkit/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Running the CXX compiler's linker: "C:/Users/GUILH/Downloads/w64devkit/bin/ld.exe" "-v"
+      GNU ld (GNU Binutils) 2.47.20260726
+...
