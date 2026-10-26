@@ -1,3 +1,0 @@
-C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/rss-external.dir
-C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/edit_cache.dir
-C:/Users/GUILH/Downloads/rss-external-mainNG/rss-external-main/build/CMakeFiles/rebuild_cache.dir
